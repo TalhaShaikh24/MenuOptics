@@ -1,0 +1,120 @@
+﻿<div class="page-header">
+    <div class="header-text">
+        <h1>Analytics Dashboard</h1>
+        <p>Comprehensive insights and performance metrics for your restaurant chain.</p>
+    </div>
+    <div class="header-actions">
+        @* <button class="btn btn-outline">
+            <i class="fas fa-download"></i> 
+            Export Report
+        </button>
+        <button class="btn btn-primary">
+            <i class="fas fa-chart-line"></i>
+            Generate Report
+        </button> *@
+    </div>
+</div>
+
+<!-- Analytics Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Monthly Revenue</p>
+                <p class="stat-value" id="revenue">$0</p>
+                <div class="stat-change" id="revenue-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>0%</span>
+                </div>
+            </div>
+            <div class="stat-icon revenue">
+                <i class="fas fa-dollar-sign"></i> <!-- Relevant for revenue -->
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Sales Count</p>
+                <p class="stat-value" id="sales-count">0</p>
+                <div class="stat-change" id="sales-count-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>0%</span>
+                </div>
+            </div>
+            <div class="stat-icon sales">
+                <i class="fas fa-shopping-cart"></i> <!-- Better suited for sales count -->
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Average Order Value</p>
+                <p class="stat-value" id="average-order-value">$0</p>
+                <div class="stat-change" id="average-order-value-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>0%</span>
+                </div>
+            </div>
+            <div class="stat-icon avg-order">
+                <i class="fas fa-chart-line"></i> <!-- Indicates metrics/trend -->
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Total Items Sold</p>
+                <p class="stat-value" id="total-items-sold">0</p>
+                <div class="stat-change" id="total-items-sold-change">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>0%</span>
+                </div>
+            </div>
+            <div class="stat-icon items-sold">
+                <i class="fas fa-boxes"></i> <!-- Represents items/products -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Charts Section -->
+<div class="content-grid">
+    <div class="card chart-card">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-line"></i> Revenue Trend</h3>
+        </div>
+        <div class="card-content">
+            <canvas id="revenueChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="card chart-card">
+        <div class="card-header">
+            <h3><i class="fas fa-chart-pie"></i> Order Distribution</h3>
+        </div>
+        <div class="card-content">
+            <canvas id="orderChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Metrics -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-tachometer-alt"></i> Restaurant Performance</h3>
+    </div>
+    <div class="card-content">
+        <div class="performance-grid">
+            <!-- Cards will be populated dynamically -->
+        </div>
+    </div>
+</div>
+
+<script src="~/views-js/analytics.js"></script>

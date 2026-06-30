@@ -1,0 +1,342 @@
+﻿@{
+    ViewData["Title"] = "Users";
+}
+
+<main class="main-content">
+    <div class="page-header">
+        <div class="header-text">
+            <h1>User Management</h1>
+            <p>Manage Admin and Vendor users for the restaurant system.</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal('addUserModal')">
+                <i class="fas fa-plus"></i> Add User
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Total Restaurants</p>
+                    <p class="stat-value" id="totalUsers">0</p>
+                    <p class="stat-change-text">All registered restaurants</p>
+                </div>
+                <div class="stat-icon users">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Active Restaurants</p>
+                    <p class="stat-value" id="activeUsers">0</p>
+                    <p class="stat-change-text">Currently active</p>
+                </div>
+                <div class="stat-icon active">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Inactive Restaurants</p>
+                    <p class="stat-value" id="inactiveUsers">0</p>
+                    <p class="stat-change-text">Currently inactive</p>
+                </div>
+                <div class="stat-icon inactive">
+                    <i class="fas fa-user-times"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">New This Week</p>
+                    <p class="stat-value" id="newThisWeek">0</p>
+                    <p class="stat-change-text">Joined in last 7 days</p>
+                </div>
+                <div class="stat-icon new">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search users..." class="filter-search" id="userSearch">
+        </div>
+        <div class="dropdown filter-dropdown">
+            <button class="btn btn-outline">
+                <i class="fas fa-filter"></i>
+                Role: <span id="roleFilterLabel">All</span>
+            </button>
+            <div class="dropdown-menu">
+                <a href="#" data-role="all" onclick="filterUsers('role', 'all')">All</a>
+                <a href="#" data-role="Admin" onclick="filterUsers('role', 'Admin')">Admin</a>
+                <a href="#" data-role="Vendor" onclick="filterUsers('role', 'Vendor')">Vendor</a>
+            </div>
+        </div>
+        <div class="dropdown filter-dropdown">
+            <button class="btn btn-outline">
+                <i class="fas fa-chart-line"></i>
+                Status: <span id="statusFilterLabel">All</span>
+            </button>
+            <div class="dropdown-menu">
+                <a href="#" data-status="all" onclick="filterUsers('status', 'all')">All</a>
+                <a href="#" data-status="active" onclick="filterUsers('status', 'active')">Active</a>
+                <a href="#" data-status="inactive" onclick="filterUsers('status', 'inactive')">Inactive</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-users"></i> Staff Directory</h3>
+        </div>
+        <div class="card-content">
+            <div class="table-container">
+                <table class="data-table" id="userTable">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Join Date</th>
+                            <th>Last Modified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <!-- Users will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal" id="addUserModal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Add New User</h3>
+                <button class="modal-close" onclick="closeModal('addUserModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm" enctype="multipart/form-data">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name <span style="color:red">*</span></label>
+                            <input type="text" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name <span style="color:red">*</span></label>
+                            <input type="text" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username <span style="color:red">*</span></label>
+                            <input type="text" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span style="color:red">*</span></label>
+                            <input type="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone <span style="color:red">*</span></label>
+                            <input type="text" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password <span style="color:red">*</span></label>
+                            <input type="password" name="password" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <div class="file-upload">
+                                <img id="addProfilePicPreview" src="https://via.placeholder.com/150" alt="Profile Picture Preview" style="max-width:150px; max-height:150px; margin-bottom:10px; display:none;">
+                                <label for="addProfilePicFile" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Choose profile picture</span>
+                                </label>
+                                <input type="file" id="addProfilePicFile" accept="image/*" name="file">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input type="text" name="address">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Country</label>
+                            <input type="text" name="country">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <input type="text" name="state">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="city">
+                        </div>
+                        <div class="form-group">
+                            <label>Zip</label>
+                            <input type="text" name="zip">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display">
+                        <label>Role <span style="color:red">*</span></label>
+                        <select name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Vendor">Vendor</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:none">
+                        <label>Active</label>
+                        <input type="hidden" name="isActive" value="true">
+                        <label for="isActive">Active</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
+                <button class="btn btn-primary" id="saveUserBtn">Save User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal" id="editUserModal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Edit User</h3>
+                <button class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm" enctype="multipart/form-data">
+                    <input type="hidden" name="userId">
+                    <input type="hidden" name="profilePic">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name <span style="color:red">*</span></label>
+                            <input type="text" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name <span style="color:red">*</span></label>
+                            <input type="text" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username <span style="color:red">*</span></label>
+                            <input type="text" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span style="color:red">*</span></label>
+                            <input type="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone <span style="color:red">*</span></label>
+                            <input type="text" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <div class="file-upload">
+                                <img id="editProfilePicPreview" src="https://via.placeholder.com/150" alt="Profile Picture Preview" style="max-width:150px; max-height:150px; margin-bottom:10px; display:none;">
+                                <label for="editProfilePicFile" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span id="editProfilePicLabel">Choose new profile picture</span>
+                                </label>
+                                <input type="file" id="editProfilePicFile" accept="image/*" name="file">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input type="text" name="address">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Country</label>
+                            <input type="text" name="country">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <input type="text" name="state">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="city">
+                        </div>
+                        <div class="form-group">
+                            <label>Zip</label>
+                            <input type="text" name="zip">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Role <span style="color:red">*</span></label>
+                        <select name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Vendor">Vendor</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:none">
+                        <label>Active</label>
+                        <input type="hidden" name="isActive" value="true">
+                        <label for="isActive">Active</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editUserModal')">Cancel</button>
+                <button class="btn btn-primary" id="updateUserBtn">Update User</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="~/views-js/vendor.js"></script>

@@ -1,0 +1,105 @@
+﻿
+<div class="page-header">
+    <div class="header-text">
+        <h1>Menu Engineering Insights</h1>
+        <p>Analyze menu item performance, profitability, and popularity.</p>
+    </div>
+</div>
+
+@* <!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Total Menu Items</p>
+                <p class="stat-value">150</p>
+                <p class="stat-change-text">+10 this month</p>
+            </div>
+            <div class="stat-icon items">
+                <i class="fas fa-utensils"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">High Profit Items</p>
+                <p class="stat-value">25</p>
+                <p class="stat-change-text">+3 this week</p>
+            </div>
+            <div class="stat-icon profitable">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Popular Items</p>
+                <p class="stat-value">30</p>
+                <p class="stat-change-text">Top sellers</p>
+            </div>
+            <div class="stat-icon popular">
+                <i class="fas fa-star"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Low Performers</p>
+                <p class="stat-value">12</p>
+                <p class="stat-change-text">Need review</p>
+            </div>
+            <div class="stat-icon low-performers">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+        </div>
+    </div>
+</div> *@
+
+<!-- Filters -->
+<div class="filters">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search menu items..." class="filter-search" id="menuItemSearch">
+    </div>
+    <button class="btn btn-outline quadrant-filter" data-quadrant="Star"><i class="fas fa-star"></i> Star</button>
+    <button class="btn btn-outline quadrant-filter" data-quadrant="Plowhorse"><i class="fas fa-horse"></i> Plowhorse</button>
+    <button class="btn btn-outline quadrant-filter" data-quadrant="Puzzle"><i class="fas fa-puzzle-piece"></i> Puzzle</button>
+    <button class="btn btn-outline quadrant-filter" data-quadrant="Dog"><i class="fas fa-dog"></i> Dog</button>
+    @* <button class="btn btn-outline" id="high-profit-filter"><i class="fas fa-dollar-sign"></i> High Profit Only</button> *@
+    <button class="btn btn-outline" id="clear-filter"><i class="fas fa-times"></i> Clear Filters</button>
+</div>
+
+<!-- Menu Engineering Insights Table -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-chart-line"></i> Menu Performance Overview</h3>
+    </div>
+    <div class="card-content">
+        <div class="table-container">
+            <table class="data-table menu-engineering-table">
+                <thead>
+                    <tr>
+                        <th>Menu Item</th>
+                        <th>Selling Price</th>
+                        <th>Cost</th>
+                        <th>Units Sold</th>
+                        <th>Contribution Margin</th>
+                        <th>Profitability Score</th>
+                        <th>Popularity Share</th>
+                        <th>Quadrant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="~/views-js/MenuEngineeringInsights.js?v=@DateTime.Now.Ticks"></script>

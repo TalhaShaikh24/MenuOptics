@@ -1,0 +1,236 @@
+﻿@{
+    ViewData["Title"] = "Users";
+}
+
+
+<main class="main-content">
+    <div class="page-header">
+        <div class="header-text">
+            <h1>User Management</h1>
+            <p>Manage vendors, admins, and customers.</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal('registerVendorModal')">
+                <i class="fas fa-plus"></i>
+                Register Vendor
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <div class="form-group">
+            <label>Role Filter</label>
+            <select id="roleFilter" style="width:200px;"></select>
+        </div>
+        <div class="form-group">
+            <label>Status Filter</label>
+            <select id="isActiveFilter" style="width:200px;">
+                <option value="">All Statuses</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- User Grid -->
+    <div class="user-grid" id="userGrid">
+        <!-- Users will be populated dynamically -->
+    </div>
+</main>
+
+<!-- Register Vendor Modal -->
+<div class="modal" id="registerVendorModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3>Register Vendor</h3>
+            <button class="modal-close" onclick="closeModal('registerVendorModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="registerVendorForm" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name <span style="color:red">*</span></label>
+                        <input type="text" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name <span style="color:red">*</span></label>
+                        <input type="text" name="lastName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Username <span style="color:red">*</span></label>
+                        <input type="text" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span style="color:red">*</span></label>
+                        <input type="email" name="email" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Phone <span style="color:red">*</span></label>
+                        <input type="text" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password <span style="color:red">*</span></label>
+                        <input type="password" name="password" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Profile Picture</label>
+                    <div class="file-upload">
+                        <label for="profilePic" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Choose profile picture</span>
+                        </label>
+                        <input type="file" id="profilePic" accept="image/*" name="file">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" name="address">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" name="country">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" name="state">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="city">
+                    </div>
+                    <div class="form-group">
+                        <label>Zip</label>
+                        <input type="text" name="zip">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select name="gender">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('registerVendorModal')">Cancel</button>
+            <button class="btn btn-primary" id="saveVendorBtn">Register Vendor</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal" id="editUserModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3>Edit User</h3>
+            <button class="modal-close" onclick="closeModal('editUserModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editUserForm" enctype="multipart/form-data">
+                <input type="hidden" id="editUserId" name="userId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name <span style="color:red">*</span></label>
+                        <input type="text" id="editFirstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name <span style="color:red">*</span></label>
+                        <input type="text" id="editLastName" name="lastName" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Username <span style="color:red">*</span></label>
+                        <input type="text" id="editUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email <span style="color:red">*</span></label>
+                        <input type="email" id="editEmail" name="email" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Phone <span style="color:red">*</span></label>
+                        <input type="text" id="editPhone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Role <span style="color:red">*</span></label>
+                        <select id="editRole" name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="Vendor">Vendor</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Profile Picture</label>
+                    <div class="file-upload">
+                        <img id="editProfilePicPreview" src="https://via.placeholder.com/150" alt="Profile Picture Preview" style="max-width:150px; max-height:150px; margin-bottom:10px; display:none;">
+                        <label for="editProfilePic" class="file-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span id="editProfilePicLabel">Choose profile picture</span>
+                        </label>
+                        <input type="file" id="editProfilePic" accept="image/*" name="file">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" id="editAddress" name="address">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" id="editCountry" name="country">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" id="editState" name="state">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" id="editCity" name="city">
+                    </div>
+                    <div class="form-group">
+                        <label>Zip</label>
+                        <input type="text" id="editZip" name="zip">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select id="editGender" name="gender">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Active</label>
+                    <input type="checkbox" id="editIsActive" name="isActive">
+                    <label for="editIsActive">Is Active</label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('editUserModal')">Cancel</button>
+            <button class="btn btn-primary" id="updateUserBtn">Update User</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/views-js/vendors.js"></script>

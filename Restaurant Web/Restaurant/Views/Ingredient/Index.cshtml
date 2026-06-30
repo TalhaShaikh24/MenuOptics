@@ -1,0 +1,242 @@
+﻿<div class="page-header">
+    <div class="header-text">
+        <h1>Ingredients & Inventory</h1>
+        <p>Monitor stock levels, track freshness, and manage suppliers.</p>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-outline" id="linkVendorBtn">
+            <i class="fas fa-link"></i>
+            Link Vendor
+        </button>
+        <button class="btn btn-primary" id="addIngredientBtn">
+            <i class="fas fa-plus"></i>
+            Add Ingredient
+        </button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Total Items</p>
+                <p class="stat-value">1,247</p>
+                <p class="stat-change-text">+23 this week</p>
+            </div>
+            <div class="stat-icon items">
+                <i class="fas fa-box"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Low Stock Items</p>
+                <p class="stat-value">18</p>
+                <p class="stat-change-text">+5 since yesterday</p>
+            </div>
+            <div class="stat-icon low-stock">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Expiring Soon</p>
+                <p class="stat-value">12</p>
+                <p class="stat-change-text">Next 3 days</p>
+            </div>
+            <div class="stat-icon expiring">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Pending Orders</p>
+                <p class="stat-value">7</p>
+                <p class="stat-change-text">From suppliers</p>
+            </div>
+            <div class="stat-icon pending">
+                <i class="fas fa-truck"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search ingredients..." class="filter-search" id="ingredientSearch">
+    </div>
+    <button class="btn btn-outline">
+        <i class="fas fa-filter"></i>
+        Category
+    </button>
+    <button class="btn btn-outline">
+        <i class="fas fa-exclamation-triangle"></i>
+        Low Stock Only
+    </button>
+</div>
+
+<!-- Ingredients Table -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-box"></i> Inventory Overview</h3>
+    </div>
+    <div class="card-content">
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Ingredient</th>
+                        <th>Unit</th>
+                        <th>Status</th>
+                        <th>Supplier</th>
+                        <th>Created Date</th>
+                        <th>Price</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Ingredient Modal -->
+<div class="modal" id="addIngredientModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Ingredient</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="addIngredientForm">
+                <div class="form-group">
+                    <label>Ingredient Name</label>
+                    <input id="ingredientName" type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Ingredient Description</label>
+                    <textarea id="ingredientDescription" name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="unit">Cuisine Type</label>
+                    <div class="input-wrapper">
+                        <select id="ingredientUnit" name="unit" required>
+                            <option value="" disabled selected>Select unit</option>
+                            <option value="g">g</option>
+                            <option value="kg">kg</option>
+                            <option value="ml">ml</option>
+                            <option value="l">l</option>
+                            <option value="pcs">pcs</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input id="ingredientPrice" type="number" name="price" placeholder="Enter Price" required>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('addIngredientModal')" >Cancel</button>
+            <button id="addIngredientBtn2" class="btn btn-primary">Save Ingredient</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Ingredient Modal -->
+<div class="modal" id="editIngredientModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Ingredient</h3>
+            <button class="modal-close" onclick="closeModal('editIngredientModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editIngredientForm">
+                <input type="hidden" id="editIngredientId" name="ingredientId">
+                <div class="form-group">
+                    <label>Ingredient Name</label>
+                    <input id="editIngredientName" type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Ingredient Description</label>
+                    <textarea id="editIngredientDescription" name="description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="unit">Cuisine Type</label>
+                    <div class="input-wrapper">
+                        <select id="editIngredientUnit" name="unit" required>
+                            <option value="" disabled>Select unit</option>
+                            <option value="g">g</option>
+                            <option value="kg">kg</option>
+                            <option value="ml">ml</option>
+                            <option value="l">l</option>
+                            <option value="pcs">pcs</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input id="editIngredientPrice" type="number" name="price" placeholder="Enter Price" required>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('editIngredientModal')">Cancel</button>
+            <button id="updateIngredientBtn" class="btn btn-primary">Update Ingredient</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Link Vendor Modal -->
+<div class="modal" id="linkVendorModal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3>Vendor Management</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="addVendor">Add Vendor</button>
+                <button class="tab-btn" data-tab="linkedVendors">Linked Vendors</button>
+            </div>
+
+            <!-- Add Vendor Tab -->
+            <div class="tab-content active" id="addVendorTab">
+                <div class="vendor-grid"></div>
+                <div class="empty-state add-vendor-empty" style="display: none;">
+                    <h2 style="text-align: center;">No Vendors Available to Link</h2>
+                </div>
+            </div>
+
+            <!-- Linked Vendors Tab -->
+            <div class="tab-content" id="linkedVendorsTab">
+                <div class="linked-vendors-list"></div>
+                <div class="empty-state linked-vendor-empty" style="display: none;">
+                    <h2 style="text-align: center;">No Vendors Are Linked</h2>
+                </div>
+            </div>
+
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('linkVendorModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/views-js/ingredients.js?v=@DateTime.Now.Ticks"></script>

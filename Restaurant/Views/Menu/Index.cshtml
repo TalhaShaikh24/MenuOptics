@@ -1,0 +1,246 @@
+﻿@{
+    ViewData["Title"] = "Menu Items";
+}
+
+
+<!-- Main Content -->
+<main class="main-content">
+    <div class="page-header">
+        <div class="header-text">
+            <h1>Menu Item Management</h1>
+            <p>Create menu items using up to date ingredient pricing.</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline-success" id="exportMenuPdfBtn">
+                <i class="fas fa-file-pdf"></i> Export All PDF
+            </button>
+            <button class="btn btn-primary" id="addMenuItemBtn" onclick="openModal('addMenuItemModal')">
+                <i class="fas fa-plus"></i>
+                Add Menu Item
+            </button>
+        </div>
+    </div>
+
+    <!-- Menu Stats -->
+    <div class="stats-grid" >
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Avg. Food Cost %</p>
+                    <p class="stat-value" id="avgFoodCost">0.00%</p>
+                    <p class="stat-change-text">Active Items Only</p>
+                </div>
+                <div class="stat-icon" style="background: rgba(240, 141, 17, 0.1); color: #f08d11;">
+                    <i class="fas fa-percentage"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card hidden">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Total Menu Items</p>
+                    <p class="stat-value">156</p>
+                    <p class="stat-change-text">+8 this week</p>
+                </div>
+                <div class="stat-icon menu-items">
+                    <i class="fas fa-utensils"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card hidden">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Categories</p>
+                    <p class="stat-value">12</p>
+                    <p class="stat-change-text">Appetizers, Mains, Desserts</p>
+                </div>
+                <div class="stat-icon categories">
+                    <i class="fas fa-list"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card hidden">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Popular Items</p>
+                    <p class="stat-value">23</p>
+                    <p class="stat-change-text">High demand items</p>
+                </div>
+                <div class="stat-icon popular">
+                    <i class="fas fa-fire"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card hidden">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Out of Stock</p>
+                    <p class="stat-value">5</p>
+                    <p class="stat-change-text">Need attention</p>
+                </div>
+                <div class="stat-icon out-of-stock">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Categories Tabs -->
+    <div class="menu-tabs" id="categoryTabs">
+        <!-- Category tabs will be populated dynamically -->
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search menu items..." class="filter-search" id="menuSearch">
+        </div>
+    </div>
+
+    <!-- Menu Items Grid -->
+    <div class="menu-grid" id="menuGrid">
+        <!-- Menu items will be populated dynamically -->
+    </div>
+</main>
+
+<!-- Add Menu Item Modal -->
+<div class="modal" id="addMenuItemModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3>Add New Menu Item</h3>
+            <button class="modal-close" onclick="closeModal('addMenuItemModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="addMenuItemForm" enctype="multipart/form-data">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name <span style="color:red">*</span></label>
+                        <input type="text" id="menuName" name="name" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category <span style="color:red">*</span></label>
+                        <select name="categoryId" id="menuCategory" required>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description <span style="color:red">*</span></label>
+                    <textarea id="menuDescription" name="description" rows="3" required placeholder="Describe the dish, ingredients, and preparation method"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Featured Image <span style="color:red">*</span></label>
+                        <div class="file-upload">
+                            <label for="featuredImageFile" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Choose featured image</span>
+                            </label>
+                            <input type="file" id="featuredImageFile" accept="image/*" name="featuredImageFile" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ingredients</label>
+                    <select id="ingredientsSelect" name="ingredients[]" multiple="multiple" style="width:100%"></select>
+                    <div id="ingredientsDetails" class="ingredientsDetails"></div>
+                </div>
+                <div class="form-group">
+                    <label>Recipes</label>
+                    <select id="recipesSelect" name="recipes[]" multiple="multiple" style="width:100%"></select>
+                    <div id="recipesDetails" class="recipesDetails"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cost ($) <span style="color:red">*</span></label>
+                        <input type="number" step="0.01" id="menuCost" name="cost" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Selling Price ($) <span style="color:red">*</span></label>
+                        <input type="number" step="0.01" id="menuSellingPrice" name="sellingPrice" required>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('addMenuItemModal')">Cancel</button>
+            <button class="btn btn-primary" id="saveMenuItemBtn">Save Menu Item</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Menu Item Modal -->
+<div class="modal" id="editMenuItemModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3>Edit Menu Item</h3>
+            <button class="modal-close" onclick="closeModal('editMenuItemModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editMenuItemForm" enctype="multipart/form-data">
+                <input type="hidden" id="editMenuItemId" name="menuItemId">
+                <input type="hidden" id="editFeaturedImage" name="featuredImage">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name <span style="color:red">*</span></label>
+                        <input type="text" id="editMenuName" name="name" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category <span style="color:red">*</span></label>
+                        <select name="categoryId" id="editMenuCategory" required></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description <span style="color:red">*</span></label>
+                    <textarea id="editMenuDescription" name="description" rows="3" required placeholder="Describe the dish, ingredients, and preparation method"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Featured Image</label>
+                        <div class="file-upload">
+                            <img id="editFeaturedImagePreview" src="https://via.placeholder.com/150" alt="Featured Image Preview" style="max-width:150px; max-height:150px; margin-bottom:10px; display:none;">
+                            <label for="editFeaturedImageFile" class="file-upload-label">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span id="editFeaturedImageLabel">Choose new featured image</span>
+                            </label>
+                            <input type="file" id="editFeaturedImageFile" accept="image/*" name="featuredImageFile">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ingredients</label>
+                    <select id="editIngredientsSelect" name="ingredients[]" multiple="multiple" style="width:100%"></select>
+                    <div id="editIngredientsDetails" class="ingredientsDetails"></div>
+                </div>
+                <div class="form-group">
+                    <label>Recipes</label>
+                    <select id="editRecipesSelect" name="recipes[]" multiple="multiple" style="width:100%"></select>
+                    <div id="editRecipesDetails" class="recipesDetails"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cost ($) <span style="color:red">*</span></label>
+                        <input type="number" step="0.01" id="editMenuCost" name="cost" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Selling Price ($) <span style="color:red">*</span></label>
+                        <input type="number" step="0.01" id="editMenuSellingPrice" name="sellingPrice" required>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('editMenuItemModal')">Cancel</button>
+            <button class="btn btn-primary" id="updateMenuItemBtn">Update Menu Item</button>
+        </div>
+    </div>
+</div>
+
+<script src="~/views-js/menu.js?v=@DateTime.Now.Ticks"></script>
