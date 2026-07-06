@@ -238,12 +238,21 @@
             </button>
 
             <div class="form-footer">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="terms" required>
+                    <span class="checkmark"></span>
+                    I agree to the <a href="@Url.Action("TermsAndConditions", "Home")" target="_blank">Terms & Conditions</a>
+                </label>
+                <p>Already have an account? <a href="@Url.Action("Login", "User")">Sign in here</a></p>
+
+
                 <button type="button" id="backToEmailBtnSetup"
                         class="btn btn-link p-0"
                         style="font-size:.85rem;">
                     &larr; Use a different email
                 </button>
             </div>
+
         </div>
 
     </div>

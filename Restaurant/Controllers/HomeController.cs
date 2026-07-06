@@ -17,7 +17,13 @@ namespace MenuOptics.Controllers
         [Authorize]
         public IActionResult Index()
         {
-            return View();
+            if (User.IsInRole("Restaurant"))
+            {
+                return RedirectToAction("Index", "Menu");
+            }
+            return RedirectToAction("Index", "User");
+
+            //return View();
         }
 
         public IActionResult Privacy()

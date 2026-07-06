@@ -1,6 +1,16 @@
 ﻿@{
     ViewData["Title"] = "My Profile";
+    var userRole = User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? "User";
+    bool isParent = Convert.ToBoolean(
+        User?.FindFirst("isParent")?.Value ?? "false"
+    );
 }
+@using System.Security.Claims
+@using MenuOptics
+@using MenuOptics.Models
+@using MenuOptics.Utility
+@inject Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper Html
+
 
     <div class="page-header">
         <h1>Edit Profile</h1>
@@ -11,13 +21,16 @@
             <form id="profileEditForm" enctype="multipart/form-data">
                 <input type="hidden" name="profilePic" id="existingProfilePic">
 
+            @if (isParent){
                 <div class="profile-upload-section" style="text-align: center; margin-bottom: 2rem;">
                     <img id="profilePreview" src="/img/default-avatar.png" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid #ddd;">
                     <div class="mt-2">
-                        <label for="profileFile" class="btn btn-outline-sm">Change Photo</label>
+                        <label for="profileFile" class="btn btn-outline-sm">Company Logo</label>
                         <input type="file" id="profileFile" name="file" accept="image/*" style="display: none;">
                     </div>
                 </div>
+            }
+                
 
                 <div class="form-row">
                     <div class="form-group">
@@ -57,7 +70,7 @@
                         <input type="text" name="city" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label>Zip Code</label>
+                        <label>Postal Code</label>
                         <input type="text" name="zip" class="form-control">
                     </div>
                 </div>

@@ -1,16 +1,203 @@
-﻿let table;
+let table;
 
+// ─── Ingredient table (server-side DataTable) ──────────────────────────────────
+function initIngredientsTable() {
+    if ($.fn.DataTable.isDataTable('.ingredients-table')) {
+        $('.ingredients-table').DataTable().destroy();
+    }
+
+    table = $('.ingredients-table').DataTable({
+        serverSide: true,
+        processing: true,
+        ajax: function (dtParams, callback, settings) {
+            // Map DataTables params → our API query params
+            const searchValue = dtParams.search ? dtParams.search.value : '';
+            const orderCol    = dtParams.order  && dtParams.order.length  ? dtParams.order[0].column : 1;
+            const orderDir    = dtParams.order  && dtParams.order.length  ? dtParams.order[0].dir    : 'asc';
+
+            $.ajax({
+                url: '/api/IngredientApi/GetAllActiveInactiveIngredients',
+                method: 'GET',
+                data: {
+                    draw:        dtParams.draw,
+                    start:       dtParams.start,
+                    length:      dtParams.length,
+                    searchValue: searchValue,
+                    orderColumn: orderCol,
+                    orderDir:    orderDir
+                },
+                success: function (response) {
+                    // Rebuild supplier dropdown from current page data
+                    const supplierFilter = $('#supplierFilter');
+                    const existing = supplierFilter.val();
+                    supplierFilter.find('option:not(:first)').remove();
+                    const suppliers = new Set();
+                    (response.data || []).forEach(i => {
+                        if (i.fullName) suppliers.add(i.fullName);
+                    });
+                    suppliers.forEach(s => supplierFilter.append(`<option value="${s}">${s}</option>`));
+                    if (existing) supplierFilter.val(existing);
+
+                    callback({
+                        draw:            response.draw,
+                        recordsTotal:    response.recordsTotal,
+                        recordsFiltered: response.recordsFiltered,
+                        data:            response.data || []
+                    });
+                },
+                error: function (xhr) {
+                    showNotification('Failed to load ingredients.', 'error');
+                    callback({ draw: dtParams.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                // Checkbox column — not sortable
+                orderable: false,
+                searchable: false,
+                data: 'ingredientId',
+                render: function (id) {
+                    return `<input type="checkbox" class="ingredient-checkbox" data-id="${id}">`;
+                }
+            },
+            {
+                data: 'name',
+                render: function (name, type, row) {
+                    const date = DateFormatter.formatWithComma(row.createdOn);
+                    return `<div class="ingredient-info">
+                                <p class="ingredient-name">${name}</p>
+                                <p class="ingredient-meta">Added on: ${date}</p>
+                            </div>`;
+                }
+            },
+            {
+                data: 'vendorProductId',
+                render: val => `<span class="${val != null ? 'category-badge' : ''}">${val || ''}</span>`
+            },
+            {
+                data: 'unit',
+                render: val => `<span class="category-badge">${val || ''}</span>`
+            },
+            {
+                data: 'unitOfMeasure',
+                render: val => `<span class="${val != null ? 'category-badge' : ''}">${val || ''}</span>`
+            },
+            {
+                // Size — not sortable, not searchable
+                orderable: false,
+                searchable: false,
+                data: 'size',
+                render: (val, type, row) => `<span class="${val != null ? 'category-badge-size' : ''}">${val ? `${val} ${row.unit || ''}` : ''}</span>`
+            },
+            {
+                data: 'isActive',
+                render: function (active) {
+                    const cls  = active ? 'good' : 'critical';
+                    const lbl  = active ? 'Active' : 'In Active';
+                    return `<span class="status-badge ${cls}">${lbl}</span>`;
+                }
+            },
+            {
+                // Supplier
+                data: 'fullName',
+                render: val => val || 'N/A'
+            },
+            {
+                data: 'createdOn',
+                render: function (val) {
+                    return `<i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(val)}`;
+                }
+            },
+            {
+                data: 'price',
+                render: val => `$${val}`
+            },
+            {
+                // Actions — not sortable
+                orderable: false,
+                searchable: false,
+                data: null,
+                render: function (data, type, row) {
+                    const addStock = (!row.vendorId || row.vendorId <= 0)
+                        ? `<a href="#" onclick="addStock(${row.ingredientId})">
+                               <i class="fas fa-box"></i> Add Stock
+                           </a>`
+                        : '';
+
+                    const toggleLink = (!row.vendorId || row.vendorId <= 0)
+                        ? `<a href="#" onclick="toggleIngredientActive(${row.ingredientId})">
+                               <i class="fas fa-ban"></i>
+                               ${row.isActive ? 'Deactivate' : 'Activate'}
+                           </a>`
+                        : '';
+
+                    return `<div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    ${addStock}
+                                    <a href="#" onclick="editIngredient(${row.ingredientId})">
+                                        <i class="fas fa-edit"></i> Edit Details
+                                    </a>
+                                    ${toggleLink}
+                                </div>
+                            </div>`;
+                }
+            }
+        ],
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        ordering: true,
+        order: [[1, 'asc']],
+        language: {
+            search: '',
+            searchPlaceholder: 'Search ingredients...',
+            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...'
+        },
+        drawCallback: function () {
+            // Re-bind select-all checkbox after each draw
+            $('#selectAllIngredients').prop('checked', false);
+            $('#selectAllIngredients').off('change').on('change', function () {
+                $('.ingredient-checkbox').prop('checked', this.checked);
+            });
+        }
+    });
+
+    // Custom search input → server
+    $('#ingredientSearch').off('keyup').on('keyup', function () {
+        table.search(this.value).draw();
+    });
+
+    // Supplier filter → search on supplier column (index 5)
+    $('#supplierFilter').off('change').on('change', function () {
+        table.column(7).search(this.value).draw();
+    });
+}
+
+// Convenience alias used after add/edit/delete operations
+function refreshIngredientsTable() {
+    if (table) {
+        table.ajax.reload(null, false); // false = keep current page
+    } else {
+        initIngredientsTable();
+    }
+}
+
+// ─── Page ready ────────────────────────────────────────────────────────────────
 $(document).ready(function () {
+
+    // ── Save new ingredient ───────────────────────────────────────────────────
     $('#addIngredientBtn2').on('click', function () {
         const ingredientData = {
-            name: $('#ingredientName').val(),
-            description: $('#ingredientDescription').val(),
-            unit: $('#ingredientUnit').val(),
+            name:          $('#ingredientName').val(),
+            description:   $('#ingredientDescription').val(),
+            unit:          $('#ingredientUnit').val(),
             unitOfMeasure: $('#ingredientUnit').val(),
-            price: parseFloat($('#ingredientPrice').val()) || 0,
-            stock: $('#ingredientStock').val() || 0
+            price:         parseFloat($('#ingredientPrice').val()) || 0,
+            stock:         $('#ingredientStock').val() || 0
         };
-        debugger
         if (ingredientData.name && ingredientData.unit) {
             addIngredientByUserId(ingredientData);
         } else {
@@ -18,16 +205,16 @@ $(document).ready(function () {
         }
     });
 
+    // ── Update ingredient ─────────────────────────────────────────────────────
     $('#updateIngredientBtn').on('click', function () {
         const ingredientData = {
-            ingredientId: $('#editIngredientId').val(),
-            name: $('#editIngredientName').val(),
-            description: $('#editIngredientDescription').val(),
-            unit: $('#editIngredientUnit').val(),
+            ingredientId:  $('#editIngredientId').val(),
+            name:          $('#editIngredientName').val(),
+            description:   $('#editIngredientDescription').val(),
+            unit:          $('#editIngredientUnit').val(),
             unitOfMeasure: $('#editIngredientUnitOfMeasure').val(),
-            price: parseFloat($('#editIngredientPrice').val()) || 0,
+            price:         parseFloat($('#editIngredientPrice').val()) || 0,
         };
-
         if (ingredientData.name && ingredientData.unit) {
             updateIngredient(ingredientData);
         } else {
@@ -35,23 +222,11 @@ $(document).ready(function () {
         }
     });
 
-    // Bulk action buttons
-    $('#bulkDeleteBtn').on('click', function () {
-        bulkDeleteIngredients();
-    });
+    // ── Bulk actions ──────────────────────────────────────────────────────────
+    $('#bulkDeleteBtn').on('click', function () { bulkDeleteIngredients(); });
+    $('#bulkToggleBtn').on('click',  function () { bulkToggleIngredients(); });
 
-    $('#bulkToggleBtn').on('click', function () {
-        bulkToggleIngredients();
-    });
-
-    // Select all checkbox
-    $('#selectAllIngredients').on('change', function () {
-        $('.ingredient-checkbox').prop('checked', this.checked);
-    });
-
-
-
-    // Export CSV Function
+    // ── Export CSV ────────────────────────────────────────────────────────────
     $('#exportCSVBtn').on('click', function () {
         ajaxRequest({
             url: '/api/IngredientApi/GetAllIngredientsByUserId',
@@ -59,43 +234,31 @@ $(document).ready(function () {
             showMessage: false,
             onSuccess: function (response) {
                 const ingredients = response.data;
-
-                // CSV Headers
                 let csvContent = "Name,Unit,UOM,Physical Count\n";
-
-                // Add data rows
                 ingredients.forEach(ingredient => {
-                    const name = ingredient.name.replace(/,/g, ' '); // Remove commas
+                    const name = ingredient.name.replace(/,/g, ' ');
                     const unit = ingredient.unit || '';
-                    const uom = ingredient.unitOfMeasure || '';
-                    const physicalCount = ''; // Blank column
-
-                    csvContent += `"${name}","${unit}","${uom}","${physicalCount}"\n`;
+                    const uom  = ingredient.unitOfMeasure || '';
+                    csvContent += `"${name}","${unit}","${uom}",""\n`;
                 });
-
-                // Create blob and download
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-
+                const url  = URL.createObjectURL(blob);
                 link.setAttribute('href', url);
                 link.setAttribute('download', `Ingredients_${new Date().toISOString().slice(0, 10)}.csv`);
                 link.style.visibility = 'hidden';
-
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-
                 showNotification('CSV exported successfully!', 'success');
             },
-            onError: function (xhr, status, error) {
-                console.error('Failed to export CSV:', error);
+            onError: function () {
                 showNotification('Failed to export CSV.', 'error');
             }
         });
     });
 
-    // Export PDF Function
+    // ── Export PDF ────────────────────────────────────────────────────────────
     $('#exportPdfBtn').on('click', function () {
         ajaxRequest({
             url: '/api/IngredientApi/GetAllIngredientsByUserId',
@@ -103,93 +266,62 @@ $(document).ready(function () {
             showMessage: false,
             onSuccess: function (response) {
                 const ingredients = response.data;
-
-                // Create PDF using jsPDF
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-
-                // Title
                 doc.setFontSize(18);
                 doc.text('Ingredients List', 14, 20);
-
-                // Date
                 doc.setFontSize(10);
                 doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
-
-                // Table headers and data
                 const headers = [['Name', 'Unit', 'UOM', 'Physical Count']];
-                const data = ingredients.map(ingredient => [
-                    ingredient.name,
-                    ingredient.unit || '',
-                    ingredient.unitOfMeasure || '',
-                    '' // Blank Physical Count column
-                ]);
-
-                // Add table using autoTable plugin
+                const data = ingredients.map(i => [i.name, i.unit || '', i.unitOfMeasure || '', '']);
                 doc.autoTable({
                     head: headers,
                     body: data,
                     startY: 35,
                     theme: 'grid',
-                    styles: {
-                        fontSize: 9,
-                        cellPadding: 3
-                    },
-                    headStyles: {
-                        fillColor: [41, 128, 185],
-                        textColor: 255,
-                        fontStyle: 'bold'
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 70 },  // Name
-                        1: { cellWidth: 30 },  // Unit
-                        2: { cellWidth: 30 },  // UOM
-                        3: { cellWidth: 50 }   // Physical Count
-                    }
+                    styles: { fontSize: 9, cellPadding: 3 },
+                    headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+                    columnStyles: { 0: { cellWidth: 70 }, 1: { cellWidth: 30 }, 2: { cellWidth: 30 }, 3: { cellWidth: 50 } }
                 });
-
-                // Save PDF
                 doc.save(`Ingredients_${new Date().toISOString().slice(0, 10)}.pdf`);
-
                 showNotification('PDF exported successfully!', 'success');
             },
-            onError: function (xhr, status, error) {
-                console.error('Failed to export PDF:', error);
+            onError: function () {
                 showNotification('Failed to export PDF.', 'error');
             }
         });
     });
 
-    refreshIngredientsTable();
-    refreshVendors(); // Load vendors on page load
+    // ── Initialise ────────────────────────────────────────────────────────────
+    initIngredientsTable();
+    refreshVendors();
 });
 
-// Existing addIngredientByUserId function remains the same
+// ─── CRUD Functions ────────────────────────────────────────────────────────────
+
 function addIngredientByUserId(ingredientData) {
     ajaxRequest({
         url: '/api/IngredientApi/CreateIngredient',
         method: 'POST',
         data: {
-            Name: ingredientData.name,
-            Description: ingredientData.description,
-            Price: ingredientData.price,
-            Unit: ingredientData.unit,
+            Name:          ingredientData.name,
+            Description:   ingredientData.description,
+            Price:         ingredientData.price,
+            Unit:          ingredientData.unit,
             UnitOfMeasure: ingredientData.unitOfMeasure,
-            Stock: ingredientData.stock
+            Stock:         ingredientData.stock
         },
-        onSuccess: function (response) {
+        onSuccess: function () {
             refreshIngredientsTable();
-            $('#ingredientForm')[0].reset();
+            $('#addIngredientForm')[0].reset();
             closeModal('addIngredientModal');
         },
-        onError: function (xhr, status, error) {
-            console.error('Failed to add ingredient:', error);
+        onError: function () {
             showNotification('Failed to add ingredient.', 'error');
         }
     });
 }
 
-// Function to get ingredient by ID
 function getIngredientById(id) {
     $('.form-group.editIngredientStock').hide();
     ajaxRequest({
@@ -197,9 +329,7 @@ function getIngredientById(id) {
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-           
             const ingredient = response.data;
-
             $('#editIngredientId').val(ingredient.ingredientId);
             $('#editIngredientName').val(ingredient.name);
             $('#editIngredientDescription').val(ingredient.description);
@@ -208,62 +338,48 @@ function getIngredientById(id) {
             $('#editIngredientPrice').val(ingredient.price);
 
             if (ingredient.vendorId > 0) {
-
-                // Readonly fields
                 $('#editIngredientName').prop('disabled', true);
                 $('#editIngredientUnit').prop('disabled', true);
                 $('#editIngredientDescription').prop('disabled', true);
-
-                // Price hide
-                $('#editIngredientPrice').closest('.form-group').hide(); 
-            }
-            else {
-
-                // Sab fields normal
+                $('#editIngredientPrice').closest('.form-group').hide();
+            } else {
                 $('#editIngredientName').prop('disabled', false);
                 $('#editIngredientDescription').prop('disabled', false);
                 $('#editIngredientUnit').prop('disabled', false);
                 $('#editIngredientUnitOfMeasure').prop('disabled', false);
-
                 $('#editIngredientPrice').closest('.form-group').show();
             }
-
-            
             openModal('editIngredientModal');
         },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch ingredient:', error);
+        onError: function () {
             showNotification('Failed to fetch ingredient.', 'error');
         }
     });
 }
 
-// Function to update ingredient
 function updateIngredient(ingredientData) {
     ajaxRequest({
         url: '/api/IngredientApi/UpdateIngredient',
         method: 'PUT',
         data: {
-            IngredientId: ingredientData.ingredientId,
-            Name: ingredientData.name,
-            Description: ingredientData.description,
-            Price: ingredientData.price,
-            Unit: ingredientData.unit,
+            IngredientId:  ingredientData.ingredientId,
+            Name:          ingredientData.name,
+            Description:   ingredientData.description,
+            Price:         ingredientData.price,
+            Unit:          ingredientData.unit,
             UnitOfMeasure: ingredientData.unitOfMeasure
         },
-        onSuccess: function (response) {
+        onSuccess: function () {
             refreshIngredientsTable();
             closeModal('editIngredientModal');
             showNotification('Ingredient updated successfully.', 'success');
         },
-        onError: function (xhr, status, error) {
-            console.error('Failed to update ingredient:', error);
+        onError: function () {
             showNotification('Failed to update ingredient.', 'error');
         }
     });
 }
 
-// Function to toggle category active status
 function toggleIngredientActive(id) {
     if (confirm('Are you sure you want to toggle the active status of this Ingredient?')) {
         ajaxRequest({
@@ -274,15 +390,46 @@ function toggleIngredientActive(id) {
                 refreshIngredientsTable();
                 showNotification(response.responseMsg, 'success');
             },
-            onError: function (xhr, status, error) {
-                console.error('Failed to toggle ingredient status:', error);
+            onError: function () {
+                console.error('Failed to toggle ingredient status.');
             }
         });
     }
 }
 
+function editIngredient(id) {
+    getIngredientById(id);
+}
 
-// Bulk delete ingredients
+// ── Add Stock ─────────────────────────────────────────────────────────────────
+function addStock(ingredientId) {
+    $('#addStockIngredientId').val(ingredientId);
+    $('#addStock').val('');
+    openModal('addStockModal');
+}
+
+$('#saveStockBtn').on('click', function () {
+    const ingredientId = $('#addStockIngredientId').val();
+    const stock        = parseFloat($('#addStock').val());
+    if (!stock || stock <= 0) {
+        showNotification('Please enter a valid stock.', 'error');
+        return;
+    }
+    ajaxRequest({
+        url: '/api/IngredientApi/AddIngredientStock',
+        method: 'POST',
+        data: { ingredientId: ingredientId, stock: stock },
+        onSuccess: function () {
+            closeModal('addStockModal');
+            refreshIngredientsTable();
+        },
+        onError: function () {
+            console.error('Failed to add stock.');
+        }
+    });
+});
+
+// ── Bulk delete ───────────────────────────────────────────────────────────────
 function bulkDeleteIngredients() {
     const selectedIds = $('.ingredient-checkbox:checked').map(function () {
         return $(this).data('id');
@@ -292,30 +439,27 @@ function bulkDeleteIngredients() {
         showNotification('Please select at least one ingredient to delete.', 'error');
         return;
     }
-
     if (confirm(`Are you sure you want to delete ${selectedIds.length} selected ingredient(s)?`)) {
-        let completedRequests = 0;
-        let errorOccurred = false;
-
+        let completed = 0;
+        let hasError  = false;
         selectedIds.forEach(id => {
             ajaxRequest({
                 url: `/api/IngredientApi/DeleteIngredientById/${id}`,
                 method: 'DELETE',
                 showMessage: false,
-                onSuccess: function (response) {
-                    completedRequests++;
-                    if (completedRequests === selectedIds.length) {
+                onSuccess: function () {
+                    completed++;
+                    if (completed === selectedIds.length) {
                         refreshIngredientsTable();
                         showNotification(`${selectedIds.length} ingredient(s) deleted successfully.`, 'success');
                     }
                 },
-                onError: function (xhr, status, error) {
-                    completedRequests++;
-                    errorOccurred = true;
-                    console.error(`Failed to delete ingredient ${id}:`, error);
-                    if (completedRequests === selectedIds.length) {
+                onError: function () {
+                    completed++;
+                    hasError = true;
+                    if (completed === selectedIds.length) {
                         refreshIngredientsTable();
-                        showNotification(errorOccurred ? 'Some ingredients could not be deleted.' : `${selectedIds.length} ingredient(s) deleted successfully.`, errorOccurred ? 'error' : 'success');
+                        showNotification(hasError ? 'Some ingredients could not be deleted.' : `${selectedIds.length} ingredient(s) deleted successfully.`, hasError ? 'error' : 'success');
                     }
                 }
             });
@@ -323,7 +467,7 @@ function bulkDeleteIngredients() {
     }
 }
 
-// Bulk toggle ingredients
+// ── Bulk toggle ───────────────────────────────────────────────────────────────
 function bulkToggleIngredients() {
     const selectedIds = $('.ingredient-checkbox:checked').map(function () {
         return $(this).data('id');
@@ -333,30 +477,27 @@ function bulkToggleIngredients() {
         showNotification('Please select at least one ingredient to toggle.', 'error');
         return;
     }
-
     if (confirm(`Are you sure you want to toggle the active status of ${selectedIds.length} selected ingredient(s)?`)) {
-        let completedRequests = 0;
-        let errorOccurred = false;
-
+        let completed = 0;
+        let hasError  = false;
         selectedIds.forEach(id => {
             ajaxRequest({
                 url: `/api/IngredientApi/ToggleIngredientActive/${id}`,
                 method: 'PUT',
                 showMessage: false,
-                onSuccess: function (response) {
-                    completedRequests++;
-                    if (completedRequests === selectedIds.length) {
+                onSuccess: function () {
+                    completed++;
+                    if (completed === selectedIds.length) {
                         refreshIngredientsTable();
                         showNotification(`${selectedIds.length} ingredient(s) toggled successfully.`, 'success');
                     }
                 },
-                onError: function (xhr, status, error) {
-                    completedRequests++;
-                    errorOccurred = true;
-                    console.error(`Failed to toggle ingredient ${id}:`, error);
-                    if (completedRequests === selectedIds.length) {
+                onError: function () {
+                    completed++;
+                    hasError = true;
+                    if (completed === selectedIds.length) {
                         refreshIngredientsTable();
-                        showNotification(errorOccurred ? 'Some ingredients could not be toggled.' : `${selectedIds.length} ingredient(s) toggled successfully.`, errorOccurred ? 'error' : 'success');
+                        showNotification(hasError ? 'Some ingredients could not be toggled.' : `${selectedIds.length} ingredient(s) toggled successfully.`, hasError ? 'error' : 'success');
                     }
                 }
             });
@@ -364,165 +505,27 @@ function bulkToggleIngredients() {
     }
 }
 
-// Modified editIngredient function
-function editIngredient(id) {
-    getIngredientById(id);
-}
+// ─── Vendor management ─────────────────────────────────────────────────────────
 
-// Function to open Add Stock modal
-function addStock(ingredientId) {
-    $('#addStockIngredientId').val(ingredientId);
-    $('#addStock').val('');
-    openModal('addStockModal');
-}
-
-// Function to save (add) stock
-$('#saveStockBtn').on('click', function () {
-    const ingredientId = $('#addStockIngredientId').val();
-    const stock = parseFloat($('#addStock').val());
-
-    if (!stock || stock <= 0) {
-        showNotification('Please enter a valid stock.', 'error');
-        return;
-    }
-
-    ajaxRequest({
-        url: '/api/IngredientApi/AddIngredientStock',
-        method: 'POST',
-        data: {
-            ingredientId: ingredientId,
-            stock: stock
-        },
-        onSuccess: function (response) {
-            closeModal('addStockModal');
-            debugger
-            refreshIngredientsTable();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to add stock:', error);
-        }
-    });
-});
-
-
-// Modified refreshIngredientsTable
-function refreshIngredientsTable() {
-    ajaxRequest({
-        url: '/api/IngredientApi/GetAllActiveInactiveIngredients',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: function (response) {
-
-
-            // Pehle check karo agar table pehle se initialized hai
-            if ($.fn.DataTable.isDataTable('.ingredients-table')) {
-                $('.ingredients-table').DataTable().clear().destroy();
-            }
-
-            const ingredients = response.data;
-            const tbody = $('.data-table tbody');
-            tbody.empty();
-            debugger
-            let suppliers = new Set(); // unique suppliers
-
-            ingredients.forEach(ingredient => {
-                const createdDate = DateFormatter.formatWithComma(ingredient.createdOn);
-                const supplier = ingredient.fullName != null ? ingredient.fullName : 'N/A';
-                suppliers.add(supplier);
-
-                const row = `
-                    <tr>
-                        <td><input type="checkbox" class="ingredient-checkbox" data-id="${ingredient.ingredientId}"></td>
-                        <td>
-                            <div class="ingredient-info">
-                                <p class="ingredient-name">${ingredient.name}</p>
-                                <p class="ingredient-meta">Added on: ${createdDate}</p>
-                            </div>
-                        </td>
-                        <td><span class="category-badge">${ingredient.unit}</span></td>
-                        <td><span class="category-badge">${ingredient.unitOfMeasure || ''}</span></td>
-                        <td><span class="status-badge ${ingredient.isActive == 1 ? "good" : "critical"}">${ingredient.isActive == 1 ? "Active" : "In Active"}</span></td>
-                        <td>${supplier}</td>
-                        <td><i class="fas fa-calendar"></i> ${createdDate}</td>
-                        <td>$${ingredient.price}</td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="dropdown-toggle">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                     ${!ingredient.vendorId > 0
-                                                            ? `<a href="#" onclick="addStock(${ingredient.ingredientId})">
-                                                    <i class="fas fa-box"></i> Add Stock
-                                               </a>`
-                                                            : ""
-                                        }
-
-                                    <a href="#" onclick="editIngredient(${ingredient.ingredientId})"><i class="fas fa-edit"></i> Edit Details</a>
-
-                                   
-                                   ${ingredient.vendorId > 0 ? '' : `
-                                    <a href="#" onclick="toggleIngredientActive(${ingredient.ingredientId})">
-                                       <i class="fas fa-ban"></i>
-                                       ${ingredient.isActive == 1 ? "Deactivate" : "Activate"}
-                                    </a>
-
-                                  
-                                    `}
-
-                                   
-
-                                    
-
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                tbody.append(row);
-            });
-
-            // Populate supplier dropdown
-            const supplierFilter = $('#supplierFilter');
-            supplierFilter.empty();
-            supplierFilter.append('<option value="">All Suppliers</option>');
-            suppliers.forEach(supplier => {
-                supplierFilter.append(`<option value="${supplier}">${supplier}</option>`);
-            });
-
-           
-            initDataTable();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch ingredients:', error);
-        }
-    });
-}
-
-
-// New function to refresh vendors
 function refreshVendors() {
     ajaxRequest({
         url: '/api/IngredientApi/GetAllVendors',
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            const vendors = response.data;
-            const vendorGrid = $('.vendor-grid');
+            const vendors         = response.data;
+            const vendorGrid      = $('.vendor-grid');
             const linkedVendorsList = $('.linked-vendors-list');
-
-            // Empty state containers
-            const addVendorEmpty = $('.add-vendor-empty');
+            const addVendorEmpty   = $('.add-vendor-empty');
             const linkedVendorEmpty = $('.linked-vendor-empty');
 
-            // Clear previous content
             vendorGrid.empty();
             linkedVendorsList.empty();
             addVendorEmpty.hide();
             linkedVendorEmpty.hide();
 
             let hasUnlinked = false;
-            let hasLinked = false;
+            let hasLinked   = false;
 
             vendors.forEach(vendor => {
                 const name = vendor.restaurantName || vendor.firstName + ' ' + vendor.lastName;
@@ -535,14 +538,13 @@ function refreshVendors() {
                             <p class="vendor-email"><i class="fas fa-envelope"></i> ${vendor.email}</p>
                         </div>
                         <div class="vendor-actions">
-                            <button class="btn btn-primary btn-sm link-vendor-btn" 
-                                    data-vendor="${name}" 
+                            <button class="btn btn-primary btn-sm link-vendor-btn"
+                                    data-vendor="${name}"
                                     data-vendor-id="${vendor.userId}">
                                 <i class="fas fa-link"></i> Link Vendor
                             </button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
 
                 const linkedVendorItem = `
                     <div class="linked-vendor-item">
@@ -553,14 +555,13 @@ function refreshVendors() {
                             <p class="link-date">Linked on: ${DateFormatter.formatWithComma(vendor.modifiedOn || vendor.createdOn)}</p>
                         </div>
                         <div class="vendor-actions">
-                            <button class="btn btn-danger btn-sm unlink-vendor-btn" 
+                            <button class="btn btn-danger btn-sm unlink-vendor-btn"
                                     data-vendor="${name}"
                                     data-vendor-id="${vendor.userId}">
                                 <i class="fas fa-unlink"></i> Unlink
                             </button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
 
                 if (vendor.isLinked) {
                     hasLinked = true;
@@ -571,24 +572,22 @@ function refreshVendors() {
                 }
             });
 
-            // Show empty states if needed
             if (!hasUnlinked) addVendorEmpty.show();
-            if (!hasLinked) linkedVendorEmpty.show();
+            if (!hasLinked)   linkedVendorEmpty.show();
         },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch vendors:', error);
+        onError: function () {
             showNotification('Failed to fetch vendors.', 'error');
         }
     });
 }
 
-// Link Vendor Modal functionality
+// Open vendor modal
 $("#linkVendorBtn").on("click", () => {
     openModal("linkVendorModal");
     refreshVendors();
 });
 
-// Tab switching functionality
+// Tab switching
 $(".tab-btn").on("click", function () {
     const tabName = $(this).data("tab");
     $(".tab-btn").removeClass("active");
@@ -597,86 +596,46 @@ $(".tab-btn").on("click", function () {
     $(`#${tabName}Tab`).addClass("active");
 });
 
-// Link vendor functionality
+// Link vendor
 $(document).on("click", ".link-vendor-btn", function () {
     const vendorName = $(this).data("vendor");
-    const vendorId = $(this).data("vendor-id");
-
+    const vendorId   = $(this).data("vendor-id");
     $(this).addClass("loading").text("Linking...");
 
     ajaxRequest({
         url: '/api/IngredientApi/LinkVendor',
         method: 'POST',
         data: { vendorId: vendorId },
-        onSuccess: function (response) {
-            $(this).removeClass("loading").html('<i class="fas fa-check"></i> Linked')
-                .prop("disabled", true)
-                .removeClass("btn-primary")
-                .addClass("btn-success");
+        onSuccess: function () {
             showNotification(`${vendorName} linked successfully!`, "success");
             refreshVendors();
             refreshIngredientsTable();
         },
-        onError: function (xhr, status, error) {
-            $(this).removeClass("loading").html('<i class="fas fa-link"></i> Link Vendor');
-            console.error('Failed to link vendor:', error);
+        onError: function () {
             showNotification(`Failed to link ${vendorName}.`, 'error');
         }
     });
 });
 
-// Unlink vendor functionality
+// Unlink vendor
 $(document).on("click", ".unlink-vendor-btn", function () {
     const vendorName = $(this).data("vendor");
-    const vendorId = $(this).data("vendor-id");
+    const vendorId   = $(this).data("vendor-id");
 
     if (confirm(`Are you sure you want to unlink ${vendorName}?`)) {
         $(this).addClass("loading").text("Unlinking...");
-
         ajaxRequest({
             url: `/api/IngredientApi/UnlinkVendor/${vendorId}`,
             method: 'DELETE',
             showMessage: false,
-            onSuccess: function (response) {
-                $(this).closest(".linked-vendor-item").fadeOut(300, function () {
-                    $(this).remove();
-                });
+            onSuccess: function () {
                 showNotification(`${vendorName} unlinked successfully!`, "success");
                 refreshVendors();
                 refreshIngredientsTable();
             },
-            onError: function (xhr, status, error) {
-                $(this).removeClass("loading").html('<i class="fas fa-unlink"></i> Unlink');
-                console.error('Failed to unlink vendor:', error);
+            onError: function () {
                 showNotification(`Failed to unlink ${vendorName}.`, 'error');
             }
         });
     }
 });
-
-function initDataTable() {
-    table = $('.ingredients-table').DataTable({
-        paging: true,
-        searching: true,
-        ordering: true,
-        order: [[4, 'asc']], // Supplier column
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search ingredients items...'
-        }
-    });
-
-    // Custom search input
-    $('#ingredientSearch').on('keyup', function () {
-        table.search(this.value).draw();
-    });
-
-    // Supplier filter
-    $('#supplierFilter').on('change', function () {
-        table.column(4).search(this.value).draw(); // Supplier column index = 4
-    });
-}
-
-

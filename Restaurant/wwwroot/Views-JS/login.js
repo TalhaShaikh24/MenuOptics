@@ -1,5 +1,7 @@
 ﻿$(document).ready(function () {
 
+    updateCompleteSetupState();
+
     // ──────────────────────────────────────────────────────────────
     // Helpers: show/hide steps
     // ──────────────────────────────────────────────────────────────
@@ -112,6 +114,7 @@
             data: formData,
             showMessage: true,
             onSuccess: function (response) {
+                debugger;
                 Cookies.set('JwtToken', response.data.token);
                 localStorage.setItem('profilePic', response.data.profilePic);
 
@@ -263,5 +266,15 @@
         e.preventDefault();
         window.location.href = '/User/ForgotPassword';
     });
+
+
+
+    // Terms checkbox controls Next button availability
+    function updateCompleteSetupState() {
+        const isChecked = $('input[name="terms"]').is(':checked');
+        $('#completeSetupBtn').prop('disabled', !isChecked);
+    }
+
+    $('input[name="terms"]').on('change', updateCompleteSetupState);
 
 });

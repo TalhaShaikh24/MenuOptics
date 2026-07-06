@@ -119,7 +119,6 @@ namespace MenuOptics.Models
         public int TotalCount { get; set; }
         public int ActiveCount { get; set; }
         public int InactiveCount { get; set; }
-        public int NewThisWeekCount { get; set; }
     }
 
     public class LoginModel

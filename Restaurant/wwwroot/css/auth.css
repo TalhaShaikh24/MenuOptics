@@ -387,6 +387,7 @@
         color: #6b7280;
         font-size: 14px;
         margin: 0;
+        text-align:start;
     }
 
     .form-footer a {

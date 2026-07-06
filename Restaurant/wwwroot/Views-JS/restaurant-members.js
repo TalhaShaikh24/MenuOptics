@@ -176,18 +176,16 @@ function refreshMemberStats() {
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            const stats = response.data || { totalCount: 0, activeCount: 0, inactiveCount: 0, newThisWeekCount: 0 };
+            const stats = response.data || { totalCount: 0, activeCount: 0, inactiveCount: 0};
             $('#totalMembers').text(stats.totalCount);
             $('#activeMembers').text(stats.activeCount);
             $('#inactiveMembers').text(stats.inactiveCount);
-            $('#newMembersThisWeek').text(stats.newThisWeekCount);
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch stats:', error);
             $('#totalMembers').text('0');
             $('#activeMembers').text('0');
             $('#inactiveMembers').text('0');
-            $('#newMembersThisWeek').text('0');
         }
     });
 }

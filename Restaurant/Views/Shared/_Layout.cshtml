@@ -128,7 +128,7 @@
                     </a>
                     <a href="@Url.Action("Index", "Menu")" class="nav-item @Html.IsActive("Menu", "Index")">
                         <i class="fas fa-utensils"></i>
-                        <span>Menu</span>
+                        <span>Menu Items</span>
                     </a>
 
                     
@@ -148,10 +148,7 @@
 
                 @if (User.IsInRole("Restaurant"))
                 {
-                    <a href="@Url.Action("Index", "Sales")" class="nav-item @Html.IsActive("Sales", "Index")">
-                        <i class="fas fa-dollar-sign"></i>
-                        <span>Sales</span>
-                    </a>
+                    
                     <a href="@Url.Action("Index", "Event")" class="nav-item @Html.IsActive("Event", "Index")">
                         <i class="fa-solid fa-bell-concierge"></i>
                         <span>Event & Catering</span>
@@ -161,7 +158,11 @@
                         <i class="fas fa-chart-pie"></i>
                         <span>Menu Insights</span>
                     </a>
-                    <a href="@Url.Action("Index", "Analytics")" class="nav-item @Html.IsActive("Analytics", "Index")">
+                    <a href="@Url.Action("Index", "Sales")" class="nav-item @Html.IsActive("Sales", "Index")">
+                        <i class="fas fa-dollar-sign"></i>
+                        <span>Sales</span>
+                    </a>
+                    <a href="@Url.Action("Index", "Analytics")" class="nav-item @Html.IsActive("Analytics", "Index") hidden">
                         <i class="fas fa-chart-line"></i>
                         <span>Analytics</span>
                     </a>
@@ -174,7 +175,7 @@
                     
                 }
 
-                 @if (User.IsInRole("Restaurant"))
+                 @if (User.IsInRole("Restaurant") && isParent)
                 {
                      <a href="@Url.Action("Index", "Profile")" class="nav-item @Html.IsActive("Profile", "Index")">
                         <i class="fas fa-edit"></i>
@@ -202,9 +203,7 @@
                 </a>
 
                 <div class="policies">
-                    <a class="policies-link" href="@Url.Action("Privacy", "Home")" target="_blank">Privacy Policy</a>
-                    <a class="policies-link" href="@Url.Action("TermsAndConditions", "Home")" target="_blank">Terms of Service</a>
-                    <a class="policies-link" href="@Url.Action("DataExportPolicy", "Home")" target="_blank">Data Export Policy</a>
+                    <a class="policies-link" href="@Url.Action("TermsAndConditions", "Home")" target="_blank">Terms & Conditions</a>
                 </div>
             </nav>
 

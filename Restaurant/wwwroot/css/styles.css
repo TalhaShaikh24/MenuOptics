@@ -1140,6 +1140,14 @@ hr {
     font-size: 12px;
     font-weight: 500;
 }
+.category-badge-size {
+    background: bisque;
+    color: #374151;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
 
 .stock-level {
     display: flex;

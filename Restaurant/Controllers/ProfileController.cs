@@ -9,6 +9,14 @@ namespace MenuOptics.Controllers
     {
         public IActionResult Index()
         {
+
+            
+            bool isParent = Convert.ToBoolean(User?.FindFirst("isParent")?.Value ?? "false");
+
+            if (!isParent)
+            {
+                return RedirectToAction("Index", "Menu");
+            }
             return View();
         }
         

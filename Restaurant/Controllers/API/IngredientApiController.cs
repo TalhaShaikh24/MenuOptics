@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -105,6 +105,7 @@ namespace MenuOptics.Controllers.Api
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", basePrice);
                 parameters.Add("@Unit", model.Unit);
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@VendorProductId", model.VendorProductId);
                 parameters.Add("@CreatedBy", currentUserId);
 
@@ -212,6 +213,7 @@ namespace MenuOptics.Controllers.Api
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@Price", basePrice);
                 parameters.Add("@VendorId", basePrice);
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@ModifiedBy", currentUserId);
 
@@ -497,24 +499,87 @@ namespace MenuOptics.Controllers.Api
         [HttpGet("GetAllIngredients")]
         public async Task<IActionResult> GetAllIngredients()
         {
-            var response = new Response();
             using var connection = _context.CreateConnection();
             connection.Open();
             try
             {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Action", "SELECT_ALL");
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"]);
+                    int start = int.Parse(Request.Query["start"]);
+                    int length = int.Parse(Request.Query["length"]);
+                    string searchValue = Request.Query["searchValue"].ToString() ?? "";
+                    
+                    int orderColumnIndex = 1;
+                    if (Request.Query.ContainsKey("orderColumn"))
+                    {
+                        orderColumnIndex = int.Parse(Request.Query["orderColumn"]);
+                    }
+                    string orderDir = "asc";
+                    if (Request.Query.ContainsKey("orderDir"))
+                    {
+                        orderDir = Request.Query["orderDir"].ToString();
+                    }
 
-                var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-                response.Status = 200;
-                response.ResponseMsg = "Ingredients retrieved successfully.";
-                response.Data = ingredients;
-                return Ok(response);
+                    string orderBy = orderColumnIndex switch
+                    {
+                        1 => "Name",
+                        2 => "Unit",
+                        3 => "UnitOfMeasure",
+                        4 => "IsActive",
+                        6 => "CreatedOn",
+                        7 => "Price",
+                        _ => "Name"
+                    };
+
+                    int pageNumber = (start / length) + 1;
+
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@Action", "SELECT_ALL");
+                    parameters.Add("@PageNumber", pageNumber);
+                    parameters.Add("@PageSize", length);
+                    parameters.Add("@SearchValue", searchValue);
+                    parameters.Add("@OrderBy", orderBy);
+                    parameters.Add("@OrderDir", orderDir);
+                    parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    var ingredients = await connection.QueryAsync<Ingredient>(
+                        "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                    int totalCount = parameters.Get<int>("@TotalCount");
+
+                    var dtResponse = new DataTablesResponse<Ingredient>
+                    {
+                        Draw = draw,
+                        RecordsTotal = totalCount,
+                        RecordsFiltered = totalCount,
+                        Data = ingredients
+                    };
+
+                    return Ok(dtResponse);
+                }
+                else
+                {
+                    var response = new Response();
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@Action", "SELECT_ALL");
+                    parameters.Add("@PageSize", -1); // Return all rows
+
+                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    response.Status = 200;
+                    response.ResponseMsg = "Ingredients retrieved successfully.";
+                    response.Data = ingredients;
+                    return Ok(response);
+                }
             }
             catch (Exception ex)
             {
-                response.Status = 500;
-                response.ResponseMsg = $"{ex.Message}";
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"].FirstOrDefault() ?? "1");
+                    return Ok(new DataTablesResponse<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                }
+                var response = new Response { Status = 500, ResponseMsg = ex.Message };
                 return StatusCode(500, response);
             }
             finally
@@ -526,28 +591,90 @@ namespace MenuOptics.Controllers.Api
         [HttpGet("GetAllIngredientsByUserId")]
         public async Task<IActionResult> GetAllIngredientsByUserId()
         {
-
             var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-
-            var response = new Response();
             using var connection = _context.CreateConnection();
             connection.Open();
             try
             {
-                var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
-                parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"]);
+                    int start = int.Parse(Request.Query["start"]);
+                    int length = int.Parse(Request.Query["length"]);
+                    string searchValue = Request.Query["searchValue"].ToString() ?? "";
+                    
+                    int orderColumnIndex = 1;
+                    if (Request.Query.ContainsKey("orderColumn"))
+                    {
+                        orderColumnIndex = int.Parse(Request.Query["orderColumn"]);
+                    }
+                    string orderDir = "asc";
+                    if (Request.Query.ContainsKey("orderDir"))
+                    {
+                        orderDir = Request.Query["orderDir"].ToString();
+                    }
 
-                var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-                response.Status = 200;
-                response.ResponseMsg = "Ingredients retrieved successfully.";
-                response.Data = ingredients;
-                return Ok(response);
+                    string orderBy = orderColumnIndex switch
+                    {
+                        1 => "Name",
+                        2 => "Unit",
+                        3 => "UnitOfMeasure",
+                        4 => "IsActive",
+                        6 => "CreatedOn",
+                        7 => "Price",
+                        _ => "Name"
+                    };
+
+                    int pageNumber = (start / length) + 1;
+
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@PageNumber", pageNumber);
+                    parameters.Add("@PageSize", length);
+                    parameters.Add("@SearchValue", searchValue);
+                    parameters.Add("@OrderBy", orderBy);
+                    parameters.Add("@OrderDir", orderDir);
+                    parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    var ingredients = await connection.QueryAsync<Ingredient>(
+                        "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                    int totalCount = parameters.Get<int>("@TotalCount");
+
+                    var dtResponse = new DataTablesResponse<Ingredient>
+                    {
+                        Draw = draw,
+                        RecordsTotal = totalCount,
+                        RecordsFiltered = totalCount,
+                        Data = ingredients
+                    };
+
+                    return Ok(dtResponse);
+                }
+                else
+                {
+                    var response = new Response();
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@PageSize", -1); // Return all rows
+
+                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    response.Status = 200;
+                    response.ResponseMsg = "Ingredients retrieved successfully.";
+                    response.Data = ingredients;
+                    return Ok(response);
+                }
             }
             catch (Exception ex)
             {
-                response.Status = 500;
-                response.ResponseMsg = $"{ex.Message}";
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"].FirstOrDefault() ?? "1");
+                    return Ok(new DataTablesResponse<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                }
+                var response = new Response { Status = 500, ResponseMsg = ex.Message };
                 return StatusCode(500, response);
             }
             finally
@@ -558,28 +685,94 @@ namespace MenuOptics.Controllers.Api
         [HttpGet("GetAllActiveInactiveIngredients")]
         public async Task<IActionResult> GetAllActiveInactiveIngredients()
         {
-
             var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-
-            var response = new Response();
             using var connection = _context.CreateConnection();
             connection.Open();
             try
             {
-                var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
-                parameters.Add("@Action", "SELECT_ALL_INGREDIENTS_BY_USERID");
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"]);
+                    int start = int.Parse(Request.Query["start"]);
+                    int length = int.Parse(Request.Query["length"]);
+                    string searchValue = Request.Query["searchValue"].ToString() ?? "";
+                    
+                    int orderColumnIndex = 1;
+                    if (Request.Query.ContainsKey("orderColumn"))
+                    {
+                        orderColumnIndex = int.Parse(Request.Query["orderColumn"]);
+                    }
+                    string orderDir = "asc";
+                    if (Request.Query.ContainsKey("orderDir"))
+                    {
+                        orderDir = Request.Query["orderDir"].ToString();
+                    }
 
-                var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-                response.Status = 200;
-                response.ResponseMsg = "Ingredients retrieved successfully.";
-                response.Data = ingredients;
-                return Ok(response);
+                    // Map column index to column name:
+                    // 0=checkbox, 1=Name, 2=Unit, 3=UnitOfMeasure, 4=Status, 5=Supplier, 6=CreatedDate, 7=Price
+                    string orderBy = orderColumnIndex switch
+                    {
+                        1 => "Name",
+                        2 => "VendorProductId",
+                        3 => "Unit",
+                        4 => "UnitOfMeasure",
+                        6 => "IsActive",
+                        7 => "FullName",
+                        8 => "CreatedOn",
+                        9 => "Price",
+                        _ => "Name"
+                    };
+
+                    int pageNumber = (start / length) + 1;
+
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@Action", "SELECT_ALL_INGREDIENTS_BY_USERID");
+                    parameters.Add("@PageNumber", pageNumber);
+                    parameters.Add("@PageSize", length);
+                    parameters.Add("@SearchValue", searchValue);
+                    parameters.Add("@OrderBy", orderBy);
+                    parameters.Add("@OrderDir", orderDir);
+                    parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    var ingredients = await connection.QueryAsync<Ingredient>(
+                        "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                    int totalCount = parameters.Get<int>("@TotalCount");
+
+                    var dtResponse = new DataTablesResponse<Ingredient>
+                    {
+                        Draw = draw,
+                        RecordsTotal = totalCount,
+                        RecordsFiltered = totalCount,
+                        Data = ingredients
+                    };
+
+                    return Ok(dtResponse);
+                }
+                else
+                {
+                    var response = new Response();
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@Action", "SELECT_ALL_INGREDIENTS_BY_USERID");
+                    parameters.Add("@PageSize", -1); // Return all rows
+
+                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    response.Status = 200;
+                    response.ResponseMsg = "Ingredients retrieved successfully.";
+                    response.Data = ingredients;
+                    return Ok(response);
+                }
             }
             catch (Exception ex)
             {
-                response.Status = 500;
-                response.ResponseMsg = $"{ex.Message}";
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"].FirstOrDefault() ?? "1");
+                    return Ok(new DataTablesResponse<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                }
+                var response = new Response { Status = 500, ResponseMsg = ex.Message };
                 return StatusCode(500, response);
             }
             finally
@@ -593,33 +786,91 @@ namespace MenuOptics.Controllers.Api
         public async Task<IActionResult> GetAllIngredientsByVendorId()
         {
             var vendorId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-
-            var response = new Response();
             using var connection = _context.CreateConnection();
             connection.Open();
             try
             {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Action", "SELECT_ALL"); // Using SELECT_ALL and filtering in code
-                var ingredients = (await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure))
-                    .Where(i => i.VendorId == vendorId).ToList();
-
-                if (!ingredients.Any())
+                if (Request.Query.ContainsKey("draw"))
                 {
-                    response.Status = 404;
-                    response.ResponseMsg = "No ingredients found for the specified vendor.";
-                    return NotFound(response);
-                }
+                    int draw = int.Parse(Request.Query["draw"]);
+                    int start = int.Parse(Request.Query["start"]);
+                    int length = int.Parse(Request.Query["length"]);
+                    string searchValue = Request.Query["searchValue"].ToString() ?? "";
+                    
+                    int orderColumnIndex = 1;
+                    if (Request.Query.ContainsKey("orderColumn"))
+                    {
+                        orderColumnIndex = int.Parse(Request.Query["orderColumn"]);
+                    }
+                    string orderDir = "asc";
+                    if (Request.Query.ContainsKey("orderDir"))
+                    {
+                        orderDir = Request.Query["orderDir"].ToString();
+                    }
 
-                response.Status = 200;
-                response.ResponseMsg = "Ingredients retrieved successfully.";
-                response.Data = ingredients;
-                return Ok(response);
+                    // Column indices match VendorIngredients table:
+                    // 0=checkbox, 1=Name, 2=Unit, 3=Status, 4=CreatedDate, 5=Price
+                    string orderBy = orderColumnIndex switch
+                    {
+                        1 => "Name",
+                        2 => "Unit",
+                        3 => "IsActive",
+                        4 => "CreatedOn",
+                        5 => "Price",
+                        _ => "Name"
+                    };
+
+                    int pageNumber = (start / length) + 1;
+
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@VendorId", vendorId);
+                    parameters.Add("@Action", "SELECT_BY_VENDORID"); // Use the correct SP action
+                    parameters.Add("@PageNumber", pageNumber);
+                    parameters.Add("@PageSize", length);
+                    parameters.Add("@SearchValue", searchValue);
+                    parameters.Add("@OrderBy", orderBy);
+                    parameters.Add("@OrderDir", orderDir);
+                    parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    var ingredients = await connection.QueryAsync<Ingredient>(
+                        "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                    int totalCount = parameters.Get<int>("@TotalCount");
+
+                    var dtResponse = new DataTablesResponse<Ingredient>
+                    {
+                        Draw = draw,
+                        RecordsTotal = totalCount,
+                        RecordsFiltered = totalCount,
+                        Data = ingredients
+                    };
+
+                    return Ok(dtResponse);
+                }
+                else
+                {
+                    var response = new Response();
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@VendorId", vendorId);
+                    parameters.Add("@Action", "SELECT_BY_VENDORID");
+                    parameters.Add("@PageSize", -1); // Return all rows
+
+                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    
+                    response.Status = 200;
+                    response.ResponseMsg = "Ingredients retrieved successfully.";
+                    response.Data = ingredients;
+                    return Ok(response);
+                }
             }
             catch (Exception ex)
             {
-                response.Status = 500;
-                response.ResponseMsg = $"{ex.Message}";
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"].FirstOrDefault() ?? "1");
+                    return Ok(new DataTablesResponse<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                }
+                var response = new Response { Status = 500, ResponseMsg = ex.Message };
                 return StatusCode(500, response);
             }
             finally
@@ -632,32 +883,86 @@ namespace MenuOptics.Controllers.Api
         // [Authorize(Roles = "Vendor")]
         public async Task<IActionResult> GetAllIngredientsByUserId(int userId)
         {
-            var response = new Response();
             using var connection = _context.CreateConnection();
             connection.Open();
             try
             {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Action", "SELECT_ALL"); // Using SELECT_ALL and filtering in code
-                var ingredients = (await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure))
-                    .Where(i => i.UserId == userId).ToList();
-
-                if (!ingredients.Any())
+                if (Request.Query.ContainsKey("draw"))
                 {
-                    response.Status = 404;
-                    response.ResponseMsg = "No ingredients found for the specified user.";
-                    return NotFound(response);
-                }
+                    int draw = int.Parse(Request.Query["draw"]);
+                    int start = int.Parse(Request.Query["start"]);
+                    int length = int.Parse(Request.Query["length"]);
+                    string searchValue = Request.Query["searchValue"].ToString() ?? "";
+                    
+                    int orderColumnIndex = 1;
+                    if (Request.Query.ContainsKey("orderColumn"))
+                    {
+                        orderColumnIndex = int.Parse(Request.Query["orderColumn"]);
+                    }
+                    string orderDir = "asc";
+                    if (Request.Query.ContainsKey("orderDir"))
+                    {
+                        orderDir = Request.Query["orderDir"].ToString();
+                    }
 
-                response.Status = 200;
-                response.ResponseMsg = "Ingredients retrieved successfully.";
-                response.Data = ingredients;
-                return Ok(response);
+                    string orderBy = orderColumnIndex switch
+                    {
+                        1 => "Name",
+                        2 => "Unit",
+                        _ => "Name"
+                    };
+
+                    int pageNumber = (start / length) + 1;
+
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@UserId", userId);
+                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@PageNumber", pageNumber);
+                    parameters.Add("@PageSize", length);
+                    parameters.Add("@SearchValue", searchValue);
+                    parameters.Add("@OrderBy", orderBy);
+                    parameters.Add("@OrderDir", orderDir);
+                    parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+
+                    var ingredients = await connection.QueryAsync<Ingredient>(
+                        "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                    int totalCount = parameters.Get<int>("@TotalCount");
+
+                    var dtResponse = new DataTablesResponse<Ingredient>
+                    {
+                        Draw = draw,
+                        RecordsTotal = totalCount,
+                        RecordsFiltered = totalCount,
+                        Data = ingredients
+                    };
+
+                    return Ok(dtResponse);
+                }
+                else
+                {
+                    var response = new Response();
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@UserId", userId);
+                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@PageSize", -1); // Return all rows
+
+                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    
+                    response.Status = 200;
+                    response.ResponseMsg = "Ingredients retrieved successfully.";
+                    response.Data = ingredients;
+                    return Ok(response);
+                }
             }
             catch (Exception ex)
             {
-                response.Status = 500;
-                response.ResponseMsg = $"{ex.Message}";
+                if (Request.Query.ContainsKey("draw"))
+                {
+                    int draw = int.Parse(Request.Query["draw"].FirstOrDefault() ?? "1");
+                    return Ok(new DataTablesResponse<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                }
+                var response = new Response { Status = 500, ResponseMsg = ex.Message };
                 return StatusCode(500, response);
             }
             finally
@@ -1166,5 +1471,6 @@ namespace MenuOptics.Controllers.Api
                 return StatusCode(500, response);
             }
         }
+
     }
 }

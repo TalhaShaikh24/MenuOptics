@@ -17,6 +17,8 @@
             "/User/Register",
             "/Payment/Cancel",
             "/Payment/Success",
+            "/Home/TermsAndConditions",
+            "/Home/Privacy",
         };
 
         public AuthRedirectMiddleware(RequestDelegate next)

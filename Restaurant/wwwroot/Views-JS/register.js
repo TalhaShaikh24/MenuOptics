@@ -2,6 +2,10 @@
 const totalSteps = 3;
 const stripe = Stripe('pk_test_51M9O4qKR3yBF1l8fXy3z9Vvtnn8A5e4frQt5lJgfpPOBcBMx6ZZFG93mpFCWgN0EjYXL0l7ioxvtSA07AJzUUOJX00XWJkik2w');
 
+
+// Run once on page load in case checkbox is pre-checked or browser autofills it
+updateNextButtonState();
+
 // Step navigation
 $('.next-btn').on('click', function () {
     if (validateCurrentStep()) {
@@ -50,6 +54,8 @@ function validateCurrentStep() {
         }
     });
 
+   
+
     if (!isValid) {
         showNotification('Please fill in all required fields', 'error');
     }
@@ -73,6 +79,17 @@ function calculatePasswordStrength(password) {
     if (/[^A-Za-z0-9]/.test(password)) score++;
     return score;
 }
+
+
+// Terms checkbox controls Next button availability
+function updateNextButtonState() {
+    const isChecked = $('input[name="terms"]').is(':checked');
+    $('.next-btn').prop('disabled', !isChecked);
+    $('.submit-btn').prop('disabled', !isChecked);
+}
+
+$('input[name="terms"]').on('change', updateNextButtonState);
+
 
 function updatePasswordStrength(strength) {
     const strengthFill = $('.strength-fill');
