@@ -9,6 +9,10 @@ const profilePic = (() => {
     return value && value !== "null" ? value : '/images/menu optics_logo.png';
 })();
 
+const restaurantAddress = localStorage.getItem("address");
+const restaurantName = localStorage.getItem("restaurantName");
+const restaurantPhone = localStorage.getItem("phone");
+
 $(document).ready(function () {
     loadEvents();
     loadMenuItems();
@@ -373,7 +377,7 @@ function exportEventsPDF(isCustomerFacing) {
         )).then(async events => {
             let logo = null;
             try { logo = await getImageAsPngBase64(profilePic); } catch {}
-
+            
             const content = [];
 
             events.forEach((event, idx) => {
@@ -384,9 +388,9 @@ function exportEventsPDF(isCustomerFacing) {
                         {
                             width: '*',
                             stack: [
-                                { text: 'Menu Optics Catering', style: 'companyTitle' },
-                                { text: '123 Catering Blvd, Food City', style: 'companyText' },
-                                { text: 'www.menuoptics.com | (555) 123-4567', style: 'companyText' }
+                                { text: restaurantName, style: 'companyTitle' },
+                                { text: restaurantAddress, style: 'companyText' },
+                                { text: restaurantPhone, style: 'companyText' }
                             ]
                         },
                         logo ? { width: 120, stack: [{ image: logo, width: 70, alignment: 'right' }] } : {}

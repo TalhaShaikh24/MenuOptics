@@ -154,14 +154,16 @@
                         <span>Event & Catering</span>
                     </a>
                     
-                    <a href="@Url.Action("Index", "MenuEngineeringInsights")" class="nav-item @Html.IsActive("MenuEngineeringInsights", "Index")">
-                        <i class="fas fa-chart-pie"></i>
-                        <span>Menu Insights</span>
-                    </a>
                     <a href="@Url.Action("Index", "Sales")" class="nav-item @Html.IsActive("Sales", "Index")">
                         <i class="fas fa-dollar-sign"></i>
                         <span>Sales</span>
                     </a>
+
+                    <a href="@Url.Action("Index", "MenuEngineeringInsights")" class="nav-item @Html.IsActive("MenuEngineeringInsights", "Index")">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Menu Insights</span>
+                    </a>
+                    
                     <a href="@Url.Action("Index", "Analytics")" class="nav-item @Html.IsActive("Analytics", "Index") hidden">
                         <i class="fas fa-chart-line"></i>
                         <span>Analytics</span>

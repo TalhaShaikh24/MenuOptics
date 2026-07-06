@@ -12,7 +12,6 @@ $(document).ready(function () {
     $('#addCategoryBtn2').on('click', function () {
         const categoryData = {
             name: $('#categoryName').val(),
-            description: $('#categoryDescription').val()
         };
 
         if (categoryData.name) {
@@ -27,7 +26,6 @@ $(document).ready(function () {
         const categoryData = {
             categoryId: $('#editCategoryId').val(),
             name: $('#editCategoryName').val(),
-            description: $('#editCategoryDescription').val(),
             isActive: true
         };
 
@@ -53,8 +51,7 @@ function addCategory(categoryData) {
         url: '/api/CategoryApi/CreateCategory',
         method: 'POST',
         data: {
-            Name: categoryData.name,
-            Description: categoryData.description
+            Name: categoryData.name
         },
         onSuccess: function (response) {
             $('#addCategoryForm')[0].reset();
@@ -78,7 +75,6 @@ function getCategoryById(id) {
             const category = response.data;
             $('#editCategoryId').val(category.categoryId);
             $('#editCategoryName').val(category.name);
-            $('#editCategoryDescription').val(category.description);
             openModal('editCategoryModal');
         },
         onError: function (xhr, status, error) {
@@ -96,7 +92,6 @@ function updateCategory(categoryData) {
         data: {
             CategoryId: categoryData.categoryId,
             Name: categoryData.name,
-            Description: categoryData.description,
             IsActive: categoryData.isActive
         },
         onSuccess: function (response) {
@@ -195,7 +190,6 @@ function refreshCategoriesTable() {
                                 <p class="category-meta">Added on: ${createdDate}</p>
                             </div>
                         </td>
-                        <td>${category.description || 'No description'}</td>
                         <td><i class="fas fa-calendar"></i> ${createdDate}</td>
                         <td><span class="status-badge ${category.isActive ? 'good' : 'critical'}">${category.isActive ? 'Active' : 'Inactive'}</span></td>
                         <td>
@@ -254,7 +248,6 @@ function toggleActiveFilter() {
                                 <p class="category-meta">Added on: ${createdDate}</p>
                             </div>
                         </td>
-                        <td>${category.description || 'No description'}</td>
                         <td><i class="fas fa-calendar"></i> ${createdDate}</td>
                         <td><span class="status-badge ${category.isActive ? 'good' : 'critical'}">${category.isActive ? 'Active' : 'Inactive'}</span></td>
                         <td>

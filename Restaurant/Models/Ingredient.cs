@@ -11,7 +11,6 @@ namespace MenuOptics.Models
         public string Name { get; set; }
         public decimal Price { get; set; }
         public string Unit { get; set; } // e.g., kg, liters, units
-        public string? UnitOfMeasure { get; set; } // e.g., kg, liters, units
         public decimal? Size { get; set; } 
         public DateTime CreatedOn { get; set; }
         public int CreatedBy { get; set; }
@@ -20,6 +19,7 @@ namespace MenuOptics.Models
         public bool IsActive { get; set; }
         public string? FullName { get; set; }
         public string? Stock { get; set; }
+        public int TotalCount { get; set; }
     }
 
 
@@ -66,7 +66,7 @@ namespace MenuOptics.Models
         public decimal? PackSize { get; set; }
         public decimal? Weight { get; set; }
         public decimal BasePrice { get; set; }
-        public decimal? Size { get; set; }
+       
 
         public List<RestaurantPriceEntry>? RestaurantPrices { get; set; }
     }
@@ -105,6 +105,7 @@ namespace MenuOptics.Models
         public int IngredientId { get; set; }
         public string? Name { get; set; }
         public string? Unit { get; set; }
+        public decimal? Size { get; set; }
         public bool? IsActive { get; set; }
     }
 

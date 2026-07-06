@@ -52,15 +52,7 @@ function initIngredientsTable() {
             });
         },
         columns: [
-            {
-                // Checkbox column — not sortable
-                orderable: false,
-                searchable: false,
-                data: 'ingredientId',
-                render: function (id) {
-                    return `<input type="checkbox" class="ingredient-checkbox" data-id="${id}">`;
-                }
-            },
+            
             {
                 data: 'name',
                 render: function (name, type, row) {
@@ -76,19 +68,20 @@ function initIngredientsTable() {
                 render: val => `<span class="${val != null ? 'category-badge' : ''}">${val || ''}</span>`
             },
             {
-                data: 'unit',
-                render: val => `<span class="category-badge">${val || ''}</span>`
-            },
-            {
-                data: 'unitOfMeasure',
-                render: val => `<span class="${val != null ? 'category-badge' : ''}">${val || ''}</span>`
-            },
-            {
                 // Size — not sortable, not searchable
                 orderable: false,
                 searchable: false,
                 data: 'size',
                 render: (val, type, row) => `<span class="${val != null ? 'category-badge-size' : ''}">${val ? `${val} ${row.unit || ''}` : ''}</span>`
+            },
+            {
+                data: 'price',
+                render: val => `$${val}`
+            },
+            {
+                // Supplier
+                data: 'fullName',
+                render: val => val || 'N/A'
             },
             {
                 data: 'isActive',
@@ -98,21 +91,8 @@ function initIngredientsTable() {
                     return `<span class="status-badge ${cls}">${lbl}</span>`;
                 }
             },
-            {
-                // Supplier
-                data: 'fullName',
-                render: val => val || 'N/A'
-            },
-            {
-                data: 'createdOn',
-                render: function (val) {
-                    return `<i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(val)}`;
-                }
-            },
-            {
-                data: 'price',
-                render: val => `$${val}`
-            },
+           
+           
             {
                 // Actions — not sortable
                 orderable: false,
@@ -132,7 +112,8 @@ function initIngredientsTable() {
                            </a>`
                         : '';
 
-                    return `<div class="dropdown">
+                    return `${row.vendorId && row.vendorId > 0 ? '' : `
+                            <div class="dropdown">
                                 <button class="dropdown-toggle">
                                     <i class="fas fa-ellipsis-h"></i>
                                 </button>
@@ -143,7 +124,8 @@ function initIngredientsTable() {
                                     </a>
                                     ${toggleLink}
                                 </div>
-                            </div>`;
+                            </div>
+                        `}`;
                 }
             }
         ],
@@ -192,13 +174,12 @@ $(document).ready(function () {
     $('#addIngredientBtn2').on('click', function () {
         const ingredientData = {
             name:          $('#ingredientName').val(),
-            description:   $('#ingredientDescription').val(),
             unit:          $('#ingredientUnit').val(),
-            unitOfMeasure: $('#ingredientUnit').val(),
             price:         parseFloat($('#ingredientPrice').val()) || 0,
-            stock:         $('#ingredientStock').val() || 0
+            stock:         $('#ingredientStock').val() || 0,
+            size:          $('#ingredientSize').val() 
         };
-        if (ingredientData.name && ingredientData.unit) {
+        if (ingredientData.name && ingredientData.unit && ingredientData.size) {
             addIngredientByUserId(ingredientData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -210,12 +191,11 @@ $(document).ready(function () {
         const ingredientData = {
             ingredientId:  $('#editIngredientId').val(),
             name:          $('#editIngredientName').val(),
-            description:   $('#editIngredientDescription').val(),
             unit:          $('#editIngredientUnit').val(),
-            unitOfMeasure: $('#editIngredientUnitOfMeasure').val(),
             price:         parseFloat($('#editIngredientPrice').val()) || 0,
+            size:         parseFloat($('#editIngredientSize').val()),
         };
-        if (ingredientData.name && ingredientData.unit) {
+        if (ingredientData.name && ingredientData.unit && ingredientData.size) {
             updateIngredient(ingredientData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -234,12 +214,11 @@ $(document).ready(function () {
             showMessage: false,
             onSuccess: function (response) {
                 const ingredients = response.data;
-                let csvContent = "Name,Unit,UOM,Physical Count\n";
+                let csvContent = "Name,Unit,Physical Count\n";
                 ingredients.forEach(ingredient => {
                     const name = ingredient.name.replace(/,/g, ' ');
                     const unit = ingredient.unit || '';
-                    const uom  = ingredient.unitOfMeasure || '';
-                    csvContent += `"${name}","${unit}","${uom}",""\n`;
+                    csvContent += `"${name}","${unit}", ""\n`;
                 });
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
@@ -265,6 +244,7 @@ $(document).ready(function () {
             method: 'GET',
             showMessage: false,
             onSuccess: function (response) {
+                debugger
                 const ingredients = response.data;
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -272,8 +252,8 @@ $(document).ready(function () {
                 doc.text('Ingredients List', 14, 20);
                 doc.setFontSize(10);
                 doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
-                const headers = [['Name', 'Unit', 'UOM', 'Physical Count']];
-                const data = ingredients.map(i => [i.name, i.unit || '', i.unitOfMeasure || '', '']);
+                const headers = [['Name', 'Size', 'Physical Count']];
+                const data = ingredients.map(i => [i.name, i.size == null ? '' : i.size  + ' ' + i.unit || '', '']);
                 doc.autoTable({
                     head: headers,
                     body: data,
@@ -305,10 +285,9 @@ function addIngredientByUserId(ingredientData) {
         method: 'POST',
         data: {
             Name:          ingredientData.name,
-            Description:   ingredientData.description,
             Price:         ingredientData.price,
             Unit:          ingredientData.unit,
-            UnitOfMeasure: ingredientData.unitOfMeasure,
+            Size:         ingredientData.size,
             Stock:         ingredientData.stock
         },
         onSuccess: function () {
@@ -332,21 +311,18 @@ function getIngredientById(id) {
             const ingredient = response.data;
             $('#editIngredientId').val(ingredient.ingredientId);
             $('#editIngredientName').val(ingredient.name);
-            $('#editIngredientDescription').val(ingredient.description);
             $('#editIngredientUnit').val(ingredient.unit);
-            $('#editIngredientUnitOfMeasure').val(ingredient.unitOfMeasure);
             $('#editIngredientPrice').val(ingredient.price);
-
+            $('#editIngredientSize').val(ingredient.size);
+            
             if (ingredient.vendorId > 0) {
                 $('#editIngredientName').prop('disabled', true);
                 $('#editIngredientUnit').prop('disabled', true);
-                $('#editIngredientDescription').prop('disabled', true);
+                $('#editIngredientSize').prop('disabled', true);
                 $('#editIngredientPrice').closest('.form-group').hide();
             } else {
                 $('#editIngredientName').prop('disabled', false);
-                $('#editIngredientDescription').prop('disabled', false);
                 $('#editIngredientUnit').prop('disabled', false);
-                $('#editIngredientUnitOfMeasure').prop('disabled', false);
                 $('#editIngredientPrice').closest('.form-group').show();
             }
             openModal('editIngredientModal');
@@ -364,19 +340,16 @@ function updateIngredient(ingredientData) {
         data: {
             IngredientId:  ingredientData.ingredientId,
             Name:          ingredientData.name,
-            Description:   ingredientData.description,
             Price:         ingredientData.price,
             Unit:          ingredientData.unit,
-            UnitOfMeasure: ingredientData.unitOfMeasure
+            Size:          ingredientData.size
         },
         onSuccess: function () {
             refreshIngredientsTable();
             closeModal('editIngredientModal');
             showNotification('Ingredient updated successfully.', 'success');
-        },
-        onError: function () {
-            showNotification('Failed to update ingredient.', 'error');
         }
+        
     });
 }
 

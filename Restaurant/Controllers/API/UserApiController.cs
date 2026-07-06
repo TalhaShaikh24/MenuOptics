@@ -539,6 +539,9 @@ namespace MenuOptics.Controllers.Api
                 response.Data = new
                 {
                     UserId = effectiveUserId,
+                    RestaurantName = user.RestaurantName,
+                    Phone = user.Phone,
+                    Address = user.Address,
                     ActualUserId = user.UserId,
                     IsParent = isParent,
                     Roles = user.Roles,

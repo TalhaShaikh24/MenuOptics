@@ -41,7 +41,7 @@
             </select>
         </div>
     </div>
-    <button class="btn btn-danger" id="bulkDeleteBtn">
+    <button class="btn btn-danger hidden" id="bulkDeleteBtn">
         <i class="fas fa-trash"></i>
         Delete Selected
     </button>
@@ -61,16 +61,14 @@
             <table class="ingredients-table data-table">
                 <thead>
                     <tr>
-                        <th><input type="checkbox" id="selectAllIngredients"></th>
+                        @* <th><input type="checkbox" id="selectAllIngredients"></th> *@
                         <th>Ingredient</th>
                         <th>Product Id</th>
-                        <th>Unit</th>
-                        <th>Unit Of Measure</th>
                         <th>Size</th>
-                        <th>Status</th>
-                        <th>Supplier</th>
-                        <th>Created Date</th>
                         <th>Price</th>
+                        <th>Supplier</th>
+                        <th>Status</th>
+                        
                         <th></th>
                     </tr>
                 </thead>
@@ -91,18 +89,14 @@
         <div class="modal-body">
             <form id="addIngredientForm">
                 <div class="form-group">
-                    <label>Ingredient Name</label>
+                    <label>Ingredient Name <span style="color:red">*</span></label>
                     <input id="ingredientName" type="text" name="name" required>
                 </div>
                 <div class="form-group">
-                    <label>Ingredient Description</label>
-                    <textarea id="ingredientDescription" name="description" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="unit">Unit of measure</label>
+                    <label for="unit">Unit <span style="color:red">*</span></label>
                     <div class="input-wrapper">
                         <select id="ingredientUnit" name="unit" required>
-                            <option value="" disabled selected>Select unit</option>
+                            <option value="" disabled>Select unit</option>
                             <option value="ba">BA - Bag</option>
                             <option value="bg">BG - Bag (alt)</option>
                             <option value="bx">BX - Box</option>
@@ -133,8 +127,12 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Price</label>
+                    <label>Price <span style="color:red">*</span></label>
                     <input id="ingredientPrice" type="number" name="price" placeholder="Enter Price" required>
+                </div>
+                <div class="form-group">
+                    <label>Size <span style="color:red">*</span></label>
+                    <input id="ingredientSize" type="number" name="size" placeholder="Enter Size" required>
                 </div>
                 <div class="form-group">
                     <label>Stock</label>
@@ -160,15 +158,11 @@
             <form id="editIngredientForm">
                 <input type="hidden" id="editIngredientId" name="ingredientId">
                 <div class="form-group">
-                    <label>Ingredient Name</label>
+                    <label>Ingredient Name <span style="color:red">*</span></label>
                     <input id="editIngredientName" type="text" name="name" required>
                 </div>
                 <div class="form-group">
-                    <label>Ingredient Description</label>
-                    <textarea id="editIngredientDescription" name="description" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="unit">Unit</label>
+                    <label for="unit">Unit <span style="color:red">*</span></label>
                     <div class="input-wrapper">
                         <select id="editIngredientUnit" name="unit" required>
                             <option value="" disabled>Select unit</option>
@@ -201,43 +195,14 @@
                         </select>
                     </div>
                 </div>
+                
                 <div class="form-group">
-                    <label for="unit">Unit of measure</label>
-                    <div class="input-wrapper">
-                        <select id="editIngredientUnitOfMeasure" name="unitOfMeasure" required>
-                            <option value="" disabled>Select unit of measure</option>
-                            <option value="ba">BA - Bag</option>
-                            <option value="bg">BG - Bag (alt)</option>
-                            <option value="bx">BX - Box</option>
-                            <option value="ca">CA - Case</option>
-                            <option value="cm">CM - Centimeter</option>
-                            <option value="ct">CT - Carton</option>
-                            <option value="dz">DZ - Dozen</option>
-                            <option value="ea">EA - Each</option>
-                            <option value="fl">FL - Fluid Ounce</option>
-                            <option value="ft">FT - Foot</option>
-                            <option value="ga">GA - Gallon</option>
-                            <option value="gm">GM - Gram</option>
-                            <option value="hr">HR - Hour</option>
-                            <option value="in">IN - Inch</option>
-                            <option value="kg">KG - Kilogram</option>
-                            <option value="lb">LB - Pound</option>
-                            <option value="lt">LT - Liter</option>
-                            <option value="ml">ML - Milliliter</option>
-                            <option value="mr">MR - Meter</option>
-                            <option value="oz">OZ - Ounce</option>
-                            <option value="pa">PA - Pail</option>
-                            <option value="pc">PC - Piece</option>
-                            <option value="pr">PR - Pair</option>
-                            <option value="pt">PT - Pint</option>
-                            <option value="rl">RL - Roll</option>
-                            <option value="tb">TB - Tube</option>
-                        </select>
-                    </div>
+                    <label>Price <span style="color:red">*</span></label>
+                    <input id="editIngredientPrice" type="number" name="price" placeholder="Enter Price" required>
                 </div>
                 <div class="form-group">
-                    <label>Price</label>
-                    <input id="editIngredientPrice" type="number" name="price" placeholder="Enter Price" required>
+                    <label>Size <span style="color:red">*</span></label>
+                    <input id="editIngredientSize" type="number" name="size" placeholder="Enter Size" required>
                 </div>
                 <div class="form-group editIngredientStock" style="display:none">
                     <label>Stock</label>

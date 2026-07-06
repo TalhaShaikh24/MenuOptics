@@ -87,10 +87,10 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
                 placeholder: 'Select or add ingredients',
                 width: '100%',
                 dropdownParent: $(modalId),
-               
+
             });
 
-            
+
 
             $(selectId).on('change', function () {
                 const selected = $(this).val() || [];
@@ -98,6 +98,10 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
             });
 
             $(detailsId).on('input', 'input[name^="ingredient_quantity_"]', function () {
+                updateIngredientPrice($(this), detailsId, priceInputId);
+            });
+
+            $(detailsId).on('change', 'select[name^="ingredient_uom_"]', function () {
                 updateIngredientPrice($(this), detailsId, priceInputId);
             });
         },
@@ -112,9 +116,10 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
     const existingData = {};
     $(`${detailsId} .ingredient-detail-row`).each(function () {
         const input = $(this).find('input[name^="ingredient_quantity_"]');
+        const uomSelect = $(this).find('select[name^="ingredient_uom_"]');
         const ingredientId = input.attr('name').split('_')[2];
         const quantity = input.val();
-        if (quantity) existingData[ingredientId] = quantity;
+        if (quantity) existingData[ingredientId] = { quantity: quantity, uom: uomSelect.val() || '' };
     });
 
     let html = '';
@@ -122,13 +127,20 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
         const ingredient = ingredientsWithPrices.find(ing => ing.id == id);
         if (ingredient) {
             const name = ingredient.text;
-            const unitOfMeasure = ingredient.unitOfMeasure;
             const existing = existingData[id];
+            const savedQuantity = existing ? existing.quantity : '';
+            const savedUom = (existing && existing.uom) || ingredient.unitOfMeasure || ingredient.unit;
+            const uomOptions = (typeof buildUomOptionsHtml === 'function')
+                ? buildUomOptionsHtml(ingredient.unit, savedUom)
+                : `<option value="${savedUom}" selected>${savedUom}</option>`;
             html += `
                 <div class="ingredient-detail-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                     <span class="ingredient-name" style="min-width:120px;">${name}</span>
-                    <span class="unit" style="min-width:80px;">${unitOfMeasure}</span>
-                    <input type="number" step="0.01" name="ingredient_quantity_${id}" value="${existing || ''}" placeholder="Enter Wt / Qty" style="width:150px;" min="0" step="0.01">
+                    <span class="unit" style="min-width:80px;">${ingredient.unit}</span>
+                    <select name="ingredient_uom_${id}" required>
+                        ${uomOptions}
+                    </select>
+                    <input type="number" step="0.01" name="ingredient_quantity_${id}" value="${savedQuantity}" placeholder="Enter Wt / Qty" style="width:150px;" min="0">
                     
                     <span class="ingredient-price" style="min-width:100px;">Price: $0.00</span>
                 </div>
@@ -137,11 +149,12 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
     });
     $(detailsId).html(html);
 
-    // Restore existing quantities
-    Object.keys(existingData).forEach(id => {
-        const input = $(`input[name="ingredient_quantity_${id}"]`);
-        if (input.length) input.trigger('input');
+    // Recompute prices for any restored rows and refresh the total
+    $(`${detailsId} .ingredient-detail-row`).each(function () {
+        const input = $(this).find('input[name^="ingredient_quantity_"]');
+        if (input.val()) updateIngredientPrice(input, detailsId, priceInputId);
     });
+    updateTotalPrice(detailsId, priceInputId);
 
     // Remove handler
     //$(detailsId).off('click', '.remove-ingredient').on('click', '.remove-ingredient', function () {
@@ -154,14 +167,18 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
 }
 
 // Update ingredient price with unit conversion
-function updateIngredientPrice($quantityInput, detailsId, priceInputId) {
+function updateIngredientPrice($el, detailsId, priceInputId) {
+    const row = $el.closest('.ingredient-detail-row');
+    const $quantityInput = row.find('input[name^="ingredient_quantity_"]');
+    const uomSelect = row.find('select[name^="ingredient_uom_"]');
     const ingredientId = $quantityInput.attr('name').split('_')[2];
     const quantity = parseFloat($quantityInput.val()) || 0;
-    const row = $quantityInput.closest('.ingredient-detail-row');
     const ingredientData = ingredientsWithPrices.find(ing => ing.id == ingredientId);
 
     if (ingredientData && quantity > 0) {
-        const userUnit = ingredientData.unitOfMeasure;
+        // Convert the quantity entered in the user-selected UOM back to the
+        // ingredient's stored unit (pricing is per stored unit).
+        const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
         const price = (ingredientData.price * convertedQuantity).toFixed(2);
         row.find('.ingredient-price').text(`Price: $${price}`);
@@ -182,17 +199,11 @@ function updateTotalPrice(detailsId, priceInputId) {
     $(priceInputId).val(total.toFixed(2));
 }
 
-// Unit conversion
-// New units are industry-standard distributor codes (BA, BG, BX, CA, etc.) with no
-// fixed numeric relationships. Same unit returns quantity as-is; different units are
-// a pass-through. Pricing is always per-unit of the stored ingredient unit.
-function convertUnit(quantity, fromUnit, toUnit) {
-    const from = fromUnit ? fromUnit.toUpperCase() : fromUnit;
-    const to = toUnit ? toUnit.toUpperCase() : toUnit;
-    if (from === to) return quantity;
-    console.warn(`No numeric conversion defined from ${from} to ${to}. Returning quantity as-is.`);
-    return quantity;
-}
+// Unit conversion is provided by the shared unitConversions.js
+// (convertUnit / getAllowedUomForUnit / buildUomOptionsHtml). Ensure that
+// script is loaded on this page BEFORE recipes.js. The previous local
+// pass-through convertUnit stub has been removed so real numeric conversion
+// (e.g. KG <-> GM / LB / OZ / LT / ML / FL / GA) is used.
 
 // Get form data with proper unit conversion
 function getRecipeFormData(formId, detailsId) {
@@ -204,7 +215,8 @@ function getRecipeFormData(formId, detailsId) {
         const nameParts = input.attr('name').split('_');
         const ingredientId = nameParts[2];
         const displayQuantity = parseFloat(input.val()) || 0;
-        const displayUnit = $(this).find('.unit').text().trim();
+        const uomSelect = $(this).find('select[name^="ingredient_uom_"]');
+        const displayUnit = uomSelect.val() || $(this).find('.unit').text().trim();
 
         const ingredientData = ingredientsWithPrices.find(ing => ing.id == ingredientId);
 
@@ -213,8 +225,7 @@ function getRecipeFormData(formId, detailsId) {
 
             ingredients.push({
                 IngredientId: parseInt(ingredientId),
-                Quantity: storageQuantity,
-                Unit: ingredientData.unit
+                Quantity: storageQuantity
             });
         }
     });

@@ -107,7 +107,6 @@ namespace MenuOptics.Controllers.Api
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Description", model.Description);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Action", "INSERT");
 
@@ -143,7 +142,6 @@ namespace MenuOptics.Controllers.Api
                 var parameters = new DynamicParameters();
                 parameters.Add("@CategoryId", model.CategoryId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Description", model.Description);
                 parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Action", "UPDATE");

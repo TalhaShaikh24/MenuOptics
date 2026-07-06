@@ -61,6 +61,15 @@ namespace MenuOptics.Controllers.Api
                 return BadRequest(response);
             }
 
+            if (model.Size <= 0 || model.Size == null)
+            {
+                response.Status = 400;
+                response.ResponseMsg = "Size should be greater than 0";
+                await _activityLog.LogAsync(currentUserId, requestId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
+                    System.Text.Json.JsonSerializer.Serialize(response), "Warning");
+                return BadRequest(response);
+            }
+
             if (!_allowedUnits.Contains(model.Unit?.ToLower()))
             {
                 response.Status = 400;
@@ -213,7 +222,6 @@ namespace MenuOptics.Controllers.Api
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@Price", basePrice);
                 parameters.Add("@VendorId", basePrice);
-                parameters.Add("@Size", model.Size);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@ModifiedBy", currentUserId);
 
@@ -350,7 +358,7 @@ namespace MenuOptics.Controllers.Api
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToLower());
-                parameters.Add("@UnitOfMeasure", model.UnitOfMeasure.ToLower());
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Action", "INSERT");
 
@@ -525,10 +533,9 @@ namespace MenuOptics.Controllers.Api
                     {
                         1 => "Name",
                         2 => "Unit",
-                        3 => "UnitOfMeasure",
-                        4 => "IsActive",
-                        6 => "CreatedOn",
-                        7 => "Price",
+                        3 => "IsActive",
+                        4 => "CreatedOn",
+                        5 => "Price",
                         _ => "Name"
                     };
 
@@ -618,10 +625,9 @@ namespace MenuOptics.Controllers.Api
                     {
                         1 => "Name",
                         2 => "Unit",
-                        3 => "UnitOfMeasure",
-                        4 => "IsActive",
-                        6 => "CreatedOn",
-                        7 => "Price",
+                        3 => "IsActive",
+                        4 => "CreatedOn",
+                        5 => "Price",
                         _ => "Name"
                     };
 
@@ -708,18 +714,16 @@ namespace MenuOptics.Controllers.Api
                         orderDir = Request.Query["orderDir"].ToString();
                     }
 
-                    // Map column index to column name:
-                    // 0=checkbox, 1=Name, 2=Unit, 3=UnitOfMeasure, 4=Status, 5=Supplier, 6=CreatedDate, 7=Price
+
                     string orderBy = orderColumnIndex switch
                     {
                         1 => "Name",
                         2 => "VendorProductId",
                         3 => "Unit",
-                        4 => "UnitOfMeasure",
-                        6 => "IsActive",
-                        7 => "FullName",
-                        8 => "CreatedOn",
-                        9 => "Price",
+                        4 => "IsActive",
+                        5 => "FullName",
+                        6 => "CreatedOn",
+                        7 => "Price",
                         _ => "Name"
                     };
 
@@ -998,17 +1002,18 @@ namespace MenuOptics.Controllers.Api
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToLower());
-                parameters.Add("@UnitOfMeasure", model.UnitOfMeasure ?? null);
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@ModifiedBy", currentUserId); // Set ModifiedBy to the current authenticated user
                 parameters.Add("@IsActive", 1); // Assuming IsActive can be updated
                 parameters.Add("@Action", "UPDATE");
 
-                int affectedRows = await connection.ExecuteAsync("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                
+                int affectedRows = await connection.QueryFirstOrDefaultAsync<int>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
-                if (affectedRows == 0)
+                if (affectedRows <= 0)
                 {
                     response.Status = 400;
-                    response.ResponseMsg = "Ingredient not found or no changes were made.";
+                    response.ResponseMsg = "No changes were made.";
                     return NotFound(response);
                 }
 
@@ -1151,7 +1156,7 @@ namespace MenuOptics.Controllers.Api
                 parameters.Add("@Unit", model.Unit ?? existing.Unit);
                 parameters.Add("@IsActive", model.IsActive ?? existing.IsActive);
                 parameters.Add("@Price", existing.Price);
-                parameters.Add("@UnitOfMeasure", existing.UnitOfMeasure);
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "UPDATE");
 

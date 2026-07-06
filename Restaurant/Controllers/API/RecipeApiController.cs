@@ -86,7 +86,6 @@ namespace MenuOptics.Controllers.API
                         ingParams.Add("@RecipeId", recipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
                         ingParams.Add("@Quantity", ing.Quantity);
-                        ingParams.Add("@Unit", ing.Unit);
                         ingParams.Add("@Action", "INSERT");
 
                         await connection.ExecuteAsync("sp_RecipeIngredientsCRUD", ingParams, commandType: CommandType.StoredProcedure);
@@ -258,7 +257,7 @@ namespace MenuOptics.Controllers.API
                 }
 
                 var ingredients = await connection.QueryAsync<RecipeIngredient>(
-                    @"SELECT ri.RecipeId, ri.IngredientId, i.Name AS IngredientName, ri.Quantity, ri.Unit
+                    @"SELECT ri.RecipeId, ri.IngredientId, i.Name AS IngredientName, ri.Quantity
                       FROM RecipeIngredients ri
                       INNER JOIN Ingredients i ON i.IngredientId = ri.IngredientId
                       WHERE ri.RecipeId = @RecipeId",
