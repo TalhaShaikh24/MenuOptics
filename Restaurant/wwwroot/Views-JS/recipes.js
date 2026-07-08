@@ -66,12 +66,13 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
         onSuccess: function (response) {
 
             const activeIngredients = response.data.filter(ing => ing.isActive != false);
-            debugger
+
             ingredientsWithPrices = activeIngredients.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
                 price: ing.price,
                 unit: ing.unit, // Storage unit
+                size: ing.size, // Size
                 unitOfMeasure: ing.unitOfMeasure || ing.unit // Display unit
             }));
 
@@ -179,8 +180,9 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
         // Convert the quantity entered in the user-selected UOM back to the
         // ingredient's stored unit (pricing is per stored unit).
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
+        const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
-        const price = (ingredientData.price * convertedQuantity).toFixed(2);
+        const price = (pricePerUnit * convertedQuantity).toFixed(2);
         row.find('.ingredient-price').text(`Price: $${price}`);
     } else {
         row.find('.ingredient-price').text(`Price: $0.00`);
@@ -225,7 +227,8 @@ function getRecipeFormData(formId, detailsId) {
 
             ingredients.push({
                 IngredientId: parseInt(ingredientId),
-                Quantity: storageQuantity
+                Quantity: storageQuantity,
+                Uom: displayUnit
             });
         }
     });
@@ -300,9 +303,36 @@ function getRecipeById(id) {
             setTimeout(() => {
                 recipe.ingredients.forEach(ing => {
                     const quantityInput = $(`input[name="ingredient_quantity_${ing.ingredientId}"]`);
+                    const uomSelect = $(`select[name="ingredient_uom_${ing.ingredientId}"]`);
                     const ingredientData = ingredientsWithPrices.find(item => item.id == ing.ingredientId);
                     if (ingredientData) {
-                        const userUnit = ingredientData.unitOfMeasure || ingredientData.unit;
+                        const userUnit = ing.uom || ing.Uom || ing.unitOfMeasure || ingredientData.unitOfMeasure || ingredientData.unit;
+                        if (uomSelect.length) {
+                            const normalizeFn = (typeof normalizeUnit === 'function')
+                                ? normalizeUnit
+                                : (u => (u || '').toString().trim().toUpperCase());
+                            const targetUom = normalizeFn(userUnit);
+
+                            // Find the option whose value matches the saved uom (case/format insensitive)
+                            let matchedValue = null;
+                            uomSelect.find('option').each(function () {
+                                if (this.value && normalizeFn(this.value) === targetUom) {
+                                    matchedValue = this.value;
+                                    return false;
+                                }
+                            });
+
+                            // If the saved uom isn't among the compatible options, add it so it can be selected
+                            if (!matchedValue) {
+                                const uomLabel = (typeof ALLOWED_UNIT_OF_MEASURE_LABELS !== 'undefined' && ALLOWED_UNIT_OF_MEASURE_LABELS[userUnit])
+                                    ? ALLOWED_UNIT_OF_MEASURE_LABELS[userUnit]
+                                    : userUnit;
+                                uomSelect.append(`<option value="${userUnit}">${uomLabel}</option>`);
+                                matchedValue = userUnit;
+                            }
+
+                            uomSelect.val(matchedValue).trigger('change');
+                        }
                         const displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit);
                         quantityInput.val(displayQuantity.toFixed(2));
                     } else {

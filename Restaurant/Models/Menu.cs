@@ -32,7 +32,7 @@ namespace MenuOptics.Models
         public int IngredientId { get; set; }
         public string IngredientName { get; set; }
         public decimal Quantity { get; set; }
-        public string Unit { get; set; }
+        public string Uom { get; set; }
     }
 
    
@@ -41,7 +41,7 @@ namespace MenuOptics.Models
         public int RecipeId { get; set; }
         public string RecipeName { get; set; }
         public decimal Quantity { get; set; }
-        public string Unit { get; set; }
+        public string Uom { get; set; }
     }
 
    

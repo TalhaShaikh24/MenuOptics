@@ -1,5 +1,7 @@
 ﻿let menuItemsGlobal = [];
 let eventOnlyItemsGlobal = [];
+let allActiveItems = [];
+let activeMenuItems = [];
 let activeEventItems = [];
 let allEventsData = [];
 let eventTable;
@@ -191,7 +193,7 @@ function rebuildEventsTable(events) {
 // ────────────────────────────────────────────────
 
 function applyGlobalMode(mode) {
-    activeEventItems.forEach(item => {
+    allActiveItems.forEach(item => {
         item.type = (mode === 'Manual') ? 'PerEvent' : 'PerGuest';
     });
     renderRows();
@@ -230,7 +232,7 @@ function processCustomerQuote() {
         terms: $('#quoteTerms').val().trim(),
         noteText: $('#custNote').val().trim() || ''
     };
-    debugger
+
 
     closeModal('customerDetailsModal');
     generateCustomSinglePDF(eventId, details);
@@ -245,7 +247,7 @@ async function generateCustomSinglePDF(eventId, customDetails) {
             quoteDate: customDetails.quoteDate,
             validUntil: customDetails.validUntil,
             terms: customDetails.terms,
-            noteText: customDetails.noteText 
+            noteText: customDetails.noteText
         };
 
         const backup = allEventsData;
@@ -268,7 +270,7 @@ function exportEventsPDF(isCustomerFacing) {
             let logo = null;
             try {
                 logo = await getImageAsPngBase64(profilePic);
-            } catch {}
+            } catch { }
 
             const columns = [
                 { text: 'Event Details', style: 'tableHeader' },
@@ -289,10 +291,10 @@ function exportEventsPDF(isCustomerFacing) {
             ]);
 
             const totalRevenue = allEventsData.reduce((sum, e) => sum + e.totalRevenue, 0);
-            const totalCost    = allEventsData.reduce((sum, e) => sum + e.totalFoodCost, 0);
-            const totalProfit  = totalRevenue - totalCost;
-            const totalGuests  = allEventsData.reduce((sum, e) => sum + e.numberOfGuests, 0);
-            const avgMargin    = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
+            const totalCost = allEventsData.reduce((sum, e) => sum + e.totalFoodCost, 0);
+            const totalProfit = totalRevenue - totalCost;
+            const totalGuests = allEventsData.reduce((sum, e) => sum + e.numberOfGuests, 0);
+            const avgMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
 
             const doc = {
                 header: () => ({
@@ -326,21 +328,27 @@ function exportEventsPDF(isCustomerFacing) {
                     { text: 'EXECUTIVE SUMMARY', style: 'sectionTitle', margin: [0, 15, 0, 10] },
                     {
                         columns: [
-                            { width: '33%', stack: [
-                                { text: 'Performance', style: 'billToLabel' },
-                                { text: `Total Events: ${allEventsData.length}`, style: 'summaryText' },
-                                { text: `Total Guests: ${totalGuests}`, style: 'summaryText' }
-                            ]},
-                            { width: '33%', stack: [
-                                { text: 'Financials', style: 'billToLabel' },
-                                { text: `Revenue: $${totalRevenue.toFixed(2)}`, style: 'summaryText' },
-                                { text: `Costs: $${totalCost.toFixed(2)}`, style: 'summaryText' }
-                            ]},
-                            { width: '34%', stack: [
-                                { text: 'Profitability', style: 'billToLabel' },
-                                { text: `Total Profit: $${totalProfit.toFixed(2)}`, style: 'summaryText', bold: true, color: '#da7c05' },
-                                { text: `Avg Margin: ${avgMargin}%`, style: 'summaryText' }
-                            ]}
+                            {
+                                width: '33%', stack: [
+                                    { text: 'Performance', style: 'billToLabel' },
+                                    { text: `Total Events: ${allEventsData.length}`, style: 'summaryText' },
+                                    { text: `Total Guests: ${totalGuests}`, style: 'summaryText' }
+                                ]
+                            },
+                            {
+                                width: '33%', stack: [
+                                    { text: 'Financials', style: 'billToLabel' },
+                                    { text: `Revenue: $${totalRevenue.toFixed(2)}`, style: 'summaryText' },
+                                    { text: `Costs: $${totalCost.toFixed(2)}`, style: 'summaryText' }
+                                ]
+                            },
+                            {
+                                width: '34%', stack: [
+                                    { text: 'Profitability', style: 'billToLabel' },
+                                    { text: `Total Profit: $${totalProfit.toFixed(2)}`, style: 'summaryText', bold: true, color: '#da7c05' },
+                                    { text: `Avg Margin: ${avgMargin}%`, style: 'summaryText' }
+                                ]
+                            }
                         ]
                     }
                 ],
@@ -370,14 +378,14 @@ function exportEventsPDF(isCustomerFacing) {
                         ? getAjaxPromise({ url: `/api/EventApi/GetEventNote/${e.eventId}`, method: 'GET' })
                         : Promise.resolve({ data: { noteText: "" } }))
             ]).then(([eventRes, noteRes]) => ({
-                ...e,             
-                ...eventRes.data, 
+                ...e,
+                ...eventRes.data,
                 noteText: e.noteText || noteRes.data.noteText || ""
             }))
         )).then(async events => {
             let logo = null;
-            try { logo = await getImageAsPngBase64(profilePic); } catch {}
-            
+            try { logo = await getImageAsPngBase64(profilePic); } catch { }
+
             const content = [];
 
             events.forEach((event, idx) => {
@@ -532,8 +540,8 @@ function exportEventsPDF(isCustomerFacing) {
 
                 // Aas paas line 351 ke andar:
                 const terms = event.terms || event.paymentTerms || '';
-                debugger
-                const notes = event.noteText || ''; 
+                
+                const notes = event.noteText || '';
 
                 content.push({
                     columns: [
@@ -601,19 +609,34 @@ function syncListFromSelect2(selector) {
     const sourceData = isMenu ? menuItemsGlobal : eventOnlyItemsGlobal;
     const currentMode = $('#globalCalcMode').val();
 
-    activeEventItems = activeEventItems.filter(item =>
+    allActiveItems = allActiveItems.filter(item =>
         item.source !== source || selectedIds.includes(item.id.toString())
     );
 
+    // Keep the respective array in sync with the current selection
+    if (isMenu) {
+        activeMenuItems = activeMenuItems.filter(item => selectedIds.includes(item.id.toString()));
+    } else {
+        activeEventItems = activeEventItems.filter(item => selectedIds.includes(item.id.toString()));
+    }
+
     selectedIds.forEach(selId => {
-        if (!activeEventItems.some(x => x.id == selId && x.source === source)) {
+        if (!allActiveItems.some(x => x.id == selId && x.source === source)) {
             const ref = sourceData.find(x => x.id == selId);
             if (ref) {
-                activeEventItems.push({
+                const newItem = {
                     id: ref.id, name: ref.text, cost: ref.cost, qty: 1,
                     type: (currentMode === 'Manual') ? 'PerEvent' : (isMenu ? 'PerGuest' : 'PerEvent'),
                     source
-                });
+                };
+                allActiveItems.push(newItem);
+
+                // Push into its respective array
+                if (isMenu) {
+                    activeMenuItems.push(newItem);
+                } else {
+                    activeEventItems.push(newItem);
+                }
             }
         }
     });
@@ -624,9 +647,8 @@ function renderRows() {
     const container = $('#eventItemsContainer').empty();
     const isManual = $('#globalCalcMode').val() === 'Manual';
 
-    activeEventItems.forEach((item, idx) => {
+    allActiveItems.forEach((item, idx) => {
         const badgeClass = item.source === 'Menu' ? 'badge-menu' : 'badge-event';
-        const qtySubText = item.type === 'PerGuest' ? 'x Guests' : 'Fixed Qty';
 
         const row = `
             <div class="event-item-row" data-index="${idx}" style="display:flex; align-items:center; gap:8px; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">
@@ -638,7 +660,6 @@ function renderRows() {
                     <input type="number" class="form-control item-qty" value="${item.qty}" min="0" step="1"
                            onchange="updateItemState(${idx}, 'qty', this.value)" 
                            style="height:30px; ${isManual ? 'border:1px solid #f08d11;' : ''}">
-                    <small style="font-size:9px; color:#999; text-align:center;">${qtySubText}</small>
                 </div>
                 <span class="row-total" style="min-width:120px; text-align:right; font-weight:bold;">$0.00</span>
                 <a href="#" onclick="removeItemByIndex(${idx})" class="text-danger ml-2"><i class="fa-regular fa-trash-can"></i></a>
@@ -648,7 +669,7 @@ function renderRows() {
     updateAllCosts();
 }
 function updateItemState(index, field, value) {
-    const item = activeEventItems[index];
+    const item = allActiveItems[index];
     if (!item) return;
     if (field === 'qty') item.qty = parseFloat(value) || 0;
     updateAllCosts();
@@ -656,9 +677,9 @@ function updateItemState(index, field, value) {
 
 
 function removeItemByIndex(index) {
-    const item = activeEventItems[index];
+    const item = allActiveItems[index];
     if (!item) return;
-    activeEventItems.splice(index, 1);
+    allActiveItems.splice(index, 1);
     const select = item.source === 'Menu' ? '#menuItemSelect' : '#eventOnlyItemSelect';
     const current = $(select).val() || [];
     $(select).val(current.filter(id => id != item.id)).trigger('change.select2');
@@ -667,7 +688,7 @@ function removeItemByIndex(index) {
 
 // ────────────────────────────────────────────────
 // CALCULATIONS
-// ────────────────────────────────────────────────
+// ─────────────────��──────────────────────────────
 
 function initEventCalculations() {
     $('#guestCount, #pricePerGuest').on('input keyup', updateAllCosts);
@@ -676,27 +697,40 @@ function initEventCalculations() {
 function updateAllCosts() {
     const guests = parseFloat($('#guestCount').val()) || 0;
     const isManualMode = $('#globalCalcMode').val() === 'Manual';
-    let totalCost = 0;
+    let menuFoodCost = 0;      // Total Cost -> Menu items only
+    let eventOnlyCost = 0;     // Added to Total Revenue
 
     $('.event-item-row').each(function () {
         const idx = $(this).data('index');
-        const item = activeEventItems[idx];
+        const item = allActiveItems[idx];
         if (!item) return;
 
-        const lineTotal = (item.type === 'PerGuest' && !isManualMode)
-            ? item.qty * item.cost * guests
-            : item.qty * item.cost;
+        const lineTotal = item.qty * item.cost;
 
         item.totalCost = lineTotal;
         $(this).find('.row-total').text(`$${lineTotal.toFixed(2)}`);
-        totalCost += lineTotal;
+
+        // Total Cost is built only from Menu items
+        if (item.source === 'Menu') {
+            menuFoodCost += lineTotal;
+        }
+        // Event-Only items are added to Revenue, not to food cost
+        else if (item.source === 'EventOnly') {
+            eventOnlyCost += lineTotal;
+        }
     });
 
     const pricePerGuest = parseFloat($('#pricePerGuest').val()) || 0;
-    const totalRevenue = guests * pricePerGuest;
+    const baseRevenue = guests * pricePerGuest;
+
+    // Total Revenue = (guests x price per guest) + Event-Only items cost
+    const totalRevenue = baseRevenue + eventOnlyCost;
+    // Total Cost = Menu items only
+    const totalCost = menuFoodCost;
 
     $('#totalRevenue').text(`$${totalRevenue.toFixed(2)}`);
     $('#totalFoodCost').text(`$${totalCost.toFixed(2)}`);
+
     const costPerGuest = guests > 0 ? totalCost / guests : 0;
     $('#costPerGuest').text(`$${costPerGuest.toFixed(2)}`);
     const foodCostPct = totalRevenue > 0 ? (totalCost / totalRevenue) * 100 : 0;
@@ -712,7 +746,7 @@ function updateAllCosts() {
 // ────────────────────────────────────────────────
 
 function openNewEventModal() {
-    activeEventItems = [];
+    allActiveItems = [];
     $('#addEventForm')[0].reset();
     $('#eventId').val('');
     $('#globalCalcMode').val('PerGuest');
@@ -773,9 +807,9 @@ function saveEvent() {
     }
 
     // 🔹 NEW CONDITION: Total items quantity must match Guest Count in Manual Mode
-    if (isManualMode && activeEventItems.length > 0) {
+    if (isManualMode && allActiveItems.length > 0) {
         let totalItemsQty = 0;
-        activeEventItems.forEach(item => {
+        allActiveItems.forEach(item => {
             // Hum sirf un items ko count kar rahe hain jo "Per Guest" (Menu items mostly) wali nature ke hain
             if (item.type === 'PerEvent' || item.type === 'PerGuest') {
                 totalItemsQty += item.qty;
@@ -787,7 +821,7 @@ function saveEvent() {
         }
     }
 
-    const items = activeEventItems.map(i => ({
+    const items = allActiveItems.map(i => ({
         MenuItemId: i.source === 'Menu' ? i.id : 0,
         EventOnlyItemId: i.source === 'EventOnly' ? i.id : 0,
         ItemName: i.name,
@@ -846,7 +880,7 @@ function editEvent(id) {
             $('#contactEmail').val(e.contactEmail);
             $('#contactPhone').val(e.contactPhone);
 
-            activeEventItems = [];
+            allActiveItems = [];
             const menuIds = [], eventIds = [];
             let hasManual = e.items?.some(i => i.qtyType === 'PerEvent' && i.itemSource === 'Menu');
             $('#globalCalcMode').val(hasManual ? 'Manual' : 'PerGuest');
@@ -854,7 +888,7 @@ function editEvent(id) {
             e.items?.forEach(i => {
                 const source = i.itemSource || (i.menuItemId ? 'Menu' : 'EventOnly');
                 const idVal = source === 'Menu' ? i.menuItemId : i.eventOnlyItemId;
-                activeEventItems.push({ id: idVal, name: i.itemName, cost: i.unitCost, qty: i.qty, type: i.qtyType, source });
+                allActiveItems.push({ id: idVal, name: i.itemName, cost: i.unitCost, qty: i.qty, type: i.qtyType, source });
                 if (source === 'Menu') menuIds.push(idVal); else eventIds.push(idVal);
             });
             $('#menuItemSelect').val(menuIds).trigger('change.select2');

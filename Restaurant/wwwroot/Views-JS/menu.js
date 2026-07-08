@@ -88,11 +88,13 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
+            
             ingredientsWithPrices = response.data.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
                 price: ing.price,
                 unit: ing.unit,
+                size: ing.size,
                 unitOfMeasure: ing.unitOfMeasure || ing.unit
             }));
 
@@ -264,13 +266,16 @@ function updateIngredientPrice(row, detailsId, costInputId) {
     const uomSelect = row.find('select[name^="ingredient_uom_"]');
     const ingredientId = quantityInput.attr('name').split('_')[2];
     const quantity = parseFloat(quantityInput.val()) || 0;
-
+    
     const ingredientData = ingredientsWithPrices.find(ing => ing.id == ingredientId);
+
 
     if (ingredientData && quantity > 0) {
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
+        const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
+        
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
-        const price = (ingredientData.price * convertedQuantity).toFixed(2);
+        const price = (pricePerUnit * convertedQuantity).toFixed(2);
         row.find('.ingredient-price').text(`Price: $${price}`);
     } else {
         row.find('.ingredient-price').text(`Price: $0.00`);
@@ -658,7 +663,7 @@ function getMenuFormData(formId, ingredientsDetailsId, recipesDetailsId) {
                 ingredientId: parseInt(ingredientId),
                 quantity: convertedQuantity,
                 unit: ingredientData.unit,
-                unitOfMeasure: userUnit
+                uom: userUnit
             });
         }
     });
@@ -758,9 +763,32 @@ function getMenuItemById(id) {
                     const ingredientData = ingredientsWithPrices.find(item => item.id == ing.ingredientId);
 
                     if (ingredientData) {
-                        const userUnit = ing.unitOfMeasure || ingredientData.unitOfMeasure || ingredientData.unit;
+                        const userUnit = ing.uom || ing.unitOfMeasure || ingredientData.unitOfMeasure || ingredientData.unit;
                         if (uomSelect.length) {
-                            uomSelect.val(userUnit);
+                            const normalizeFn = (typeof normalizeUnit === 'function')
+                                ? normalizeUnit
+                                : (u => (u || '').toString().trim().toUpperCase());
+                            const targetUom = normalizeFn(userUnit);
+
+                            // Find the option whose value matches the saved uom (case/format insensitive)
+                            let matchedValue = null;
+                            uomSelect.find('option').each(function () {
+                                if (this.value && normalizeFn(this.value) === targetUom) {
+                                    matchedValue = this.value;
+                                    return false;
+                                }
+                            });
+
+                            // If the saved uom isn't among the compatible options, add it so it can be selected
+                            if (!matchedValue) {
+                                const uomLabel = (typeof ALLOWED_UNIT_OF_MEASURE_LABELS !== 'undefined' && ALLOWED_UNIT_OF_MEASURE_LABELS[userUnit])
+                                    ? ALLOWED_UNIT_OF_MEASURE_LABELS[userUnit]
+                                    : userUnit;
+                                uomSelect.append(`<option value="${userUnit}">${uomLabel}</option>`);
+                                matchedValue = userUnit;
+                            }
+
+                            uomSelect.val(matchedValue).trigger('change');
                         }
                         const displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit);
                         quantityInput.val(displayQuantity.toFixed(2));
@@ -880,7 +908,7 @@ function refreshMenuGrid() {
             const menuItems = response.data;
             const grid = $('#menuGrid');
             grid.empty();
-            debugger
+            
 
             let totalCostPercentage = 0;
             let activeItemCount = 0;

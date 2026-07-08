@@ -81,6 +81,7 @@ namespace MenuOptics.Controllers.Api
                         var ingredientParams = new DynamicParameters();
                         ingredientParams.Add("@MenuItemId", menuItemId);
                         ingredientParams.Add("@IngredientId", ingredient.IngredientId);
+                        ingredientParams.Add("@Uom", ingredient.Uom);
                         ingredientParams.Add("@Quantity", ingredient.Quantity);
                         ingredientParams.Add("@Action", "INSERT");
                         await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);
@@ -142,7 +143,7 @@ namespace MenuOptics.Controllers.Api
                 }
 
                 var ingredients = await connection.QueryAsync<MenuItemIngredient>(
-                    "SELECT mi.MenuItemId, mi.IngredientId, i.Name AS IngredientName, mi.Quantity, i.Unit " +
+                    "SELECT mi.MenuItemId, mi.IngredientId, i.Name AS IngredientName, mi.Uom, mi.Quantity, i.Unit " +
                     "FROM MenuItemIngredients mi INNER JOIN Ingredients i ON i.IngredientId = mi.IngredientId " +
                     "WHERE mi.MenuItemId = @MenuItemId",
                     new { MenuItemId = id });
@@ -345,6 +346,7 @@ namespace MenuOptics.Controllers.Api
                         var ingredientParams = new DynamicParameters();
                         ingredientParams.Add("@MenuItemId", model.MenuItemId);
                         ingredientParams.Add("@IngredientId", ingredient.IngredientId);
+                        ingredientParams.Add("@Uom", ingredient.Uom);
                         ingredientParams.Add("@Quantity", ingredient.Quantity);
                         ingredientParams.Add("@Action", "INSERT");
                         await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);

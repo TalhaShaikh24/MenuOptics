@@ -114,9 +114,9 @@
             data: formData,
             showMessage: true,
             onSuccess: function (response) {
-                debugger;
+                
                 Cookies.set('JwtToken', response.data.token);
-                debugger
+                
                 localStorage.setItem('profilePic', response.data.profilePic);
                 localStorage.setItem('restaurantName', response.data.restaurantName);
                 localStorage.setItem('phone', response.data.phone);

@@ -39,6 +39,7 @@ namespace MenuOptics.Controllers.API
                         IngredientId = i.IngredientId,
                         Quantity = i.Quantity,
                         Unit = i.Unit,
+                        Uom = i.Uom,
                         IngredientName = null
                     }).ToList();
                 }
@@ -85,6 +86,7 @@ namespace MenuOptics.Controllers.API
                         var ingParams = new DynamicParameters();
                         ingParams.Add("@RecipeId", recipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
+                        ingParams.Add("@Uom", ing.Uom);
                         ingParams.Add("@Quantity", ing.Quantity);
                         ingParams.Add("@Action", "INSERT");
 
@@ -139,6 +141,7 @@ namespace MenuOptics.Controllers.API
                     {
                         IngredientId = i.IngredientId,
                         Quantity = i.Quantity,
+                        Uom = i.Uom,
                         Unit = i.Unit,
                         IngredientName = null
                     }).ToList();
@@ -199,6 +202,7 @@ namespace MenuOptics.Controllers.API
                         var ingParams = new DynamicParameters();
                         ingParams.Add("@RecipeId", model.RecipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
+                        ingParams.Add("@Uom", ing.Uom);
                         ingParams.Add("@Quantity", ing.Quantity);
                         ingParams.Add("@Unit", ing.Unit);
                         ingParams.Add("@Action", "INSERT");
@@ -257,7 +261,7 @@ namespace MenuOptics.Controllers.API
                 }
 
                 var ingredients = await connection.QueryAsync<RecipeIngredient>(
-                    @"SELECT ri.RecipeId, ri.IngredientId, i.Name AS IngredientName, ri.Quantity
+                    @"SELECT ri.RecipeId, ri.IngredientId, i.Name AS IngredientName, ri.Uom, ri.Quantity
                       FROM RecipeIngredients ri
                       INNER JOIN Ingredients i ON i.IngredientId = ri.IngredientId
                       WHERE ri.RecipeId = @RecipeId",

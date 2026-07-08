@@ -244,7 +244,7 @@ $(document).ready(function () {
             method: 'GET',
             showMessage: false,
             onSuccess: function (response) {
-                debugger
+                
                 const ingredients = response.data;
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
