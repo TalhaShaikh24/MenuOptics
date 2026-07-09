@@ -26,7 +26,7 @@ $(document).ready(function () {
     });
 
     $('#exportCsvBtn').on('click', () => $('.buttons-csv').click());
-    $('#exportPdfBtn').on('click', () => exportEventsPDF($('#customerFacing').is(':checked')));
+    $('#exportPdfBtn').on('click', () => exportEventsPDF($('#customerFacing').is(':checked'), allEventsData));
 
     // Global Mode Listener
     $(document).on('change', '#globalCalcMode', function () {
@@ -201,6 +201,8 @@ function applyGlobalMode(mode) {
 
 
 function exportSingleEventPDF(eventId) {
+
+    debugger
     if ($('#customerFacing').is(':checked')) {
         $('#exportEventId').val(eventId);
 
@@ -213,12 +215,12 @@ function exportSingleEventPDF(eventId) {
 
         openModal('customerDetailsModal');
     } else {
-        const single = allEventsData.filter(e => e.eventId === eventId);
-        if (single.length) {
-            const backup = allEventsData;
-            allEventsData = single;
-            exportEventsPDF(false);
-            allEventsData = backup;
+        const singleEvent = allEventsData.filter(e => e.eventId === eventId);
+
+        if (singleEvent.length) {
+           
+            exportEventsPDF(false, singleEvent);
+            
         }
     }
 }
@@ -249,11 +251,10 @@ async function generateCustomSinglePDF(eventId, customDetails) {
             terms: customDetails.terms,
             noteText: customDetails.noteText
         };
+        debugger
 
-        const backup = allEventsData;
-        allEventsData = [eventData];
-        exportEventsPDF(true);
-        allEventsData = backup;
+        exportEventsPDF(true, [eventData]);
+
     } catch {
         showNotification('Error preparing quote data', 'error');
     }
@@ -263,7 +264,7 @@ async function generateCustomSinglePDF(eventId, customDetails) {
 // PDF GENERATION (both internal & customer-facing)
 // ────────────────────────────────────────────────
 
-function exportEventsPDF(isCustomerFacing) {
+function exportEventsPDF(isCustomerFacing, exportableEvents) {
     if (!isCustomerFacing) {
         // Internal report
         (async () => {
@@ -281,7 +282,7 @@ function exportEventsPDF(isCustomerFacing) {
                 { text: 'Profit', style: 'tableHeader' }
             ];
 
-            const body = allEventsData.map(e => [
+            const body = exportableEvents.map(e => [
                 { text: `${e.eventName}\n${DateFormatter.formatWithComma(e.eventDate)}`, style: 'itemRow' },
                 { text: e.numberOfGuests, alignment: 'center', style: 'itemRow' },
                 { text: `$${e.pricePerGuest.toFixed(2)}`, alignment: 'right', style: 'itemRow' },
@@ -290,10 +291,10 @@ function exportEventsPDF(isCustomerFacing) {
                 { text: `$${(e.totalRevenue - e.totalFoodCost).toFixed(2)}`, alignment: 'right', style: 'itemRow' }
             ]);
 
-            const totalRevenue = allEventsData.reduce((sum, e) => sum + e.totalRevenue, 0);
-            const totalCost = allEventsData.reduce((sum, e) => sum + e.totalFoodCost, 0);
+            const totalRevenue = exportableEvents.reduce((sum, e) => sum + e.totalRevenue, 0);
+            const totalCost = exportableEvents.reduce((sum, e) => sum + e.totalFoodCost, 0);
             const totalProfit = totalRevenue - totalCost;
-            const totalGuests = allEventsData.reduce((sum, e) => sum + e.numberOfGuests, 0);
+            const totalGuests = exportableEvents.reduce((sum, e) => sum + e.numberOfGuests, 0);
             const avgMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(2) : 0;
 
             const doc = {
@@ -331,7 +332,7 @@ function exportEventsPDF(isCustomerFacing) {
                             {
                                 width: '33%', stack: [
                                     { text: 'Performance', style: 'billToLabel' },
-                                    { text: `Total Events: ${allEventsData.length}`, style: 'summaryText' },
+                                    { text: `Total Events: ${exportableEvents.length}`, style: 'summaryText' },
                                     { text: `Total Guests: ${totalGuests}`, style: 'summaryText' }
                                 ]
                             },
@@ -367,9 +368,13 @@ function exportEventsPDF(isCustomerFacing) {
 
             pdfMake.createPdf(doc).download(`Internal_Events_Report_${new Date().toISOString().split('T')[0]}.pdf`);
         })();
-    } else {
+    }
+
+
+
+    else {
         // Customer-facing quote
-        Promise.all(allEventsData.map(e =>
+        Promise.all(exportableEvents.map(e =>
             Promise.all([
                 getAjaxPromise({ url: `/api/EventApi/GetEvent/${e.eventId}`, method: 'GET' }),
                 (e.noteText)
@@ -463,6 +468,8 @@ function exportEventsPDF(isCustomerFacing) {
                     margin: [0, 0, 0, 20]
                 });
 
+
+
                 // Items table
                 const headers = [
                     { text: 'DESCRIPTION', style: 'tableHeader', alignment: 'left' },
@@ -471,28 +478,38 @@ function exportEventsPDF(isCustomerFacing) {
                     { text: 'TOTAL', style: 'tableHeader', alignment: 'right' }
                 ];
 
-                let subtotal = 0;
                 const rows = [];
+
+                rows.push([
+                    { text: 'Guest(s)', style: 'tableRow' },
+                    { text: `${event.numberOfGuests}`, style: 'tableRow', alignment: 'center' },
+                    { text: `$${event.pricePerGuest.toFixed(2)}`, style: 'tableRow', alignment: 'right' },
+                    { text: `$${(event.numberOfGuests * event.pricePerGuest).toFixed(2)}`, style: 'tableRow', alignment: 'right' }
+                ]);
 
                 if (event.items?.length && event.totalFoodCost > 0) {
                     event.items.forEach(i => {
-                        const proportion = i.totalCost / event.totalFoodCost;
-                        const sellingTotal = proportion * event.totalRevenue;
-                        let qty = i.qty;
-                        let desc = i.itemName;
+                     
+                       
+                           
+                        if (i.itemSource === "EventOnly") {
 
-                        if (i.qtyType === 'PerGuest') qty *= event.numberOfGuests;
-                        else if (i.qtyType === 'PerEvent') desc += ` (serves ${event.numberOfGuests})`;
+                            rows.push([
+                                { text: i.itemName, style: 'tableRow' },
+                                { text: i.qty.toFixed(0), style: 'tableRow', alignment: 'center' },
+                                { text: `$${i.unitCost.toFixed(2)}`, style: 'tableRow', alignment: 'right' },
+                                { text: `$${i.totalCost.toFixed(2)}`, style: 'tableRow', alignment: 'right' }
+                            ]);
 
-                        const unitPrice = qty > 0 ? sellingTotal / qty : 0;
-                        subtotal += sellingTotal;
-
-                        rows.push([
-                            { text: desc, style: 'tableRow' },
-                            { text: qty.toFixed(0), style: 'tableRow', alignment: 'center' },
-                            { text: `$${unitPrice.toFixed(2)}`, style: 'tableRow', alignment: 'right' },
-                            { text: `$${sellingTotal.toFixed(2)}`, style: 'tableRow', alignment: 'right' }
-                        ]);
+                        } else {
+                            // Menu-only item
+                            rows.push([
+                                { text: i.itemName, style: 'tableRow' },
+                                { text: i.qty.toFixed(0), style: 'tableRow', alignment: 'center' },
+                                { text: ``, style: 'tableRow', alignment: 'right' },
+                                { text: ``, style: 'tableRow', alignment: 'righ'}
+                            ]);
+                        }
                     });
                 } else {
                     subtotal = event.totalRevenue;
@@ -528,8 +545,14 @@ function exportEventsPDF(isCustomerFacing) {
                             table: {
                                 widths: ['*', 80],
                                 body: [
-                                    [{ text: 'Subtotal:', bold: true, alignment: 'right', fontSize: 10 }, { text: `$${subtotal.toFixed(2)}`, alignment: 'right', fontSize: 10 }],
-                                    [{ text: 'Total:', bold: true, fontSize: 12, alignment: 'right', color: '#f08d11' }, { text: `$${subtotal.toFixed(2)}`, bold: true, fontSize: 12, alignment: 'right', color: '#f08d11' }]
+                                    [
+                                        { text: 'Subtotal:', bold: true, alignment: 'right', fontSize: 10 },
+                                        { text: `$${event.totalRevenue.toFixed(2) }`, alignment: 'right', fontSize: 10 }
+                                    ],
+                                    [
+                                        { text: 'Total:', bold: true, fontSize: 12, alignment: 'right', color: '#f08d11' },
+                                        { text: `$${event.totalRevenue.toFixed(2) }`, bold: true, fontSize: 12, alignment: 'right', color: '#f08d11' }
+                                    ]
                                 ]
                             },
                             layout: 'noBorders'
