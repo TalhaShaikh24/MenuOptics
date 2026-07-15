@@ -1,6 +1,6 @@
 let table;
 
-// ─── Ingredient table (server-side DataTable) ──────────────────────────────────
+// ─── Ingredient table (server-side DataTable) ─────────────────────────────────
 function initIngredientsTable() {
     if ($.fn.DataTable.isDataTable('.ingredients-table')) {
         $('.ingredients-table').DataTable().destroy();
@@ -58,8 +58,8 @@ function initIngredientsTable() {
                 render: function (name, type, row) {
                     const date = DateFormatter.formatWithComma(row.createdOn);
                     return `<div class="ingredient-info">
-                                <p class="ingredient-name">${name}</p>
-                                <p class="ingredient-meta">Added on: ${date}</p>
+                                <p class="ingredient-name">${name.trim().includes(' ') ? name.split(' ').slice(1).join(' ') : name}</p>
+                                <p class="ingredient-meta">Brand: ${name.split(' ')[0]}</p>
                             </div>`;
                 }
             },

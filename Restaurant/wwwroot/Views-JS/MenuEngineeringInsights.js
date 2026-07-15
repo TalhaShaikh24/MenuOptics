@@ -9,14 +9,14 @@ $(document).ready(function () {
             
             startDate = DateFormatter.formatDashUS(selectedDates.startDate);
             endDate = DateFormatter.formatDashUS(selectedDates.endDate);
-            console.log('Filtesaasr 1 Applied:', filterType, selectedDates);
+            console.log('Filter 1 Applied:', filterType, selectedDates);
            
             refreshMenuEngineeringInsightsTable(startDate, endDate);
         },
         initialFilter: "Last 30 Days"
     });
 
-    // Ensure DataTable is loaded before proceeding
+    // Ensure DataTable is loaded before proceeding.
     if (typeof $.fn.DataTable === 'undefined') {
         console.error('jQuery DataTable library is not loaded. Please check the CDN or script inclusion.');
         showNotification('DataTable library failed to load.', 'error');
