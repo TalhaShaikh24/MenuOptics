@@ -1,4 +1,10 @@
-﻿(function ($) {
+﻿/* ============================================================================
+ * error-popup.js — Shared popup plugin used for errors and confirmations.
+ * Exposes: $.showCustomPopup(options) — supports optional OK/Cancel buttons
+ * with onConfirm/onCancel callbacks.
+ * ==========================================================================*/
+
+(function ($) {
     $.showCustomPopup = function (options) {
         // Default settings
         var settings = $.extend({

@@ -1,6 +1,20 @@
+/* ============================================================================
+ * Ingredients.js — Restaurant ingredients page (Views/Ingredient/Ingredients.cshtml)
+ * Server-side DataTable, CRUD modals, stock entry, bulk actions and
+ * vendor link/unlink management.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
 let table;
 
-// ─── Ingredient table (server-side DataTable) ─────────────────────────────────
+/* ── 6. Helpers — server-side DataTable ───────────────────────────────── */
+
 function initIngredientsTable() {
     if ($.fn.DataTable.isDataTable('.ingredients-table')) {
         $('.ingredients-table').DataTable().destroy();
@@ -168,6 +182,8 @@ function refreshIngredientsTable() {
 }
 
 // ─── Page ready ────────────────────────────────────────────────────────────────
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+
 $(document).ready(function () {
 
     // ── Save new ingredient ───────────────────────────────────────────────────
@@ -278,6 +294,8 @@ $(document).ready(function () {
 });
 
 // ─── CRUD Functions ────────────────────────────────────────────────────────────
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function addIngredientByUserId(ingredientData) {
     ajaxRequest({

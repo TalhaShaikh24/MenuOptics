@@ -2806,3 +2806,14 @@ h4.event-heading {
 #linkVendorBtn{
     display:none!important;
 }
+
+.recipeDescription {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+    word-break: break-word;
+    transition: all 0.3s ease;
+}
+

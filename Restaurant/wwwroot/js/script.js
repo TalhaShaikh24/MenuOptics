@@ -1,4 +1,15 @@
-﻿$(document).ready(() => {
+﻿/* ============================================================================
+ * script.js — Shared layout/site script loaded on every page (_Layout.cshtml).
+ * Sidebar, modals, notifications, search, keyboard shortcuts and misc UI.
+ *
+ * Project convention — section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * ==========================================================================*/
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+
+$(document).ready(() => {
     // Initialize dashboard
     initializeDashboard()
 

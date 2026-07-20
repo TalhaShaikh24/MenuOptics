@@ -1,4 +1,16 @@
-﻿$(document).ready(function () {
+﻿/* ============================================================================
+ * menu.js — Menu management page (Views/Menu/Index.cshtml)
+ * Menu grid with ingredient/recipe cost building, categories and PDF export.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+
+$(document).ready(function () {
     // Initialize Select2 for ingredients, recipes and categories
     initializeIngredientsSelect('#ingredientsSelect', '#addMenuItemModal', '#ingredientsDetails', '#menuCost');
     initializeIngredientsSelect('#editIngredientsSelect', '#editMenuItemModal', '#editIngredientsDetails', '#editMenuCost');
@@ -43,6 +55,8 @@
     refreshMenuGrid();
 });
 
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
 // Store ingredients, recipes and categories data globally
 let ingredientsWithPrices = [];
 let recipesWithPrices = [];
@@ -52,6 +66,8 @@ const profilePic = value && value !== "null" ? value : '/images/menu optics_logo
 
 let isStaffFacing = false;
 
+
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
 async function getImageAsPngBase64(url) {
     return new Promise((resolve, reject) => {
@@ -81,6 +97,8 @@ async function getImageAsPngBase64(url) {
 
 
 // Initialize Select2 for ingredients
+/* ── 6. Helpers — Select2 setup / cost calculations ───────────────────── */
+
 function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) {
     ajaxRequest({
         url: '/api/IngredientApi/GetAllIngredientsByUserId',
@@ -88,7 +106,7 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-            
+
             ingredientsWithPrices = response.data.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
@@ -266,14 +284,14 @@ function updateIngredientPrice(row, detailsId, costInputId) {
     const uomSelect = row.find('select[name^="ingredient_uom_"]');
     const ingredientId = quantityInput.attr('name').split('_')[2];
     const quantity = parseFloat(quantityInput.val()) || 0;
-    
+
     const ingredientData = ingredientsWithPrices.find(ing => ing.id == ingredientId);
 
 
     if (ingredientData && quantity > 0) {
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
         const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
-        
+
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
         const price = (pricePerUnit * convertedQuantity).toFixed(2);
         row.find('.ingredient-price').text(`Price: $${price}`);
@@ -402,7 +420,8 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
         let displayPrice = '0.00';
         if (savedQuantity) {
             const convertedQuantity = convertUnit(parseFloat(savedQuantity), savedUom, ingredientData.unit);
-            displayPrice = (ingredientData.price * convertedQuantity).toFixed(2);
+            const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
+            displayPrice = (pricePerUnit * convertedQuantity).toFixed(2);
         }
 
         html += `
@@ -491,7 +510,8 @@ function updateTotalCost(detailsId, costInputId) {
         if (ingredientData && quantity > 0) {
             const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
             const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
-            totalCost += ingredientData.price * convertedQuantity;
+            const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
+            totalCost += pricePerUnit * convertedQuantity;
         }
     });
 
@@ -702,6 +722,8 @@ function validateMenuData(formData) {
 }
 
 // Add menu item
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
+
 function addMenuItem(formData) {
     ajaxRequest({
         url: '/api/MenuApi/CreateMenuItem',
@@ -908,7 +930,7 @@ function refreshMenuGrid() {
             const menuItems = response.data;
             const grid = $('#menuGrid');
             grid.empty();
-            
+
 
             let totalCostPercentage = 0;
             let activeItemCount = 0;

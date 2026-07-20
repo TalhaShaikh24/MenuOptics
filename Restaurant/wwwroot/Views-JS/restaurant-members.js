@@ -1,6 +1,20 @@
+/* ============================================================================
+ * restaurant-members.js — Restaurant members page (Views/Restaurant/Members.cshtml)
+ * Member directory with stats, filters, add/edit modals and auto-refresh.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
 let allMembers = [];
 let currentFilters = { status: 'all', search: '' };
 let table;
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
     // Initialize DataTable once on page load
@@ -60,6 +74,8 @@ $(document).ready(function () {
     // Auto-refresh table every 30 seconds
     setInterval(refreshMemberTable, 30000);
 });
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 // Add member
 function addMember(formData) {
@@ -189,6 +205,8 @@ function refreshMemberStats() {
         }
     });
 }
+
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
 // Initialize DataTable
 function initDataTable() {

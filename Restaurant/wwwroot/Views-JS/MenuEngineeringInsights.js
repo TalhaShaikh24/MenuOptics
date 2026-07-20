@@ -1,16 +1,31 @@
-﻿let table;
+/* ============================================================================
+ * MenuEngineeringInsights.js — Menu engineering insights page
+ * (Views/MenuEngineeringInsights/Index.cshtml)
+ * Quadrant analysis table with CSV/PDF export and date-range filter.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let table;
 let startDate;
 let endDate;
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
 
     $('#dateRange').customRangeFilter({
         onApplyFilter: function (filterType, selectedDates) {
-            
+
             startDate = DateFormatter.formatDashUS(selectedDates.startDate);
             endDate = DateFormatter.formatDashUS(selectedDates.endDate);
             console.log('Filter 1 Applied:', filterType, selectedDates);
-           
+
             refreshMenuEngineeringInsightsTable(startDate, endDate);
         },
         initialFilter: "Last 30 Days"
@@ -26,21 +41,86 @@ $(document).ready(function () {
     refreshMenuEngineeringInsightsTable();
 });
 
-function getQuadrantIcon(quadrant) {
-    switch (quadrant) {
-        case 'Star':
-            return '<span class="quadrant-icon" data-quadrant="Star">⭐</span>';
-        case 'Plowhorse':
-            return '<span class="quadrant-icon" data-quadrant="Plowhorse">🐴</span>';
-        case 'Puzzle':
-            return '<span class="quadrant-icon" data-quadrant="Puzzle">🧩</span>';
-        case 'Dog':
-            return '<span class="quadrant-icon" data-quadrant="Dog">🐶</span>';
-        default:
-            return '<span class="quadrant-icon" data-quadrant="N/A">❓</span>';
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
+
+function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
+    const requestData = {};
+
+    let url = `/api/MenuEngineeringInsightsApi/GetAllMenuEngineeringInsightsByUserId?`;
+
+    if (startDate) {
+        url += `startDate=${startDate}&`;
+        if (endDate) {
+            url += `endDate=${endDate}`;
+        }
+    }
+
+    ajaxRequest({
+        url: url,
+        method: 'GET',
+        data: null,
+        isQuery: true,
+        showMessage: false,
+        onSuccess: function (response) {
+            const insights = response.data || [];
+
+            // If already initialized, destroy BEFORE touching the DOM
+            if ($.fn.DataTable.isDataTable('.menu-engineering-table')) {
+                table.destroy();
+            }
+
+            const tbody = $('.menu-engineering-table tbody');
+            tbody.empty();
+
+            insights.forEach(insight => {
+                tbody.append(buildInsightRow(insight));
+            });
+
+            // Initialize DataTable AFTER rows are present
+            initDataTable();
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to fetch menu engineering insights:', error);
+            showNotification('Failed to fetch menu engineering insights.', 'error');
+        }
+    });
+}
+
+// Function to toggle menu item active status
+function toggleMenuItemActive(id) {
+    if (confirm('Are you sure you want to toggle the active status of this menu item?')) {
+        ajaxRequest({
+            url: `/api/MenuApi/ToggleMenuActive/${id}`,
+            method: 'PUT',
+            showMessage: false,
+            onSuccess: function (response) {
+                refreshMenuEngineeringInsightsTable();
+                showNotification(response.responseMsg, 'success');
+            },
+            onError: function (xhr, status, error) {
+                console.error('Failed to toggle menu item status:', error);
+            }
+        });
     }
 }
 
+// Delete menu item
+function deleteMenuItem(id) {
+    ajaxRequest({
+        url: `/api/MenuApi/DeleteMenuItem/${id}`,
+        method: 'DELETE',
+        showMessage: false,
+        onSuccess: function (response) {
+            refreshMenuEngineeringInsightsTable();
+            showNotification('Menu item deleted successfully!', 'success');
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to delete menu item:', error);
+        }
+    });
+}
+
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
 function initDataTable() {
     // Custom order: Star < Plowhorse < Puzzle < Dog
@@ -80,15 +160,7 @@ function initDataTable() {
                 exportOptions: {
                     columns: [0, 1, 2, 3, 4, 5, 6, 7, 8], // Export only specified columns
                     format: {
-                        body: function (data, row, column, node) {
-                            if (column === 8) { // Quadrant column
-                                return $(data).attr('data-quadrant') || data || 'N/A';
-                            }
-                            if (column === 0) { // Insight name (strip HTML)
-                                return $(data).find('.insight-name').text() || data;
-                            }
-                            return data; // Return other columns as is
-                        }
+                        body: formatExportCell
                     }
                 }
             },
@@ -102,15 +174,7 @@ function initDataTable() {
                 exportOptions: {
                     columns: [0, 1, 2, 3, 4, 5, 6, 7, 8], // Export only specified columns
                     format: {
-                        body: function (data, row, column, node) {
-                            if (column === 8) { // Quadrant column
-                                return $(data).attr('data-quadrant') || data || 'N/A';
-                            }
-                            if (column === 0) { // Insight name (strip HTML)
-                                return $(data).find('.insight-name').text() || data;
-                            }
-                            return data; // Return other columns as is
-                        }
+                        body: formatExportCell
                     }
                 }
             }
@@ -140,59 +204,34 @@ function initDataTable() {
     });
 }
 
-
-
-
-function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
-    const requestData = {};
-
-    let url = `/api/MenuEngineeringInsightsApi/GetAllMenuEngineeringInsightsByUserId?`;
-    
-
-    if (startDate) {
-        url += `startDate=${startDate}&`;
-        if (endDate) {
-            url += `endDate=${endDate}`;
-        }
+// Shared CSV/PDF cell formatter (same output as before refactoring)
+function formatExportCell(data, row, column, node) {
+    if (column === 8) { // Quadrant column
+        return $(data).attr('data-quadrant') || data || 'N/A';
     }
+    if (column === 0) { // Insight name (strip HTML)
+        return $(data).find('.insight-name').text() || data;
+    }
+    return data; // Return other columns as is
+}
 
+// Builds a single insight table row (same markup as before refactoring)
+function buildInsightRow(insight) {
+    const createdDate = DateFormatter.formatWithComma(insight.createdOn || new Date());
+    const actionText = insight.isActive ? 'Inactive' : 'Reactivate';
+    const actionIcon = insight.isActive ? 'fas fa-ban' : 'fas fa-check';
 
+    // Clean numerics for sorting
+    const sellingPrice = Number(insight.sellingPrice || 0);
+    const cost = Number(insight.cost || 0);
+    const costPct = sellingPrice ? (cost / sellingPrice) * 100 : 0;
+    const unitsSold = Number(insight.unitsSold || 0);
+    const cm = Number(insight.contributionMargin || 0);
+    const prof = Number(insight.profitabilityScore || 0);
+    const popShare = Number(insight.popularityShare || 0);
+    const quadrant = insight.menuQuadrant || 'N/A';
 
-
-
-    ajaxRequest({
-        url: url,
-        method: 'GET',
-        data: null,
-        isQuery: true,
-        showMessage: false,
-        onSuccess: function (response) {
-            const insights = response.data || [];
-
-            // If already initialized, destroy BEFORE touching the DOM
-            if ($.fn.DataTable.isDataTable('.menu-engineering-table')) {
-                table.destroy();
-            }
-
-            const tbody = $('.menu-engineering-table tbody');
-            tbody.empty();
-
-            insights.forEach(insight => {
-                const createdDate = DateFormatter.formatWithComma(insight.createdOn || new Date());
-                const actionText = insight.isActive ? 'Inactive' : 'Reactivate';
-                const actionIcon = insight.isActive ? 'fas fa-ban' : 'fas fa-check';
-
-                // Clean numerics for sorting
-                const sellingPrice = Number(insight.sellingPrice || 0);
-                const cost = Number(insight.cost || 0);
-                const costPct = sellingPrice ? (cost / sellingPrice) * 100 : 0;
-                const unitsSold = Number(insight.unitsSold || 0);
-                const cm = Number(insight.contributionMargin || 0);
-                const prof = Number(insight.profitabilityScore || 0);
-                const popShare = Number(insight.popularityShare || 0);
-                const quadrant = insight.menuQuadrant || 'N/A';
-
-                const row = `
+    return `
                     <tr>
                         <td>
                             <div class="insight-info">
@@ -239,51 +278,21 @@ function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
                         </td>
                     </tr>
                 `;
-
-                tbody.append(row);
-            });
-
-            // ✅ Initialize DataTable AFTER rows are present
-            initDataTable();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch menu engineering insights:', error);
-            showNotification('Failed to fetch menu engineering insights.', 'error');
-        }
-    });
 }
 
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
-// Function to toggle menu item active status
-function toggleMenuItemActive(id) {
-    if (confirm('Are you sure you want to toggle the active status of this menu item?')) {
-        ajaxRequest({
-            url: `/api/MenuApi/ToggleMenuActive/${id}`,
-            method: 'PUT',
-            showMessage: false,
-            onSuccess: function (response) {
-                refreshMenuEngineeringInsightsTable();
-                showNotification(response.responseMsg, 'success');
-            },
-            onError: function (xhr, status, error) {
-                console.error('Failed to toggle menu item status:', error);
-            }
-        });
+function getQuadrantIcon(quadrant) {
+    switch (quadrant) {
+        case 'Star':
+            return '<span class="quadrant-icon" data-quadrant="Star">⭐</span>';
+        case 'Plowhorse':
+            return '<span class="quadrant-icon" data-quadrant="Plowhorse">🐴</span>';
+        case 'Puzzle':
+            return '<span class="quadrant-icon" data-quadrant="Puzzle">🧩</span>';
+        case 'Dog':
+            return '<span class="quadrant-icon" data-quadrant="Dog">🐶</span>';
+        default:
+            return '<span class="quadrant-icon" data-quadrant="N/A">❓</span>';
     }
-}
-
-// Delete menu item
-function deleteMenuItem(id) {
-    ajaxRequest({
-        url: `/api/MenuApi/DeleteMenuItem/${id}`,
-        method: 'DELETE',
-        showMessage: false,
-        onSuccess: function (response) {
-            refreshMenuEngineeringInsightsTable();
-            showNotification('Menu item deleted successfully!', 'success');
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to delete menu item:', error);
-        }
-    });
 }

@@ -18,7 +18,7 @@ namespace MenuOptics.Models
         public int? ModifiedBy { get; set; }
         public bool IsActive { get; set; }
         public string? FullName { get; set; }
-        public string? Stock { get; set; }
+        public decimal? Stock { get; set; }
         public int TotalCount { get; set; }
     }
 

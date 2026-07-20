@@ -1,4 +1,12 @@
-﻿// Setup global AJAX headers
+﻿/* ============================================================================
+ * globalAjax.js — Shared AJAX wrapper used by every page.
+ * Exposes: ajaxRequest(options), executeAjaxRequest(options),
+ *          showConfirmDeleteModal(message, onConfirm)
+ * DELETE requests go through a confirmation modal; 500 errors trigger the
+ * global error popup. Do not change the request/response contract.
+ * ==========================================================================*/
+
+// Setup global AJAX headers
 (function setupAjaxDefaults() {
     $.ajaxSetup({
         xhrFields: {

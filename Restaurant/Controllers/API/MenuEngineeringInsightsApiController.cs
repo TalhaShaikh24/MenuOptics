@@ -1,10 +1,6 @@
-﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using MenuOptics.Data;
-using MenuOptics.Models;
-using System.Data;
-using System.Globalization;
-using System.Threading.Tasks;
+using MenuOptics.Services;
+using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {
@@ -12,49 +8,20 @@ namespace MenuOptics.Controllers.Api
     [ApiController]
     public class MenuEngineeringInsightsApiController : ControllerBase
     {
-        private readonly DapperContext _context;
+        private readonly IMenuEngineeringInsightsService _menuEngineeringInsightsService;
 
-        public MenuEngineeringInsightsApiController(DapperContext context)
+        public MenuEngineeringInsightsApiController(IMenuEngineeringInsightsService menuEngineeringInsightsService)
         {
-            _context = context;
+            _menuEngineeringInsightsService = menuEngineeringInsightsService;
         }
+
+        private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
         [HttpGet("GetAllMenuEngineeringInsightsByUserId")]
         public async Task<IActionResult> GetAllMenuEngineeringInsightsByUserId(DateTime? startDate, DateTime? endDate)
         {
-            var response = new Response();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-              
-
-                var parameters = new DynamicParameters();
-                parameters.Add("@StartDate", startDate);
-                parameters.Add("@EndDate", endDate);
-                parameters.Add("@UserId", currentUserId);
-
-                var insights = await connection.QueryAsync<MenuEngineeringInsights>("sp_GetMenuEngineeringInsightsByUserId", parameters, commandType: CommandType.StoredProcedure);
-
-
-                response.Status = 200;
-                response.ResponseMsg = "Menu engineering insights retrieved successfully.";
-                response.Data = insights;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Status = 500;
-                response.ResponseMsg = $"Server error: {ex.Message}";
-                return StatusCode(500, response);
-            }
-            finally
-            {
-                connection.Close();
-            }
+            var response = await _menuEngineeringInsightsService.GetAllMenuEngineeringInsightsByUserIdAsync(CurrentUserId, startDate, endDate);
+            return StatusCode(response.Status, response);
         }
-
     }
 }

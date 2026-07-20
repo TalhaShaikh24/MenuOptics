@@ -1,6 +1,21 @@
-﻿// wwwroot/views-js/recipes.js
+﻿/* ============================================================================
+ * recipes.js — Recipe management page (Views/Recipe/Index.cshtml)
+ * Recipe table with ingredient Select2 pickers and unit-converted pricing.
+ * Requires shared unitConversions.js to be loaded BEFORE this file.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
 let recipeTable;
 let ingredientsWithPrices = [];
+let recipeDescriptions = {}
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
     // Initialize Select2 for ingredients
@@ -35,10 +50,37 @@ $(document).ready(function () {
         recipeTable.search(this.value).draw();
     });
 
+    // Export all recipes to PDF. The Employee Facing checkbox removes pricing information.
+    $('#exportRecipesPdfBtn').on('click', function () {
+        ajaxRequest({
+            url: '/api/RecipeApi/GetAllRecipes',
+            method: 'GET',
+            showMessage: false,
+            isQuery: false,
+            onSuccess: function (response) {
+                generateRecipePDF(response.data || [], 'Full_Recipe_Report');
+            },
+            onError: function (xhr, status, error) {
+                console.error('Failed to export recipes:', error);
+                showNotification('Failed to export recipes.', 'error');
+            }
+        });
+    });
+
 
 
     refreshRecipesTable();
 });
+
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
+
+// Show full description in popup
+function showRecipeDescription(recipeId) {
+    const desc = recipeDescriptions[recipeId] || '';
+    $('#recipeDescriptionPopupText').text(desc);
+    openModal('recipeDescriptionModal');
+}
+
 
 // Initialize DataTable
 function initRecipeTable() {
@@ -209,6 +251,7 @@ function updateTotalPrice(detailsId, priceInputId) {
 
 // Get form data with proper unit conversion
 function getRecipeFormData(formId, detailsId) {
+    debugger
     const formData = new FormData($(formId)[0]);
     const ingredients = [];
 
@@ -237,6 +280,8 @@ function getRecipeFormData(formId, detailsId) {
     return formData;
 }
 
+/* ── Validation ───────────────────────────────────────────────────────── */
+
 // Validate data
 function validateRecipeData(formData) {
     const name = formData.get('name');
@@ -244,6 +289,8 @@ function validateRecipeData(formData) {
     const ingredients = JSON.parse(formData.get('ingredients') || '[]');
     return name && unit && ingredients.length > 0;
 }
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 // Add recipe
 function addRecipe(formData) {
@@ -297,6 +344,7 @@ function getRecipeById(id) {
             $('#editRecipeName').val(recipe.name);
             $('#editRecipeUnit').val(recipe.unit);
             $('#editRecipePrice').val(recipe.price);
+            $('#editRecipeDescription').val(recipe.description);
 
             $('#editIngredientsSelect').val(recipe.ingredients.map(ing => ing.ingredientId)).trigger('change');
 
@@ -402,6 +450,7 @@ function refreshRecipesTable() {
 
             recipes.forEach(item => {
                 const created = DateFormatter.formatWithComma(item.createdOn);
+                recipeDescriptions[item.recipeId] = item.description || '';
 
                 // Get the ingredient names as a comma-separated string
                 const ingredientNames = item.ingredients ? item.ingredients.map(ingredient => ingredient.ingredientName).join(', ') : '';
@@ -414,10 +463,12 @@ function refreshRecipesTable() {
                                 <p class="recipe-meta">Added on: ${created}</p>
                             </div>
                         </td>
+                        <td>
+                            <span class="recipeDescription" style="cursor:pointer;" onclick="showRecipeDescription(${item.recipeId})">${item.description}</span>
+                        </td>
                         <td>${item.unit}</td>
                         <td>$${item.price.toFixed(2)}</td>
                         <td><span class="status-badge good">${ingredientNames}</span></td>
-                        <td><i class="fas fa-calendar"></i> ${created}</td>
                      
                         <td>
                             <div class="dropdown">
@@ -425,6 +476,7 @@ function refreshRecipesTable() {
                                 <div class="dropdown-menu">
                                     <a href="#" onclick="getRecipeById(${item.recipeId})"><i class="fas fa-edit"></i> Edit</a>
                                     <a href="#" onclick="deleteRecipe(${item.recipeId})"><i class="fas fa-trash"></i> Delete</a>
+                                    <a href="#" onclick="exportSingleRecipePDF(${item.recipeId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
                                 </div>
                             </div>
                         </td>
@@ -439,3 +491,215 @@ function refreshRecipesTable() {
         }
     });
 }
+
+// Export one recipe to PDF.
+function exportSingleRecipePDF(id) {
+    ajaxRequest({
+        url: `/api/RecipeApi/GetRecipe/${id}`,
+        method: 'GET',
+        showMessage: false,
+        onSuccess: function (response) {
+            const recipe = response.data;
+            generateRecipePDF([recipe], `Recipe_${sanitizePdfFileName(recipe.name || id)}`);
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to export recipe:', error);
+            showNotification('Failed to export recipe.', 'error');
+        }
+    });
+}
+
+// Generate recipe PDF. When Employee Facing is checked, pricing is omitted.
+async function generateRecipePDF(recipeData, filename) {
+    const isEmployeeFacing = document.getElementById('employeeFacingRecipe')?.checked || false;
+    const logoPath = getRecipeExportLogoPath();
+    let logoBase64 = null;
+    debugger
+    try {
+        logoBase64 = await getImageAsPngBase64(logoPath);
+    } catch (e) {
+        console.warn('Logo load failed', e);
+    }
+
+    const content = [];
+
+    if (!recipeData || recipeData.length === 0) {
+        content.push({ text: 'No recipes available to export.', style: 'sectionHeader' });
+    }
+
+    for (const [index, recipe] of (recipeData || []).entries()) {
+        if (index > 0) content.push({ text: '', pageBreak: 'before' });
+
+        content.push({
+            columns: [
+                {
+                    stack: [
+                        { text: (recipe.name || 'Recipe').toUpperCase(), style: 'itemTitle' },
+                        { text: `Unit: ${recipe.unit || 'N/A'}`, margin: [0, 2, 0, 0] }
+                    ]
+                },
+                logoBase64 ? { image: logoBase64, width: 60, alignment: 'right' } : { text: '' }
+            ],
+            margin: [0, 0, 0, 15]
+        });
+
+        content.push({ text: 'Direction', style: 'sectionHeader' });
+        content.push({
+            text: wrapPdfText(recipe.description || 'No Direction'),
+            fontSize: 10,
+            lineHeight: 1.2,
+            margin: [0, 5, 0, isEmployeeFacing ? 20 : 12]
+        });
+
+        if (!isEmployeeFacing) {
+            content.push({
+                table: {
+                    widths: ['*', 'auto'],
+                    body: [
+                        [
+                            { text: 'Unit', style: 'tableHeader' },
+                            { text: 'Price', style: 'tableHeader' }
+                        ],
+                        [
+                            recipe.unit || 'N/A',
+                            formatCurrency(recipe.price)
+                        ]
+                    ]
+                },
+                layout: 'lightHorizontalLines',
+                margin: [0, 0, 0, 20]
+            });
+        }
+
+        if (recipe.ingredients && recipe.ingredients.length > 0) {
+            content.push({ text: 'Detailed Ingredients List', style: 'sectionHeader' });
+
+            const ingredientRows = recipe.ingredients.map(ingredient => {
+                const row = [
+                    ingredient.ingredientName || ingredient.name || '---',
+                    `${formatQuantity(ingredient.quantity)} ${ingredient.uom || ingredient.Uom || ingredient.unit || ''}`
+                ];
+
+                if (!isEmployeeFacing) {
+                    row.push(formatCurrency(getRecipeIngredientExportPrice(ingredient)));
+                }
+
+                return row;
+            });
+
+            const headerRow = [
+                { text: 'Ingredient Name', bold: true, fillColor: '#eeeeee' },
+                { text: 'Quantity', bold: true, fillColor: '#eeeeee' }
+            ];
+
+            if (!isEmployeeFacing) {
+                headerRow.push({ text: 'Price', bold: true, fillColor: '#eeeeee' });
+            }
+
+            content.push({
+                table: {
+                    widths: isEmployeeFacing ? ['*', 'auto'] : ['*', 'auto', 'auto'],
+                    body: [headerRow, ...ingredientRows]
+                },
+                margin: [0, 5, 0, 15]
+            });
+        } else {
+            content.push({ text: 'No ingredients added.', italics: true, color: '#6b7280', margin: [0, 5, 0, 15] });
+        }
+    }
+
+    const docDefinition = {
+        content: content,
+        styles: {
+            itemTitle: { fontSize: 20, bold: true, color: '#f08d11' },
+            sectionHeader: { fontSize: 13, bold: true, margin: [0, 10, 0, 5], color: '#333', decoration: 'underline' },
+            tableHeader: { bold: true, fontSize: 10, fillColor: '#f8f9fa' }
+        },
+        pageSize: 'A4',
+        pageMargins: [40, 40, 40, 40]
+    };
+
+    pdfMake.createPdf(docDefinition).download(`${sanitizePdfFileName(filename)}.pdf`);
+}
+
+function getRecipeExportLogoPath() {
+    const value = localStorage.getItem('profilePic');
+    return value && value !== 'null' ? value : '/images/menu optics_logo.png';
+}
+
+async function getImageAsPngBase64(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        img.onload = function () {
+            const targetWidth = 350;
+            const aspectRatio = img.naturalHeight / img.naturalWidth;
+            const targetHeight = Math.round(targetWidth * aspectRatio);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+            resolve(canvas.toDataURL('image/png'));
+        };
+
+        img.onerror = () => reject('Image load failed');
+        img.src = url;
+    });
+}
+
+function formatCurrency(value) {
+    const number = parseFloat(value);
+    return Number.isFinite(number) ? `$${number.toFixed(2)}` : '$0.00';
+}
+
+function getRecipeIngredientExportPrice(ingredient) {
+    // Prefer any price/cost returned by the API when present.
+    const directPrice = parseFloat(ingredient.price ?? ingredient.cost ?? ingredient.totalPrice ?? ingredient.totalCost);
+    if (Number.isFinite(directPrice) && directPrice > 0) {
+        return directPrice;
+    }
+
+    // GetRecipe/GetAllRecipes usually returns only ingredientId + quantity.
+    // Recalculate the line price from the globally loaded ingredient master data.
+    const ingredientId = ingredient.ingredientId ?? ingredient.IngredientId ?? ingredient.id;
+    const ingredientData = ingredientsWithPrices.find(item => item.id == ingredientId);
+    if (!ingredientData) {
+        return 0;
+    }
+
+    const quantity = parseFloat(ingredient.quantity ?? ingredient.Quantity) || 0;
+    if (quantity <= 0) {
+        return 0;
+    }
+
+    const pricePerStoredUnit = (parseFloat(ingredientData.price) || 0) / (parseFloat(ingredientData.size) || 1);
+
+    // Quantity from the recipe API is normally already stored in ingredientData.unit.
+    // If the API provides only the employee/display UOM, convert it before pricing.
+    const apiUnit = ingredient.uom || ingredient.Uom || ingredient.unitOfMeasure || ingredient.unit;
+    const storedUnit = ingredientData.unit;
+    const quantityInStoredUnit = apiUnit && storedUnit && typeof convertUnit === 'function'
+        ? convertUnit(quantity, apiUnit, storedUnit)
+        : quantity;
+
+    return pricePerStoredUnit * quantityInStoredUnit;
+}
+
+function formatQuantity(value) {
+    const number = parseFloat(value);
+    return Number.isFinite(number) ? number.toFixed(2) : '0.00';
+}
+
+function sanitizePdfFileName(value) {
+    return (value || 'Recipe_Report').toString().replace(/[^a-z0-9_\-]+/gi, '_').replace(/^_+|_+$/g, '');
+}
+
+function wrapPdfText(value) {
+    return (value || '').toString().replace(/([^\s]{45})(?=[^\s])/g, '$1\u200B');
+}
+

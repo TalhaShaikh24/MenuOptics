@@ -1,3 +1,10 @@
+/* ============================================================================
+ * customRangeFilter.js — Shared date-range filter jQuery plugin.
+ * Exposes: $(el).customRangeFilter({ onApplyFilter, initialFilter }).
+ * Renders the preset list + custom calendar and invokes onApplyFilter with
+ * (filterType, { startDate, endDate }).
+ * ==========================================================================*/
+
 (function($) {
     $.fn.customRangeFilter = function(options) {
         // Default settings

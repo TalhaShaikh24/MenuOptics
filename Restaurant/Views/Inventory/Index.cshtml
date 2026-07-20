@@ -70,9 +70,8 @@
                     <tr>
 
                         <th>Ingredient</th>
-                        <th>Unit</th>
-                        <th>Unit of measure</th>
-                        <th>Vendor</th>
+                        <th>Size</th>
+                        <th>Supplier</th>
                         <th>Opening Count</th>
 
                         <th>Opening Value</th>
@@ -86,36 +85,36 @@
                 </thead>
                 <tbody>
 
-                    <tr><td colspan="10" class="text-center">Please apply a date filter to view the COGS report.</td></tr>
+                    <tr><td colspan="9" class="text-center">Please apply a date filter to view the COGS report.</td></tr>
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="10" class="text-right"><strong>Total COGS:</strong></td>
+                        <td colspan="9" class="text-right"><strong>Total COGS:</strong></td>
 
                         <td id="total-cogs-value"><strong>$0.00</strong></td>
                     </tr>
                     <tr>
-                        <td colspan="10" class="text-right"><strong>Total Food Revenue:</strong></td>
+                        <td colspan="9" class="text-right"><strong>Total Food Revenue:</strong></td>
 
                         <td id="total-food-revenue-value"><strong>$0.00</strong></td>
                     </tr>
                     <tr>
-                        <td colspan="10" class="text-right"><strong>Actual Food Cost:</strong></td>
+                        <td colspan="9" class="text-right"><strong>Actual Food Cost:</strong></td>
 
                         <td id="actual-food-cost-value"><strong>0%</strong></td>
                     </tr>
                     <tr>
-                        <td colspan="10" class="text-right"><strong>Theoretical Food Cost:</strong></td>
+                        <td colspan="9" class="text-right"><strong>Theoretical Food Cost:</strong></td>
                         <td id="theoretical-food-cost-value"><strong>0%</strong></td>
 
                     </tr>
                     <tr>
-                        <td colspan="10" class="text-right"><strong>Variance:</strong></td>
+                        <td colspan="9" class="text-right"><strong>Variance:</strong></td>
                         <td id="variance-percentage-value"><strong>0%</strong></td>
 
                     </tr>
                     <tr>
-                        <td colspan="10" class="text-right"><strong>Variance Value:</strong></td>
+                        <td colspan="9" class="text-right"><strong>Variance Value:</strong></td>
                         <td id="variance-value"><strong>$0.00</strong></td>
                     </tr>
 
@@ -127,6 +126,5 @@
 
 @section scripts {
     <script src="~/js/customrangefilter.js"></script>
-    <script src="~/js/unitconversions.js"></script>
     <script src="~/views-js/CogsReport.js?v=@DateTime.Now.Ticks"></script>
 }

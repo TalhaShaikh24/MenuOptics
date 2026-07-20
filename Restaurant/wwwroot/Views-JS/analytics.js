@@ -1,6 +1,18 @@
+/* ============================================================================
+ * analytics.js — Analytics dashboard page (Views/Analytics/Index.cshtml)
+ * KPI cards, revenue/order charts and restaurant performance grid.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
 let revenueChartInstance = null;
 let orderChartInstance = null;
 
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
 
@@ -23,9 +35,10 @@ $(document).ready(function () {
         return;
     }
 
-
     fetchAnalyticsData();
 });
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function fetchAnalyticsData(startDate = null, endDate = null) {
 
@@ -38,14 +51,13 @@ function fetchAnalyticsData(startDate = null, endDate = null) {
         }
     }
 
-
     $.ajax({
         url: url,
         method: 'GET',
         success: function (response) {
             if (response.status === 200) {
                 const data = response.data;
-              
+
                 updateDashboard(data);
                 initializeCharts(data);
                 populateRestaurantPerformance(data);
@@ -60,6 +72,8 @@ function fetchAnalyticsData(startDate = null, endDate = null) {
         }
     });
 }
+
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
 function updateDashboard(data) {
     // Update values
@@ -76,15 +90,13 @@ function updateDashboard(data) {
 }
 
 function updateChange(selector, change) {
-   
+
     const isPositive = change >= 0;
     const formatted = `${isPositive ? '+' : '-'}${Math.abs(change).toFixed(1)}%`;
 
     $(selector).find('span').text(formatted);
     $(selector).removeClass('positive negative').addClass(isPositive ? 'positive' : 'negative');
 }
-
-
 
 function animateStats() {
     $(".stat-value").each(function () {
@@ -97,7 +109,7 @@ function animateStats() {
         } else if (finalValue.includes('/5')) {
             numericValue = Number.parseFloat(finalValue.split('/')[0]);
         } else {
-            return; 
+            return;
         }
 
         if (!isNaN(numericValue)) {
@@ -122,8 +134,6 @@ function animateStats() {
         }
     });
 }
-
-
 
 function initializeCharts(data) {
     // Revenue Chart
@@ -216,7 +226,6 @@ function initializeCharts(data) {
     }
 }
 
-
 function populateRestaurantPerformance(data) {
     const $performanceGrid = $('.performance-grid');
     $performanceGrid.empty();
@@ -252,7 +261,9 @@ function populateRestaurantPerformance(data) {
     animateStats();
 }
 
-// Helper function
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
+
+// Page-local notification helper (console-based)
 function showNotification(message, type) {
     console.log(`${type}: ${message}`);
     // Implement your notification logic here

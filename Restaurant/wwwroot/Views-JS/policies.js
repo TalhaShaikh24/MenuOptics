@@ -1,5 +1,18 @@
-﻿let allPolicies = {};
+﻿/* ============================================================================
+ * policies.js — Policy editor page (Views/Policies/Index.cshtml)
+ * CKEditor-based editing of Privacy / Terms / DataExport policies.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let allPolicies = {};
 let editorInstance = null;
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
     // Initialize CKEditor on page load
@@ -66,6 +79,8 @@ $(document).ready(function () {
     });
 });
 
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
+
 // Function to initialize CKEditor
 function initCKEditor() {
     CKEDITOR.replace('policyEditor', {
@@ -98,6 +113,8 @@ function initCKEditor() {
         });
     }
 }
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 // Function to load all policies
 function loadAllPolicies() {

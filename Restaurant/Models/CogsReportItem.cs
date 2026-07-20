@@ -12,7 +12,7 @@
         public int IngredientId { get; set; }
         public string IngredientName { get; set; }
         public string Unit { get; set; }
-        public string? UnitOfMeasure { get; set; }
+        public string Size { get; set; }
         public string VendorName { get; set; }
         public decimal OpeningCount { get; set; }
         public decimal OpeningValue { get; set; }

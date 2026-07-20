@@ -1,9 +1,7 @@
-﻿using Dapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MenuOptics.Data;
 using MenuOptics.Models;
-using System.Data;
+using MenuOptics.Services;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
@@ -13,39 +11,26 @@ namespace MenuOptics.Controllers.Api
     [Authorize(Roles = "Admin,Restaurant")]
     public class EventOnlyItemApiController : ControllerBase
     {
-        private readonly DapperContext _context;
+        private readonly IEventOnlyItemService _eventOnlyItemService;
 
-        public EventOnlyItemApiController(DapperContext context)
+        public EventOnlyItemApiController(IEventOnlyItemService eventOnlyItemService)
         {
-            _context = context;
+            _eventOnlyItemService = eventOnlyItemService;
         }
+
+        private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
         [HttpGet("GetAll")]
         public async Task<IActionResult> GetAll()
         {
-            using var connection = _context.CreateConnection();
-            var restaurantId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-            var items = await connection.QueryAsync<EventOnlyItemDTO>(
-                "sp_EventOnlyItemCRUD",
-                new { Action = "SELECT_ALL", RestaurantId = restaurantId },
-                commandType: CommandType.StoredProcedure
-            );
+            var items = await _eventOnlyItemService.GetAllAsync(CurrentUserId);
             return Ok(new { data = items });
         }
 
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] EventOnlyItemDTO model)
         {
-            using var connection = _context.CreateConnection();
-            var restaurantId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-            var newId = await connection.ExecuteScalarAsync<int>(
-                "sp_EventOnlyItemCRUD",
-                new { Action = "INSERT", RestaurantId = restaurantId, Name = model.Name, DefaultCost = model.DefaultCost },
-                commandType: CommandType.StoredProcedure
-            );
-
+            var newId = await _eventOnlyItemService.CreateAsync(model, CurrentUserId);
             return Ok(new { status = 200, data = new { EventOnlyItemId = newId, Name = model.Name, DefaultCost = model.DefaultCost } });
         }
     }

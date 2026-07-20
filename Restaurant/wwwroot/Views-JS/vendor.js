@@ -1,6 +1,20 @@
-﻿let allUsers = [];
+﻿/* ============================================================================
+ * vendor.js — Admin user management page (Views/User/AllUsers.cshtml)
+ * User table with stats, filters, add/edit modals and periodic auto-refresh.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let allUsers = [];
 let currentFilters = { role: 'all', status: 'all', search: '' };
 let table;
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
     // Initialize DataTable once on page load
@@ -40,6 +54,8 @@ $(document).ready(function () {
     setInterval(refreshUserTable, 30000);
 });
 
+/* ── Validation ───────────────────────────────────────────────────────── */
+
 // Validate user data
 function validateUserData(formData) {
     const firstName = formData.get('firstName');
@@ -51,6 +67,8 @@ function validateUserData(formData) {
     const password = formData.get('password');
     return firstName && lastName && username && email && phone && role && (formData.get('userId') || password);
 }
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 // Add user
 function addUser(formData) {
@@ -197,6 +215,8 @@ function refreshUserStats() {
     });
 }
 
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
+
 // Initialize DataTable
 function initDataTable() {
     table = $('#userTable').DataTable({
@@ -297,7 +317,8 @@ window.filterUsers = function (type, value) {
     filterAndRenderUsers();
 };
 
-// Utility functions
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
+
 function openModal(modalId) {
     $(`#${modalId}`).addClass('active');
 }

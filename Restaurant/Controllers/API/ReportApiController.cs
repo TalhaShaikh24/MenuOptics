@@ -1,8 +1,6 @@
-﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using MenuOptics.Data;
 using MenuOptics.Models;
-using System.Data;
+using MenuOptics.Services;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
@@ -11,65 +9,29 @@ namespace MenuOptics.Controllers.Api
     [ApiController]
     public class ReportApiController : ControllerBase
     {
-        private readonly DapperContext _context;
+        private readonly IReportService _reportService;
 
-        public ReportApiController(DapperContext context)
+        public ReportApiController(IReportService reportService)
         {
-            _context = context;
+            _reportService = reportService;
         }
+
+        private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
         [HttpPost("CogsReport")]
         public async Task<IActionResult> CogsReport([FromBody] CogsReportRequest model)
         {
-            var response = new Response();
-
             if (!ModelState.IsValid)
             {
-                response.Status = 400;
-                response.ResponseMsg = "Invalid input.";
-                return BadRequest(response);
-            }
-
-            try
-            {
-                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-                if (currentUserId == 0)
+                return BadRequest(new Response
                 {
-                    response.Status = 401;
-                    response.ResponseMsg = "Unauthorized";
-                    return Unauthorized(response);
-                }
-
-                using var connection = _context.CreateConnection();
-                connection.Open();
-
-                var parameters = new DynamicParameters();
-                parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@StartDate", model.StartDate);
-                parameters.Add("@EndDate", model.EndDate);
-
-                using var multi = await connection.QueryMultipleAsync("sp_InventorySuiteReport", parameters, commandType: CommandType.StoredProcedure);
-
-                var reportItems = (await multi.ReadAsync<CogsReportItem>()).ToList();
-                var totalCogsSummary = await multi.ReadFirstOrDefaultAsync<TotalCogsReportItem>();
-
-                response.Status = 200;
-                response.ResponseMsg = "Inventory report generated successfully.";
-                response.Data = new
-                {
-                    Items = reportItems,
-                    Summary = totalCogsSummary
-                };
-
-                return Ok(response);
+                    Status = 400,
+                    ResponseMsg = "Invalid input."
+                });
             }
-            catch (Exception ex)
-            {
-                response.Status = 500;
-                response.ResponseMsg = $"Server error: {ex.Message}";
-                return StatusCode(500, response);
-            }
+
+            var response = await _reportService.CogsReportAsync(model, CurrentUserId);
+            return StatusCode(response.Status, response);
         }
-
     }
 }

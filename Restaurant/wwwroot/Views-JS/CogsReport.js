@@ -1,5 +1,19 @@
-﻿let table;
+/* ============================================================================
+ * CogsReport.js — Inventory / COGS report page (Views/Ingredient/Index.cshtml)
+ * Date-filtered COGS table with editable closing counts and CSV/PDF export.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let table;
 let currentEndDate = null;
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+
 $(document).ready(function () {
     $('#dateRange').customRangeFilter({
         onApplyFilter: function (filterType, selectedDates) {
@@ -19,12 +33,139 @@ $(document).ready(function () {
         return;
     }
 
+    const today = new Date();
+    const last30Days = new Date();
+
+    last30Days.setDate(today.getDate() - 29);
+
+    startDate = DateFormatter.formatDashUS(last30Days);
+    endDate = DateFormatter.formatDashUS(today);
+
+    refreshCogsReportTable(startDate, endDate);
+
+
     // Initialize table with a message
     const tbody = $('.cogs-report-table tbody');
     tbody.empty();
-    tbody.append('<tr><td colspan="10" class="text-center">Please apply a date filter to view the Inventory report.</td></tr>');
+    tbody.append('<tr><td colspan="9" class="text-center">Please apply a date filter to view the Inventory report.</td></tr>');
 });
 
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
+
+function refreshCogsReportTable(startDate = null, endDate = null) {
+    if (!startDate || !endDate) {
+        console.warn('Start date or end date missing.');
+        showNotification('Please select a valid date range.', 'error');
+        return;
+    }
+
+    const requestData = {
+        startDate: startDate,
+        endDate: endDate
+    };
+
+    ajaxRequest({
+        url: '/api/ReportApi/CogsReport',
+        method: 'POST',
+        data: JSON.stringify(requestData),
+        contentType: 'application/json',
+        isQuery: false,
+        showMessage: false,
+        onSuccess: function (response) {
+            const items = response.data.items || [];
+
+            // If already initialized, destroy BEFORE touching the DOM
+            if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
+                table.destroy();
+            }
+
+            const tbody = $('.cogs-report-table tbody');
+            tbody.empty();
+
+            if (items.length === 0) {
+                tbody.append('<tr><td colspan="9" class="text-center">No data available for the selected date range.</td></tr>');
+                resetFooterValues();
+                initDataTable();
+                return;
+            }
+
+            items.forEach(item => {
+                const openingCount = Number(item.openingCount || 0);
+                const openingValue = Number(item.openingValue || 0);
+                const closingCount = Number(item.closingCount || 0);
+                const closingValue = Number(item.closingValue || 0);
+                const purchasesQuantity = Number(item.purchasesQuantity || 0);
+                const purchasesValue = Number(item.purchasesValue || 0);
+                const cogs = Number(item.cogs || 0);
+
+                const row = `
+        <tr>
+            <td>
+                <div class="ingredient-info"><p class="ingredient-name">${item.ingredientName}</p></div>
+            </td>
+            <td>
+              <span class="${item.unit != null ? 'category-badge-size' : ''}">
+                ${item.unit
+                                    ? `${Number.isInteger(parseFloat(item.size))
+                                        ? parseInt(item.size, 10)
+                                        : parseFloat(item.size)} ${item.unit}`
+                                    : ''}
+              </span>
+            </td>
+            <td>${item.vendorName || '(Me)'}</td>
+            <td data-order="${openingCount}">${openingCount.toFixed(2)}</td>
+            <td data-order="${openingValue}">$${openingValue.toFixed(2)}</td>
+            <td data-order="${closingCount}" class="editable-closing" data-ingredient-id="${item.ingredientId || ''}" >
+                ${closingCount.toFixed(2)}
+            </td>
+            <td data-order="${closingValue}">$${closingValue.toFixed(2)}</td>
+            <td data-order="${purchasesQuantity}">${purchasesQuantity.toFixed(2)}</td>
+            <td data-order="${purchasesValue}">$${purchasesValue.toFixed(2)}</td>
+            <td data-order="${cogs}">$${cogs.toFixed(2)}</td>
+        </tr>`;
+
+                tbody.append(row);
+            });
+
+            if (response.data && response.data.summary) {
+                updateFooterValues(response.data.summary);
+            } else {
+                resetFooterValues();
+            }
+
+            initDataTable();
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to fetch Inventory report:', error);
+            showNotification('Failed to fetch Inventory report.', 'error');
+            const tbody = $('.cogs-report-table tbody');
+            tbody.empty();
+            tbody.append('<tr><td colspan="9" class="text-center">Failed to load report. Please try again.</td></tr>');
+            resetFooterValues();
+            initDataTable();
+        }
+    });
+}
+
+function saveClosingCount(payload) {
+    ajaxRequest({
+        url: '/api/InventoryApi/UpdateClosingCount',
+        method: 'POST',
+        data: JSON.stringify(payload),
+        contentType: 'application/json',
+        showMessage: false,
+        onSuccess: function () {
+            showNotification('Closing count saved', 'success');
+            refreshCogsReportTable(startDate, currentEndDate);
+        },
+        onError: function (xhr) {
+            showNotification('Failed to save closing count', 'error');
+            console.error(xhr);
+        }
+    });
+}
+
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
 function initDataTable() {
     table = $('.cogs-report-table').DataTable({
@@ -33,8 +174,8 @@ function initDataTable() {
         ordering: true,
         order: [[1, 'asc']],
         columnDefs: [
-            { targets: [0, 3], orderable: false, searchable: false },
-            { targets: [2, 4, 5, 6, 7, 8, 9, 10], className: 'dt-body-left' }
+            { targets: [3, 4, 5, 6, 7, 8, 9], className: 'dt-body-left' },
+            { targets: [1], width: '80px' }
         ],
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
@@ -50,7 +191,7 @@ function initDataTable() {
                 className: 'btn btn-outline',
                 footer: true,
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10],
+                    columns: [0, 1, 2, 3, 4, 5, 7, 8, 9],
                     format: {
                         body: function (data, row, column, node) {
                             // Remove $ and extra spaces, keep negative sign
@@ -79,8 +220,7 @@ function initDataTable() {
                     // Add an empty row to separate the summary
                     data.body.push([]);
 
-
-                    const emptyCols = ['', '', '', '', '', '', '', '', ''];
+                    const emptyCols = ['', '', '', '', '', '', '', ''];
 
                     // Add summary rows
                     data.body.push(['Total Food Revenue', totalFoodRevenue, ...emptyCols]);
@@ -101,7 +241,7 @@ function initDataTable() {
                 title: 'Inventory Report',
                 footer: true,
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10],
+                    columns: [0, 1, 2, 3, 4, 5, 7, 8, 9],
                     format: {
                         body: function (data, row, column, node) {
                             if (column === 0) {
@@ -110,7 +250,7 @@ function initDataTable() {
                             return data;
                         },
                         footer: function (data, column, node) {
-                            if (column === 10) {
+                            if (column === 9) {
                                 return data;
                             }
                             return '';
@@ -194,96 +334,6 @@ function resetFooterValues() {
     $('#variance-value').text('$0.00');
 }
 
-
-function refreshCogsReportTable(startDate = null, endDate = null) {
-    if (!startDate || !endDate) {
-        console.warn('Start date or end date missing.');
-        showNotification('Please select a valid date range.', 'error');
-        return;
-    }
-
-    const requestData = {
-        startDate: startDate,
-        endDate: endDate
-    };
-
-    ajaxRequest({
-        url: '/api/ReportApi/CogsReport',
-        method: 'POST',
-        data: JSON.stringify(requestData),
-        contentType: 'application/json',
-        isQuery: false,
-        showMessage: false,
-        onSuccess: function (response) {
-            const items = response.data.items || [];
-
-            // If already initialized, destroy BEFORE touching the DOM
-            if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
-                table.destroy();
-            }
-
-            const tbody = $('.cogs-report-table tbody');
-            tbody.empty();
-
-            if (items.length === 0) {
-                tbody.append('<tr><td colspan="10" class="text-center">No data available for the selected date range.</td></tr>');
-                resetFooterValues();
-                initDataTable();
-                return;
-            }
-
-            items.forEach(item => {
-                const openingCount = Number(item.openingCount || 0);
-                const openingValue = Number(item.openingValue || 0);
-                const closingCount = Number(item.closingCount || 0);
-                const closingValue = Number(item.closingValue || 0);
-                const purchasesQuantity = Number(item.purchasesQuantity || 0);
-                const purchasesValue = Number(item.purchasesValue || 0);
-                const cogs = Number(item.cogs || 0);
-
-                const row = `
-        <tr>
-            <td>
-                <div class="ingredient-info"><p class="ingredient-name">${item.ingredientName || ''}</p></div>
-            </td>
-            <td>${item.unit || ''}</td>
-            <td>${item.unitOfMeasure || ''}</td>
-            <td>${item.vendorName || ''}</td>
-            <td data-order="${openingCount}">${convertUnit(openingCount, item.unit, item.unitOfMeasure || item.unit)}</td>
-            <td data-order="${openingValue}">$ ${openingValue.toFixed(2)}</td>
-            <td data-order="${closingCount}" class="editable-closing" data-ingredient-id="${item.ingredientId || ''}" >
-                ${convertUnit(closingCount, item.unit, item.unitOfMeasure || item.unit)}
-            </td>
-            <td data-order="${closingValue}">${closingValue.toFixed(2)}</td>
-            <td data-order="${purchasesQuantity}">${purchasesQuantity.toFixed(2)}</td>
-            <td data-order="${purchasesValue}">$ ${purchasesValue.toFixed(2)}</td>
-            <td data-order="${cogs}">$${cogs.toFixed(2)}</td>
-        </tr>`;
-
-                tbody.append(row);
-            });
-
-            if (response.data && response.data.summary) {
-                updateFooterValues(response.data.summary);
-            } else {
-                resetFooterValues();
-            }
-
-            initDataTable();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch Inventory report:', error);
-            showNotification('Failed to fetch Inventory report.', 'error');
-            const tbody = $('.cogs-report-table tbody');
-            tbody.empty();
-            tbody.append('<tr><td colspan="10" class="text-center">Failed to load report. Please try again.</td></tr>');
-            resetFooterValues();
-            initDataTable();
-        }
-    });
-}
-
-
 function makeClosingCountEditable() {
     $('.cogs-report-table tbody').off('click', 'td.editable-closing');
     $('.cogs-report-table tbody').on('click', 'td.editable-closing', function (e) {
@@ -312,23 +362,5 @@ function makeClosingCountEditable() {
 
         $input.on('blur', finish)
             .on('keydown', function (e) { if (e.which === 13) finish(); });
-    });
-}
-
-function saveClosingCount(payload) {
-    ajaxRequest({
-        url: '/api/InventoryApi/UpdateClosingCount',
-        method: 'POST',
-        data: JSON.stringify(payload),
-        contentType: 'application/json',
-        showMessage: false,
-        onSuccess: function () {
-            showNotification('Closing count saved', 'success');
-            refreshCogsReportTable(startDate, currentEndDate);
-        },
-        onError: function (xhr) {
-            showNotification('Failed to save closing count', 'error');
-            console.error(xhr);
-        }
     });
 }

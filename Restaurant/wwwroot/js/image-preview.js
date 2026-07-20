@@ -1,4 +1,10 @@
-﻿(function($) {
+﻿/* ============================================================================
+ * image-preview.js — Shared file-input image preview jQuery plugin.
+ * Exposes: $(input).imagePreview(options) — renders removable thumbnails
+ * next to the upload label.
+ * ==========================================================================*/
+
+(function($) {
     $.fn.imagePreview = function(options) {
         // Default settings
         var settings = $.extend({

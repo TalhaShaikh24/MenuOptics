@@ -1,4 +1,9 @@
-﻿const DateFormatter = {
+﻿/* ============================================================================
+ * dateFormatter.js — Shared date formatting utility used by every page.
+ * Exposes the global DateFormatter object. Do not change output formats.
+ * ==========================================================================*/
+
+const DateFormatter = {
     /**
      * Format date to 'YYYY-MM-DD' (ISO short)
      */

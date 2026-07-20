@@ -1,5 +1,20 @@
-﻿let allRestaurants = [];
+﻿/* ============================================================================
+ * restaurant.js — Admin restaurant management page (Views/Restaurant/Index.cshtml)
+ * Restaurant table with stats, filters and add/edit modals.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let allRestaurants = [];
 let currentFilters = { cuisine: 'all', status: 'all', search: '' };
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+
 $(document).ready(function () {
     
 
@@ -82,6 +97,8 @@ $(document).ready(function () {
     });
 });
 
+/* ── Validation ───────────────────────────────────────────────────────── */
+
 // Validate restaurant data
 function validateRestaurantData(formData) {
     const restaurantName = formData.get('restaurantName');
@@ -95,6 +112,8 @@ function validateRestaurantData(formData) {
     const password = formData.get('password');
     return restaurantName && cuisineType && restaurantSize && firstName && lastName && username && email && phone && (formData.get('userId') || password);
 }
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 // Add restaurant
 function addRestaurant(formData) {
@@ -251,6 +270,8 @@ function refreshRestaurantTable() {
     });
 }
 
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
+
 // Filter and render restaurants
 function filterAndRenderRestaurants() {
     const filteredRestaurants = allRestaurants.filter(restaurant => {
@@ -315,7 +336,8 @@ window.filterRestaurants = function (type, value) {
     $('.dropdown-menu').removeClass('active');
 };
 
-// Utility functions
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
+
 function openModal(modalId) {
     $(`#${modalId}`).addClass('active');
 }

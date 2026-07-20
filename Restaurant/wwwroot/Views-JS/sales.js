@@ -1,4 +1,16 @@
-﻿$(document).ready(function () {
+﻿/* ============================================================================
+ * sales.js — Point-of-sale page (Views/Sales/Index.cshtml)
+ * Menu grid, order cart, sale completion, sales history and Excel import.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+
+$(document).ready(function () {
     initializeSalesPage();
     loadMenuItems();
     refreshCategoryTabs(); // Add this to initialize dynamic category filters
@@ -72,12 +84,16 @@
     });
 });
 
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
 let currentOrder = [];
 let menuItems = [];
 
 function initializeSalesPage() {
     // Initialize any additional setup if needed
 }
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function loadMenuItems() {
     ajaxRequest({
@@ -112,6 +128,8 @@ function refreshCategoryTabs() {
         }
     });
 }
+
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
 function displayMenuItems(items) {
     const grid = $('#menuItemsGrid');
@@ -401,6 +419,8 @@ function loadSalesHistory() {
         }
     });
 }
+
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
 function showNotification(message, type = 'info') {
     const icons = {

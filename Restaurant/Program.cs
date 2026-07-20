@@ -23,9 +23,30 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+// Infrastructure services
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+
+// Business services (one per API controller)
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IEventOnlyItemService, EventOnlyItemService>();
+builder.Services.AddScoped<IIngredientService, IngredientService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IMenuService, MenuService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IMenuEngineeringInsightsService, MenuEngineeringInsightsService>();
+builder.Services.AddScoped<IPolicyService, PolicyService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IRecipeService, RecipeService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IRestaurantService, RestaurantService>();
+builder.Services.AddScoped<ISalesService, SalesService>();
+builder.Services.AddScoped<IStripeWebhookService, StripeWebhookService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IVendorService, VendorService>();
 
 
 // 1. Read JWT settings from configuration (appsettings.json) and create a key for token validation

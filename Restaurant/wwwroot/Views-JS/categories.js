@@ -1,4 +1,17 @@
-﻿let table;
+/* ============================================================================
+ * categories.js — Category management page (Views/Category/Index.cshtml)
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let table;
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
     // Initialize DataTable once on page load
@@ -44,6 +57,8 @@ $(document).ready(function () {
 
     refreshCategoriesTable();
 });
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 // Function to add a category
 function addCategory(categoryData) {
@@ -147,22 +162,6 @@ function editCategory(id) {
     getCategoryById(id);
 }
 
-// Function to initialize DataTable
-function initDataTable() {
-    table = $('.data-table').DataTable({
-        paging: true,
-        searching: true,
-        ordering: true,
-        order: [[0, 'asc']], // Sort by Name column by default
-        pageLength: 10, // Default rows per page
-        lengthMenu: [10, 25, 50, 100], // Pagination options
-        language: {
-            search: '', // Remove default search label
-            searchPlaceholder: 'Search categories...'
-        }
-    });
-}
-
 // Function to refresh the categories table
 function refreshCategoriesTable() {
     ajaxRequest({
@@ -174,43 +173,7 @@ function refreshCategoriesTable() {
             const categories = response.data;
             $('#totalCategories').text(categories.filter(c => c.isActive).length);
 
-            // Clear existing rows in DataTable
-            table.clear();
-
-            // Add new rows
-            categories.forEach(category => {
-                const createdDate = DateFormatter.formatWithComma(category.createdOn);
-                const actionText = category.isActive ? 'Inactive' : 'Reactivate';
-                const actionIcon = category.isActive ? 'fas fa-ban' : 'fas fa-check';
-                const row = `
-                    <tr>
-                        <td>
-                            <div class="category-info">
-                                <p class="category-name">${category.name}</p>
-                                <p class="category-meta">Added on: ${createdDate}</p>
-                            </div>
-                        </td>
-                        <td><i class="fas fa-calendar"></i> ${createdDate}</td>
-                        <td><span class="status-badge ${category.isActive ? 'good' : 'critical'}">${category.isActive ? 'Active' : 'Inactive'}</span></td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="dropdown-toggle">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a href="#" onclick="editCategory(${category.categoryId})"><i class="fas fa-edit"></i> Edit Details</a>
-                                    <a href="#" onclick="toggleCategoryActive(${category.categoryId})"><i class="${actionIcon}"></i> ${actionText}</a>
-                                    <a href="#" onclick="deleteCategory(${category.categoryId})"><i class="fas fa-trash"></i> Delete</a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                table.row.add($(row));
-            });
-
-            // Redraw the table
-            table.draw();
+            renderCategoriesTable(categories);
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch categories:', error);
@@ -232,15 +195,53 @@ function toggleActiveFilter() {
         onSuccess: function (response) {
             const categories = isActiveOnly ? response.data : response.data.filter(c => c.isActive);
 
-            // Clear existing rows in DataTable
-            table.clear();
+            renderCategoriesTable(categories);
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to fetch categories:', error);
+            showNotification('Failed to fetch categories.', 'error');
+        }
+    });
+}
 
-            // Add filtered rows
-            categories.forEach(category => {
-                const createdDate = DateFormatter.formatWithComma(category.createdOn);
-                const actionText = category.isActive ? 'Inactive' : 'Reactivate';
-                const actionIcon = category.isActive ? 'fas fa-ban' : 'fas fa-check';
-                const row = `
+/* ── 6. Helpers ───────────────────────────────────────────────────────── */
+
+// Function to initialize DataTable
+function initDataTable() {
+    table = $('.data-table').DataTable({
+        paging: true,
+        searching: true,
+        ordering: true,
+        order: [[0, 'asc']], // Sort by Name column by default
+        pageLength: 10, // Default rows per page
+        lengthMenu: [10, 25, 50, 100], // Pagination options
+        language: {
+            search: '', // Remove default search label
+            searchPlaceholder: 'Search categories...'
+        }
+    });
+}
+
+// Clears the table and renders the given categories (used by refresh + filter)
+function renderCategoriesTable(categories) {
+    // Clear existing rows in DataTable
+    table.clear();
+
+    // Add new rows
+    categories.forEach(category => {
+        table.row.add($(buildCategoryRow(category)));
+    });
+
+    // Redraw the table
+    table.draw();
+}
+
+// Builds a single category table row (same markup as before refactoring)
+function buildCategoryRow(category) {
+    const createdDate = DateFormatter.formatWithComma(category.createdOn);
+    const actionText = category.isActive ? 'Inactive' : 'Reactivate';
+    const actionIcon = category.isActive ? 'fas fa-ban' : 'fas fa-check';
+    return `
                     <tr>
                         <td>
                             <div class="category-info">
@@ -264,20 +265,10 @@ function toggleActiveFilter() {
                         </td>
                     </tr>
                 `;
-                table.row.add($(row));
-            });
-
-            // Redraw the table
-            table.draw();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch categories:', error);
-            showNotification('Failed to fetch categories.', 'error');
-        }
-    });
 }
 
-// Utility functions
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
+
 function openModal(modalId) {
     $(`#${modalId}`).addClass('active');
 }

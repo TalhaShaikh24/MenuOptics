@@ -1,8 +1,6 @@
-﻿using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using MenuOptics.Data;
 using MenuOptics.Models;
-using System.Data;
+using MenuOptics.Services;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
@@ -11,106 +9,34 @@ namespace MenuOptics.Controllers.Api
     [ApiController]
     public class PolicyApiController : ControllerBase
     {
-        private readonly DapperContext _context;
+        private readonly IPolicyService _policyService;
 
-        public PolicyApiController(DapperContext context)
+        public PolicyApiController(IPolicyService policyService)
         {
-            _context = context;
+            _policyService = policyService;
         }
 
-        // Add new endpoint to get ALL policies at once
+        private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
         [HttpGet("GetAllPolicies")]
         public async Task<IActionResult> GetAllPolicies()
         {
-            var response = new Response();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Action", "SELECT_ALL");
-
-                // Assuming sp_PolicyCRUD can handle SELECT_ALL action
-                var policies = await connection.QueryAsync<PolicyDTO>("sp_PolicyCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                response.Status = 200;
-                response.Data = policies ?? new List<PolicyDTO>();
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Status = 500;
-                response.ResponseMsg = $"Server error: {ex.Message}";
-                return StatusCode(500, response);
-            }
-            finally
-            {
-                connection.Close();
-            }
+            var response = await _policyService.GetAllPoliciesAsync();
+            return StatusCode(response.Status, response);
         }
 
         [HttpGet("GetPolicyByType")]
         public async Task<IActionResult> GetPolicyByType(string type)
         {
-            var response = new Response();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@PolicyType", type);
-                parameters.Add("@Action", "SELECT_BY_TYPE");
-
-                var policy = await connection.QuerySingleOrDefaultAsync<PolicyDTO>("sp_PolicyCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                response.Status = 200;
-                response.Data = policy ?? new PolicyDTO { PolicyType = type, Content = "" };
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Status = 500;
-                response.ResponseMsg = $"Server error: {ex.Message}";
-                return StatusCode(500, response);
-            }
-            finally
-            {
-                connection.Close();
-            }
+            var response = await _policyService.GetPolicyByTypeAsync(type);
+            return StatusCode(response.Status, response);
         }
 
         [HttpPost("SavePolicy")]
         public async Task<IActionResult> SavePolicy([FromBody] PolicyDTO model)
         {
-            var response = new Response();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-                var parameters = new DynamicParameters();
-                parameters.Add("@PolicyType", model.PolicyType);
-                parameters.Add("@Content", model.Content);
-                parameters.Add("@ModifiedBy", currentUserId);
-                parameters.Add("@Action", "UPSERT");
-
-                await connection.ExecuteAsync("sp_PolicyCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                response.Status = 200;
-                response.ResponseMsg = $"{model.PolicyType} saved successfully.";
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                response.Status = 500;
-                response.ResponseMsg = $"Server error: {ex.Message}";
-                return StatusCode(500, response);
-            }
-            finally
-            {
-                connection.Close();
-            }
+            var response = await _policyService.SavePolicyAsync(model, CurrentUserId);
+            return StatusCode(response.Status, response);
         }
     }
 }

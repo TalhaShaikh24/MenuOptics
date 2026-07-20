@@ -1,5 +1,5 @@
-﻿﻿@{
-ViewData["Title"] = "Recipes";
+﻿@{
+    ViewData["Title"] = "Recipes";
 }
 
 <div class="page-header">
@@ -8,6 +8,13 @@ ViewData["Title"] = "Recipes";
         <p>Build single and batch recipes with real-time ingredient cost tracking.</p>
     </div>
     <div class="header-actions">
+        <div class="form-check" style="margin-left: 20px;">
+            <input type="checkbox" class="form-check-input" id="employeeFacingRecipe">
+            <label class="form-check-label" for="employeeFacingRecipe">Employee Facing Export</label>
+        </div>
+        <button class="btn btn-outline-success" id="exportRecipesPdfBtn">
+            <i class="fas fa-file-pdf"></i> Export All PDF
+        </button>
         <button class="btn btn-primary" id="addRecipeBtn" onclick="openModal('addRecipeModal')">
             <i class="fas fa-plus"></i>
             Add Recipe
@@ -50,11 +57,10 @@ ViewData["Title"] = "Recipes";
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Direction</th>
                         <th>Unit</th>
                         <th>Price</th>
                         <th>Ingredients</th>
-                        <th>Created</th>
-
                         <th></th>
                     </tr>
                 </thead>
@@ -65,8 +71,6 @@ ViewData["Title"] = "Recipes";
 </div>
 
 <!-- ==================== MODALS (unchanged) ==================== -->
-
-
 <!-- Add Recipe Modal -->
 <div class="modal" id="addRecipeModal">
     <div class="modal-content large-modal">
@@ -81,6 +85,10 @@ ViewData["Title"] = "Recipes";
                         <label>Name <span style="color:red">*</span></label>
                         <input type="text" id="recipeName" name="name" required>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Direction <span style="color:red">*</span></label>
+                    <textarea id="recipeDescription" name="description" rows="3" required placeholder="Describe the recipe, ingredients, and preparation method"></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -121,10 +129,11 @@ ViewData["Title"] = "Recipes";
                     <select id="ingredientsSelect" name="ingredients[]" multiple="multiple" style="width:100%" required></select>
                     <div id="ingredientsDetails" class="ingredientsDetails"></div>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Price ($) <span style="color:red">*</span></label>
-                        <input type="number" step="1" id="recipePrice" name="price" >
+                        <input type="number" step="1" id="recipePrice" name="price">
                     </div>
                 </div>
             </form>
@@ -151,6 +160,10 @@ ViewData["Title"] = "Recipes";
                         <label>Name <span style="color:red">*</span></label>
                         <input type="text" id="editRecipeName" name="name" required>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Direction <span style="color:red">*</span></label>
+                    <textarea id="editRecipeDescription" name="description" rows="3" required placeholder="Describe the recipe, ingredients, and preparation method"></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -207,6 +220,22 @@ ViewData["Title"] = "Recipes";
 </div>
 
 
+<!-- Recipe Description Popup -->
+<div class="modal" id="recipeDescriptionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Recipe Direction</h3>
+            <button class="modal-close" onclick="closeModal('recipeDescriptionModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="recipeDescriptionPopupText" style="white-space: pre-wrap; word-break: break-word;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('recipeDescriptionModal')">Close</button>
+        </div>
+    </div>
+</div>
+
 @section scripts {
     <script src="~/views-js/recipes.js?v=@DateTime.Now.Ticks"></script>
-} 
+}

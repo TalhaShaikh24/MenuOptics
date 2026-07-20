@@ -1,4 +1,12 @@
-﻿// ============================================================================
+﻿/* ============================================================================
+ * unitConversions.js — Shared unit codes and conversion helpers.
+ * Exposes: NEW_UNIT_LABELS, ALLOWED_UNIT_OF_MEASURE_LABELS, convertUnit,
+ *          getAllowedUomForUnit, buildUomOptionsHtml, normalizeUnit.
+ * Load this BEFORE any page script that prices ingredients (recipes, menu,
+ * CogsReport). Do not change conversion factors.
+ * ==========================================================================*/
+
+// ============================================================================
 // NEW_UNIT_LABELS
 // ----------------------------------------------------------------------------
 // Full set of unit codes the system recognises. Used to populate the

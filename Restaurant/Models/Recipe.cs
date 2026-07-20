@@ -7,6 +7,7 @@
         public string Name { get; set; }
         public string Unit { get; set; }
         public double Price { get; set; }
+        public string? Description { get; set; }
         public List<RecipeIngredient> Ingredients { get; set; } = new();
         public DateTime CreatedOn { get; set; }
         public int CreatedBy { get; set; }

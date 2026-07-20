@@ -1,4 +1,16 @@
-﻿let menuItemsGlobal = [];
+﻿/* ============================================================================
+ * events.js — Event management page (Views/Event/Index.cshtml)
+ * Event table, item cost calculations, notes and customer/staff PDF export.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let menuItemsGlobal = [];
 let eventOnlyItemsGlobal = [];
 let allActiveItems = [];
 let activeMenuItems = [];
@@ -14,6 +26,8 @@ const profilePic = (() => {
 const restaurantAddress = localStorage.getItem("address");
 const restaurantName = localStorage.getItem("restaurantName");
 const restaurantPhone = localStorage.getItem("phone");
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
     loadEvents();
@@ -33,6 +47,8 @@ $(document).ready(function () {
         applyGlobalMode(this.value);
     });
 });
+
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
 async function getImageAsPngBase64(url) {
     return new Promise((resolve, reject) => {
@@ -79,6 +95,8 @@ function getAjaxPromise(options) {
 // ────────────────────────────────────────────────
 // DATA LOADING
 // ────────────────────────────────────────────────
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function loadMenuItems() {
     ajaxRequest({
@@ -199,6 +217,8 @@ function applyGlobalMode(mode) {
     renderRows();
 }
 
+
+/* ── PDF export ───────────────────────────────────────────────────────── */
 
 function exportSingleEventPDF(eventId) {
 
@@ -624,6 +644,8 @@ function exportEventsPDF(isCustomerFacing, exportableEvents) {
 // ────────────────────────────────────────────────
 // ITEM MANAGEMENT
 // ────────────────────────────────────────────────
+
+/* ── 6. Helpers — item list / cost calculations ───────────────────────── */
 
 function syncListFromSelect2(selector) {
     const selectedIds = $(selector).val() || [];

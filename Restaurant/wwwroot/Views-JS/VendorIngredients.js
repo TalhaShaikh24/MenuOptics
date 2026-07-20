@@ -1,4 +1,18 @@
+/* ============================================================================
+ * VendorIngredients.js — Vendor ingredients page (Views/Ingredient/VendorIngredients.cshtml)
+ * Server-side DataTable with CRUD modals and bulk actions.
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * Functions stay global: they are referenced by inline onclick handlers.
+ * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
 let table;
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
 
@@ -48,6 +62,8 @@ $(document).ready(function () {
 });
 
 // ─── Server-side DataTable ─────────────────────────────────────────────────────
+/* ── 6. Helpers — server-side DataTable ───────────────────────────────── */
+
 function initIngredientsTable() {
     if ($.fn.DataTable.isDataTable('.ingredients-table')) {
         $('.ingredients-table').DataTable().destroy();
@@ -176,6 +192,8 @@ function refreshIngredientsTable() {
 }
 
 // ─── CRUD Functions ────────────────────────────────────────────────────────────
+
+/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function addIngredientByUserId(ingredientData) {
     ajaxRequest({
@@ -337,6 +355,8 @@ function bulkToggleIngredients() {
 }
 
 // ─── Utility ───────────────────────────────────────────────────────────────────
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
+
 function openModal(modalId) {
     $(`#${modalId}`).addClass('active');
 }

@@ -1,4 +1,15 @@
-﻿$(document).ready(function () {
+﻿/* ============================================================================
+ * login.js — Multi-step login page (Views/User/Login.cshtml)
+ * Steps: email check → password (existing) / OTP + account setup (first-time)
+ *
+ * Project convention — every Views-JS file follows this section order:
+ *   1. Constants  2. State  3. Initialization  4. Event bindings
+ *   5. AJAX / CRUD  6. Helpers  7. Utilities
+ * ==========================================================================*/
+
+/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+
+$(document).ready(function () {
 
     updateCompleteSetupState();
 
