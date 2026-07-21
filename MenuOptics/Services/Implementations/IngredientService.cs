@@ -186,6 +186,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@Price", basePrice);
+                parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@VendorId", basePrice);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@ModifiedBy", currentUserId);
@@ -201,7 +202,7 @@ namespace MenuOptics.Services
                             {
                                 Price = model.PackSize != null && model.PackSize > 0
                                     ? Math.Abs(g.Last().Price) / model.PackSize.Value
-                                    : Math.Abs(g.Last().Price) / model.Weight!.Value,
+                                    : Math.Abs(g.Last().Price) / (model.Weight!.Value / ingredient.Size),
                                 IsActive = g.Last().IsActive
                             }
                         );

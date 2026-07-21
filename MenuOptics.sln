@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36203.30
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MenuOptics", "Restaurant\MenuOptics.csproj", "{42A84D18-D729-4948-9D94-D9B6A88BD664}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MenuOptics", "MenuOptics\MenuOptics.csproj", "{42A84D18-D729-4948-9D94-D9B6A88BD664}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
