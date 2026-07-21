@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using Stripe.Forwarding;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -30,7 +31,7 @@ namespace MenuOptics.Services
             var response = new Response();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
 
-            if (model.Size <= 0 || model.Size == null)
+            if (model.Size <= 0)
             {
                 response.Status = 400;
                 response.ResponseMsg = "Size should be greater than 0";
@@ -54,7 +55,6 @@ namespace MenuOptics.Services
                 connection.Open();
 
                 decimal basePrice = 0;
-                decimal restaurantPrice = 0;
 
                 // When PackSize given
                 if (model.PackSize != null && model.PackSize > 0)
@@ -64,7 +64,7 @@ namespace MenuOptics.Services
                 // When Weight given
                 else if (model.Weight != null && model.Weight > 0)
                 {
-                    basePrice = model.BasePrice / model.Weight.Value;
+                    basePrice = model.BasePrice / (model.Weight.Value / model.Size);
                 }
                 else
                 {
@@ -82,6 +82,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Price", basePrice);
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Size", model.Size);
+                parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@VendorProductId", model.VendorProductId);
                 parameters.Add("@CreatedBy", currentUserId);
 
@@ -160,6 +161,9 @@ namespace MenuOptics.Services
                 using var connection = _context.CreateConnection();
                 connection.Open();
 
+
+                Ingredient ingredient = (Ingredient)((Response)(await GetIngredientAsync(model.IngredientId)).Body).Data;
+
                 decimal basePrice = 0;
 
                 if (model.PackSize != null && model.PackSize > 0)
@@ -168,7 +172,7 @@ namespace MenuOptics.Services
                 }
                 else if (model.Weight != null && model.Weight > 0)
                 {
-                    basePrice = model.BasePrice / model.Weight.Value;
+                    basePrice = model.BasePrice / (model.Weight.Value / ingredient.Size);
                 }
                 else
                 {
@@ -301,6 +305,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToLower());
                 parameters.Add("@Size", model.Size);
+                parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Action", "INSERT");
 
@@ -362,11 +367,14 @@ namespace MenuOptics.Services
                 using var connection = _context.CreateConnection();
                 connection.Open();
 
+                Ingredient ingredient = (Ingredient)((Response)(await GetIngredientAsync(model.IngredientId)).Body).Data;
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@VendorId", null);
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@Stock", model.Stock);
+                parameters.Add("@Price", (model.Stock * ingredient.Price));
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Action", "INSERT");
 
@@ -801,6 +809,7 @@ namespace MenuOptics.Services
                     return (400, response);
                 }
 
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@UserId", currentUserId); // Assuming UserId can be updated or is part of the model
@@ -808,20 +817,14 @@ namespace MenuOptics.Services
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToLower());
                 parameters.Add("@Size", model.Size);
+                parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@ModifiedBy", currentUserId); // Set ModifiedBy to the current authenticated user
                 parameters.Add("@IsActive", 1); // Assuming IsActive can be updated
                 parameters.Add("@Action", "UPDATE");
 
-                int affectedRows = await connection.QueryFirstOrDefaultAsync<int>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                await connection.QueryFirstOrDefaultAsync<int>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
-                if (affectedRows <= 0)
-                {
-                    response.Status = 400;
-                    response.ResponseMsg = "No changes were made.";
-                    // Original controller returned NotFound(response) while Status stayed 400.
-                    return (404, response);
-                }
-
+               
                 response.Status = 200;
                 response.ResponseMsg = "Ingredient updated successfully.";
                 response.Data = new { IngredientId = model.IngredientId };

@@ -65,7 +65,7 @@
                         <th>Ingredient</th>
                         <th>Product Id</th>
                         <th>Size</th>
-                        <th>Price</th>
+                        <th>Price Per Item</th>
                         <th>Supplier</th>
                         <th>Status</th>
                         
@@ -127,12 +127,16 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Price <span style="color:red">*</span></label>
-                    <input id="ingredientPrice" type="number" name="price" placeholder="Enter Price" required>
+                    <label>Price Per Item <span style="color:red">*</span></label>
+                    <input id="ingredientPrice" type="number" name="price" placeholder="Enter Price Per Item" required>
                 </div>
                 <div class="form-group">
                     <label>Size <span style="color:red">*</span></label>
                     <input id="ingredientSize" type="number" name="size" placeholder="Enter Size" required>
+                </div>
+                <div class="form-group">
+                    <label>Pack Size</label>
+                    <input id="ingredientPackSize" type="number" name="packSize" placeholder="Enter Pack Size">
                 </div>
                 <div class="form-group">
                     <label>Stock</label>
@@ -197,12 +201,16 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Price <span style="color:red">*</span></label>
-                    <input id="editIngredientPrice" type="number" name="price" placeholder="Enter Price" required>
+                    <label>Price Per Item <span style="color:red">*</span></label>
+                    <input id="editIngredientPrice" type="number" name="price" placeholder="Enter Price Per Item" required>
                 </div>
                 <div class="form-group">
                     <label>Size <span style="color:red">*</span></label>
                     <input id="editIngredientSize" type="number" name="size" placeholder="Enter Size" required>
+                </div>
+                <div class="form-group">
+                    <label>Pack Size</label>
+                    <input id="editIngredientPackSize" type="number" name="packSize" placeholder="Enter Pack Size">
                 </div>
                 <div class="form-group editIngredientStock" style="display:none">
                     <label>Stock</label>

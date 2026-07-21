@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using Microsoft.Extensions.Primitives;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -15,6 +16,7 @@ namespace MenuOptics.Services
         {
             _context = context;
             _activityLog = activityLog;
+
         }
 
         public async Task<Response> InvoiceInventoryAsync(InvoiceInventoryRequest model, int currentUserId, string requestId)
@@ -54,18 +56,15 @@ namespace MenuOptics.Services
                     {
                         var parameters = new DynamicParameters();
 
-                        decimal price = 0;
                         decimal stock = 0;
 
                         if (item.Weight != null && item.Weight != 0)
                         {
-                            price = item.Price / item.Weight.Value;
                             stock = item.Weight.Value;
                         }
                         else if (item.Quantity != null && item.Quantity != 0
                             && item.PackSize != null && item.PackSize > 0)
                         {
-                            price = (item.Price / item.Quantity.Value) / item.PackSize.Value;
                             stock = item.Quantity.Value * item.PackSize.Value;
                         }
                         else
@@ -82,7 +81,7 @@ namespace MenuOptics.Services
                         parameters.Add("@VendorId", currentUserId);
                         parameters.Add("@IngredientId", item.IngredientId);
                         parameters.Add("@Stock", stock);
-                        parameters.Add("@Price", price);
+                        parameters.Add("@Price", item.Price);
                         parameters.Add("@InvoiceId", model.InvoiceId);
                         parameters.Add("@CreatedBy", currentUserId);
                         parameters.Add("@Action", "INSERT");

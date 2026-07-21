@@ -71,9 +71,11 @@ function initIngredientsTable() {
                 data: 'name',
                 render: function (name, type, row) {
                     const date = DateFormatter.formatWithComma(row.createdOn);
+                    
                     return `<div class="ingredient-info">
                                 <p class="ingredient-name">${name.trim().includes(' ') ? name.split(' ').slice(1).join(' ') : name}</p>
                                 <p class="ingredient-meta">Brand: ${name.split(' ')[0]}</p>
+                               ${row.packSize != null && row.packSize > 1 ? `<p class="ingredient-meta text-highlight">It comes with pack size "${row.packSize}"</p>` :''} 
                             </div>`;
                 }
             },
@@ -193,7 +195,8 @@ $(document).ready(function () {
             unit:          $('#ingredientUnit').val(),
             price:         parseFloat($('#ingredientPrice').val()) || 0,
             stock:         $('#ingredientStock').val() || 0,
-            size:          $('#ingredientSize').val() 
+            size:          $('#ingredientSize').val(), 
+            packSize:      Number($('#ingredientPackSize').val())
         };
         if (ingredientData.name && ingredientData.unit && ingredientData.size) {
             addIngredientByUserId(ingredientData);
@@ -210,6 +213,7 @@ $(document).ready(function () {
             unit:          $('#editIngredientUnit').val(),
             price:         parseFloat($('#editIngredientPrice').val()) || 0,
             size:         parseFloat($('#editIngredientSize').val()),
+            packSize:         Number($('#editIngredientPackSize').val()),
         };
         if (ingredientData.name && ingredientData.unit && ingredientData.size) {
             updateIngredient(ingredientData);
@@ -302,11 +306,12 @@ function addIngredientByUserId(ingredientData) {
         url: '/api/IngredientApi/CreateIngredient',
         method: 'POST',
         data: {
-            Name:          ingredientData.name,
-            Price:         ingredientData.price,
-            Unit:          ingredientData.unit,
+            Name:         ingredientData.name,
+            Price:        ingredientData.price,
+            Unit:         ingredientData.unit,
             Size:         ingredientData.size,
-            Stock:         ingredientData.stock
+            PackSize:     ingredientData.packSize,
+            Stock:        ingredientData.stock
         },
         onSuccess: function () {
             refreshIngredientsTable();
@@ -332,6 +337,7 @@ function getIngredientById(id) {
             $('#editIngredientUnit').val(ingredient.unit);
             $('#editIngredientPrice').val(ingredient.price);
             $('#editIngredientSize').val(ingredient.size);
+            $('#editIngredientPackSize').val(ingredient.packSize);
             
             if (ingredient.vendorId > 0) {
                 $('#editIngredientName').prop('disabled', true);
@@ -360,7 +366,8 @@ function updateIngredient(ingredientData) {
             Name:          ingredientData.name,
             Price:         ingredientData.price,
             Unit:          ingredientData.unit,
-            Size:          ingredientData.size
+            Size:          ingredientData.size,
+            PackSize:      ingredientData.packSize
         },
         onSuccess: function () {
             refreshIngredientsTable();

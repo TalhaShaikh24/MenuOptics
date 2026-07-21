@@ -11,7 +11,8 @@ namespace MenuOptics.Models
         public string Name { get; set; }
         public decimal Price { get; set; }
         public string Unit { get; set; } // e.g., kg, liters, units
-        public decimal? Size { get; set; } 
+        public decimal Size { get; set; } 
+        public int? PackSize { get; set; } 
         public DateTime CreatedOn { get; set; }
         public int CreatedBy { get; set; }
         public DateTime? ModifiedOn { get; set; }
@@ -36,11 +37,10 @@ namespace MenuOptics.Models
         public string Unit { get; set; }
 
         public decimal? Weight { get; set; }
-        public decimal? PackSize { get; set; }
+        public int? PackSize { get; set; }
         public decimal BasePrice { get; set; }
         public string? VendorProductId { get; set; } //Optional
-
-        public decimal? Size { get; set; }
+        public decimal Size { get; set; }
 
         public List<RestaurantPriceEntry>? RestaurantPrices { get; set; }
     }
@@ -66,8 +66,6 @@ namespace MenuOptics.Models
         public decimal? PackSize { get; set; }
         public decimal? Weight { get; set; }
         public decimal BasePrice { get; set; }
-       
-
         public List<RestaurantPriceEntry>? RestaurantPrices { get; set; }
     }
 

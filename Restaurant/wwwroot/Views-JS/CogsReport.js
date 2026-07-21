@@ -78,7 +78,7 @@ function refreshCogsReportTable(startDate = null, endDate = null) {
             if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
                 table.destroy();
             }
-
+            debugger
             const tbody = $('.cogs-report-table tbody');
             tbody.empty();
 
@@ -101,26 +101,32 @@ function refreshCogsReportTable(startDate = null, endDate = null) {
                 const row = `
         <tr>
             <td>
-                <div class="ingredient-info"><p class="ingredient-name">${item.ingredientName}</p></div>
+                <div class="ingredient-info" >
+                    <p class="ingredient-name">${item.ingredientName.trim().includes(' ') ? item.ingredientName.split(' ').slice(1).join(' ') : item.ingredientName}</p>
+                    <p class="ingredient-meta">Brand: ${item.ingredientName.split(' ')[0]}</p>
+                   ${item.packSize != null && item.packSize > 1 ? `<p class="ingredient-meta text-highlight">It comes with pack size "${item.packSize}"</p>` : ''} 
+                </div >
             </td>
             <td>
               <span class="${item.unit != null ? 'category-badge-size' : ''}">
-                ${item.unit
-                                    ? `${Number.isInteger(parseFloat(item.size))
-                                        ? parseInt(item.size, 10)
-                                        : parseFloat(item.size)} ${item.unit}`
-                                    : ''}
+                  ${item.unit
+                        ? `${Number.isInteger(parseFloat(item.size))
+                            ? parseInt(item.size, 10)
+                            : parseFloat(item.size)} ${item.unit}`
+                        : ''
+                    }
               </span>
             </td>
             <td>${item.vendorName || '(Me)'}</td>
             <td data-order="${openingCount}">${openingCount.toFixed(2)}</td>
             <td data-order="${openingValue}">$${openingValue.toFixed(2)}</td>
+            
+            <td data-order="${purchasesQuantity}">${purchasesQuantity.toFixed(2)}</td>
+            <td data-order="${purchasesValue}">$${purchasesValue.toFixed(2)}</td>
             <td data-order="${closingCount}" class="editable-closing" data-ingredient-id="${item.ingredientId || ''}" >
                 ${closingCount.toFixed(2)}
             </td>
             <td data-order="${closingValue}">$${closingValue.toFixed(2)}</td>
-            <td data-order="${purchasesQuantity}">${purchasesQuantity.toFixed(2)}</td>
-            <td data-order="${purchasesValue}">$${purchasesValue.toFixed(2)}</td>
             <td data-order="${cogs}">$${cogs.toFixed(2)}</td>
         </tr>`;
 
@@ -167,6 +173,14 @@ function saveClosingCount(payload) {
 
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
+// Strips HTML tags from a cell's raw markup and collapses whitespace/newlines
+// so exported CSV rows don't break and PDF cells don't show raw tags.
+function cleanExportCell(data) {
+    if (data == null) return '';
+    const text = $('<div>').html(data).text();
+    return text.replace(/\s+/g, ' ').trim();
+}
+
 function initDataTable() {
     table = $('.cogs-report-table').DataTable({
         paging: true,
@@ -174,11 +188,15 @@ function initDataTable() {
         ordering: true,
         order: [[1, 'asc']],
         columnDefs: [
-            { targets: [3, 4, 5, 6, 7, 8, 9], className: 'dt-body-left' },
-            { targets: [1], width: '80px' }
+            { targets: [3, 4, 5, 6, 7, 8, 9], className: 'dt-body-left' }
         ],
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
+        autoWidth: false, // Disable automatic column width calculation
+        columnDefs: [
+            { width: "150px", targets: 0 },   // First column
+            { width: "80px", targets: 1 },   // First column
+        ],
         language: {
             search: '',
             searchPlaceholder: 'Search ingredients...'
@@ -191,15 +209,15 @@ function initDataTable() {
                 className: 'btn btn-outline',
                 footer: true,
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 7, 8, 9],
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                     format: {
                         body: function (data, row, column, node) {
                             // Remove $ and extra spaces, keep negative sign
                             if (column === 0) {
-                                return $(data).find('.ingredient-name').text() || data;
+                                return $(data).find('.ingredient-name').text().trim() || cleanExportCell(data);
                             }
-                            // For numeric columns, clean up but preserve negative values
-                            let cleanData = data.replace(/\$/g, '').trim();
+                            // Strip any HTML (e.g. the Size/UOM span) before cleaning numeric formatting
+                            let cleanData = cleanExportCell(data).replace(/\$/g, '').trim();
                             return cleanData;
                         }
                     }
@@ -241,13 +259,13 @@ function initDataTable() {
                 title: 'Inventory Report',
                 footer: true,
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 7, 8, 9],
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                     format: {
                         body: function (data, row, column, node) {
                             if (column === 0) {
-                                return $(data).find('.ingredient-name').text() || data;
+                                return $(data).find('.ingredient-name').text().trim() || cleanExportCell(data);
                             }
-                            return data;
+                            return cleanExportCell(data);
                         },
                         footer: function (data, column, node) {
                             if (column === 9) {

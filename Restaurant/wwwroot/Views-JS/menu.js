@@ -980,8 +980,8 @@ function refreshMenuGrid() {
                             </div>
                             <div class="item-details">
                                 <div class="pricing">
-                                    <span class="price">${item.sellingPrice.toFixed(2)}</span>
-                                    <span class="cost">Cost: ${item.cost.toFixed(2)}</span>
+                                    <span class="price">$${item.sellingPrice.toFixed(2)}</span>
+                                    <span class="cost">Cost: $${item.cost.toFixed(2)}</span>
                                 </div>
                             </div>
                             <div class="item-stats">
