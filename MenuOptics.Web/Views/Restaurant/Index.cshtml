@@ -1,0 +1,384 @@
+﻿@{
+    ViewData["Title"] = "Restaurants";
+}
+
+<main class="main-content">
+    <div class="page-header">
+        <div class="header-text">
+            <h1>Restaurant Management</h1>
+            <p>Manage Restaurant users for the system.</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="openModal('addRestaurantModal')">
+                <i class="fas fa-plus"></i> Add Restaurant
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Total Restaurants</p>
+                    <p class="stat-value" id="totalRestaurants">0</p>
+                    <p class="stat-change-text">All registered restaurants</p>
+                </div>
+                <div class="stat-icon users">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Active Restaurants</p>
+                    <p class="stat-value" id="activeToday">0</p>
+                    <p class="stat-change-text">Currently active</p>
+                </div>
+                <div class="stat-icon active">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Inactive Restaurants</p>
+                    <p class="stat-value" id="inactiveRestaurants">0</p>
+                    <p class="stat-change-text">Currently inactive</p>
+                </div>
+                <div class="stat-icon inactive">
+                    <i class="fas fa-user-times"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">New This Week</p>
+                    <p class="stat-value" id="newThisWeek">0</p>
+                    <p class="stat-change-text">Joined in last 7 days</p>
+                </div>
+                <div class="stat-icon new">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <div class="search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search restaurants..." class="filter-search" id="restaurantSearch">
+        </div>
+        <div class="filter-dropdown">
+            <button class="btn btn-outline">
+                <i class="fas fa-filter"></i>
+                Cuisine: <span id="cuisineFilterLabel">All</span>
+            </button>
+            <div class="dropdown-menu" id="cuisineDropdown">
+                <a href="#" data-cuisine="all" onclick="filterRestaurants('cuisine', 'all')">All</a>
+                <a href="#" data-cuisine="Italian" onclick="filterRestaurants('cuisine', 'Italian')">Italian</a>
+                <a href="#" data-cuisine="Chinese" onclick="filterRestaurants('cuisine', 'Chinese')">Chinese</a>
+                <a href="#" data-cuisine="Mexican" onclick="filterRestaurants('cuisine', 'Mexican')">Mexican</a>
+                <a href="#" data-cuisine="Indian" onclick="filterRestaurants('cuisine', 'Indian')">Indian</a>
+                <a href="#" data-cuisine="American" onclick="filterRestaurants('cuisine', 'American')">American</a>
+            </div>
+        </div>
+        <div class="filter-dropdown">
+            <button class="btn btn-outline">
+                <i class="fas fa-chart-line"></i>
+                Status: <span id="statusFilterLabel">All</span>
+            </button>
+            <div class="dropdown-menu">
+                <a href="#" data-status="all" onclick="filterRestaurants('status', 'all')">All</a>
+                <a href="#" data-status="active" onclick="filterRestaurants('status', 'active')">Active</a>
+                <a href="#" data-status="inactive" onclick="filterRestaurants('status', 'inactive')">Inactive</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-utensils"></i> Restaurant Directory</h3>
+        </div>
+        <div class="card-content">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Restaurant</th>
+                            <th>Cuisine Type</th>
+                            <th>Size</th>
+                            <th>Status</th>
+                            <th>Join Date</th>
+                            <th>Last Modified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="restaurantTableBody">
+                        <!-- Restaurants will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Restaurant Modal -->
+    <div class="modal" id="addRestaurantModal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Add New Restaurant</h3>
+                <button class="modal-close" onclick="closeModal('addRestaurantModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addRestaurantForm" enctype="multipart/form-data">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Restaurant Name <span style="color:red">*</span></label>
+                            <input type="text" name="restaurantName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cuisine Type <span style="color:red">*</span></label>
+                            <select name="cuisineType" required>
+                                <option value="">Select Cuisine</option>
+                                <option value="Italian">Italian</option>
+                                <option value="Chinese">Chinese</option>
+                                <option value="Mexican">Mexican</option>
+                                <option value="Indian">Indian</option>
+                                <option value="American">American</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Restaurant Size <span style="color:red">*</span></label>
+                            <select name="restaurantSize" required>
+                                <option value="">Select Size</option>
+                                <option value="Small">Small</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Large">Large</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <div class="file-upload">
+                                <img id="addProfilePicPreview" src="https://via.placeholder.com/150" alt="Profile Picture Preview" style="max-width:150px; max-height:150px; margin-bottom:10px; display:none;">
+                                <label for="addProfilePicFile" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Choose profile picture</span>
+                                </label>
+                                <input type="file" id="addProfilePicFile" accept="image/*" name="file">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name <span style="color:red">*</span></label>
+                            <input type="text" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name <span style="color:red">*</span></label>
+                            <input type="text" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username <span style="color:red">*</span></label>
+                            <input type="text" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span style="color:red">*</span></label>
+                            <input type="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone <span style="color:red">*</span></label>
+                            <input type="text" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password <span style="color:red">*</span></label>
+                            <input type="password" name="password" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input type="text" name="address">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Country</label>
+                            <input type="text" name="country">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <input type="text" name="state">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="city">
+                        </div>
+                        <div class="form-group">
+                            <label>Zip</label>
+                            <input type="text" name="zip">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="role" value="Restaurant">
+                    <div class="form-group">
+                        <label>Active</label>
+                        <input type="checkbox" name="isActive" checked>
+                        <label for="isActive">Active</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('addRestaurantModal')">Cancel</button>
+                <button class="btn btn-primary" id="saveRestaurantBtn">Save Restaurant</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Restaurant Modal -->
+    <div class="modal" id="editRestaurantModal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Edit Restaurant</h3>
+                <button class="modal-close" onclick="closeModal('editRestaurantModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editRestaurantForm" enctype="multipart/form-data">
+                    <input type="hidden" name="userId">
+                    <input type="hidden" name="profilePic">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Restaurant Name <span style="color:red">*</span></label>
+                            <input type="text" name="restaurantName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cuisine Type <span style="color:red">*</span></label>
+                            <select name="cuisineType" required>
+                                <option value="">Select Cuisine</option>
+                                <option value="Italian">Italian</option>
+                                <option value="Chinese">Chinese</option>
+                                <option value="Mexican">Mexican</option>
+                                <option value="Indian">Indian</option>
+                                <option value="American">American</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Restaurant Size <span style="color:red">*</span></label>
+                            <select name="restaurantSize" required>
+                                <option value="">Select Size</option>
+                                <option value="Small">Small</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Large">Large</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <div class="file-upload">
+                                <img id="editProfilePicPreview" src="https://via.placeholder.com/150" alt="Profile Picture Preview" style="max-width:150px; max-height:150px; margin-bottom:10px; display:none;">
+                                <label for="editProfilePicFile" class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span id="editProfilePicLabel">Choose new profile picture</span>
+                                </label>
+                                <input type="file" id="editProfilePicFile" accept="image/*" name="file">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name <span style="color:red">*</span></label>
+                            <input type="text" name="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name <span style="color:red">*</span></label>
+                            <input type="text" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username <span style="color:red">*</span></label>
+                            <input type="text" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email <span style="color:red">*</span></label>
+                            <input type="email" name="email" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phone <span style="color:red">*</span></label>
+                            <input type="text" name="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input type="text" name="address">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Country</label>
+                            <input type="text" name="country">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <input type="text" name="state">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" name="city">
+                        </div>
+                        <div class="form-group">
+                            <label>Zip</label>
+                            <input type="text" name="zip">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="role" value="Restaurant">
+                    <div class="form-group">
+                        <label>Active</label>
+                        <input type="checkbox" name="isActive">
+                        <label for="isActive">Active</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('editRestaurantModal')">Cancel</button>
+                <button class="btn btn-primary" id="updateRestaurantBtn">Update Restaurant</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="~/views-js/restaurant.js"></script>

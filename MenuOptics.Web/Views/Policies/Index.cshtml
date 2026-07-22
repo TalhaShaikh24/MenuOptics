@@ -1,0 +1,118 @@
+﻿@{
+    ViewData["Title"] = "Policy Management";
+}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+<div class="page-header">
+    <div class="header-text">
+        <h1>Policy Management</h1>
+        <p>Manage legal documents, privacy policies, and terms of service.</p>
+    </div>
+    <div class="header-actions">
+        <button class="btn btn-primary" id="savePolicyBtn">
+            <i class="fas fa-save"></i>
+            Save Changes
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="tabs-container">
+            <button class="tab-btn active" data-type="Privacy">
+                <i class="fas fa-user-shield"></i> Privacy Policy
+            </button>
+            <button class="tab-btn" data-type="Terms">
+                <i class="fas fa-file-contract"></i> Terms & Conditions
+            </button>
+            <button class="tab-btn" data-type="DataExport">
+                <i class="fas fa-file-export"></i> Data Export Policy
+            </button>
+        </div>
+    </div>
+
+    <div class="card-content" style="padding: 20px;">
+        <input type="hidden" id="currentPolicyType" value="Privacy" />
+
+        <div class="editor-container">
+            <textarea id="policyEditor"></textarea>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cke_notification_warning{
+        display:none!important;
+    }
+
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        background: white;
+    }
+
+    .card-header {
+        background-color: #f8fafc;
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .tabs-container {
+        display: flex;
+        gap: 10px;
+    }
+
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: 500;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        border-radius: 4px;
+    }
+
+        .tab-btn:hover {
+            color: #333;
+            background-color: #f0f0f0;
+        }
+
+        .tab-btn.active {
+            color: #f08d11;
+            border-bottom: 3px solid #f08d11;
+            font-weight: 600;
+            background-color: #f0f8ff;
+        }
+
+        .tab-btn i {
+            margin-right: 8px;
+        }
+
+    .card-content {
+        min-height: 500px;
+    }
+
+    .editor-container {
+        height: 100%;
+        margin-top: 10px;
+    }
+
+    /* CKEditor custom styling */
+    .cke_chrome {
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+    }
+</style>
+
+@section scripts {
+    <!-- CKEditor 4 - No CORS issues, very stable -->
+    <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+    <!-- Your custom scripts -->
+    <script src="~/views-js/policies.js?v=@DateTime.Now.Ticks"></script>
+}

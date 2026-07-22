@@ -1,0 +1,28 @@
+using System;
+
+namespace MenuOptics.Models
+{
+    public class Ingredient
+    {
+        public int IngredientId { get; set; }
+        public int UserId { get; set; }
+        public int VendorId { get; set; }
+        public string? VendorProductId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string Unit { get; set; } = string.Empty; // e.g., kg, liters, units
+        public decimal Size { get; set; } 
+        public int? PackSize { get; set; } 
+        public DateTime CreatedOn { get; set; }
+        public int CreatedBy { get; set; }
+        public DateTime? ModifiedOn { get; set; }
+        public int? ModifiedBy { get; set; }
+        public bool IsActive { get; set; } = true;
+        public string? FullName { get; set; }
+        public decimal? Stock { get; set; }
+        public int TotalCount { get; set; }
+
+        public Ingredient? VendorIngredient { get; set; }
+        public User? Restaurant { get; set; }
+    }
+}

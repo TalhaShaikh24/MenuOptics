@@ -1,0 +1,103 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Menu Optics</title>
+    <script type="importmap"></script>
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+    <link rel="stylesheet" href="~/css/styles.css?v=@DateTime.Now.Ticks">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+</head>
+<body>
+    <style>
+        img.sidebar-logo.expanded {
+            width: 200px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            margin-bottom: 20px;
+        }
+       
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin-top: 32px;
+            margin-bottom: 16px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #374151;
+            margin-bottom: 16px;
+        }
+
+        ul {
+            list-style-type: disc;
+            padding-left: 24px;
+            margin-bottom: 24px;
+        }
+
+        ol {
+            list-style-type: decimal;
+            padding-left: 24px;
+            margin-bottom: 24px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+
+        .effective-date {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        .contact-section {
+            margin-top: 48px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 24px;
+        }
+        /* Reuse some CSS classes for consistency */
+        .card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    <div class="static-page-container">
+        <!-- Main Content -->
+        <main class="main-content">
+            <a href="/Menu/Index" target="_self">
+                <img class="sidebar-logo expanded" src="~/images/menu optics_logo.png" />
+            </a>
+            
+            @RenderBody()
+        </main>
+
+    </div>
+
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+   
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

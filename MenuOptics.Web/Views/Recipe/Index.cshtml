@@ -1,0 +1,241 @@
+﻿@{
+    ViewData["Title"] = "Recipes";
+}
+
+<div class="page-header">
+    <div class="header-text">
+        <h1>Recipe Management</h1>
+        <p>Build single and batch recipes with real-time ingredient cost tracking.</p>
+    </div>
+    <div class="header-actions">
+        <div class="form-check" style="margin-left: 20px;">
+            <input type="checkbox" class="form-check-input" id="employeeFacingRecipe">
+            <label class="form-check-label" for="employeeFacingRecipe">Employee Facing Export</label>
+        </div>
+        <button class="btn btn-outline-success" id="exportRecipesPdfBtn">
+            <i class="fas fa-file-pdf"></i> Export All PDF
+        </button>
+        <button class="btn btn-primary" id="addRecipeBtn" onclick="openModal('addRecipeModal')">
+            <i class="fas fa-plus"></i>
+            Add Recipe
+        </button>
+    </div>
+</div>
+
+<!-- Stats Card -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Total Recipes</p>
+                <p class="stat-value" id="totalRecipes">0</p>
+                <p class="stat-change-text">Active recipes</p>
+            </div>
+            <div class="stat-icon recipes">
+                <i class="fas fa-utensils"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search recipes..." class="filter-search" id="recipeSearch">
+    </div>
+</div>
+
+<!-- Recipes Table -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-utensils"></i> Recipes Overview</h3>
+    </div>
+    <div class="card-content">
+        <div class="table-container">
+            <table class="data-table" id="recipesTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Direction</th>
+                        <th>Unit</th>
+                        <th>Price</th>
+                        <th>Ingredients</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MODALS (unchanged) ==================== -->
+<!-- Add Recipe Modal -->
+<div class="modal" id="addRecipeModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3>Add New Recipe</h3>
+            <button class="modal-close" onclick="closeModal('addRecipeModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="addRecipeForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name <span style="color:red">*</span></label>
+                        <input type="text" id="recipeName" name="name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Direction <span style="color:red">*</span></label>
+                    <textarea id="recipeDescription" name="description" rows="3" required placeholder="Describe the recipe, ingredients, and preparation method"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unit <span style="color:red">*</span></label>
+                        <select id="recipeUnit" name="unit" required>
+                            <option value="" disabled selected>Select unit</option>
+                            <option value="ba">BA - Bag</option>
+                            <option value="bg">BG - Bag (alt)</option>
+                            <option value="bx">BX - Box</option>
+                            <option value="ca">CA - Case</option>
+                            <option value="cm">CM - Centimeter</option>
+                            <option value="ct">CT - Carton</option>
+                            <option value="dz">DZ - Dozen</option>
+                            <option value="ea">EA - Each</option>
+                            <option value="fl">FL - Fluid Ounce</option>
+                            <option value="ft">FT - Foot</option>
+                            <option value="ga">GA - Gallon</option>
+                            <option value="gm">GM - Gram</option>
+                            <option value="hr">HR - Hour</option>
+                            <option value="in">IN - Inch</option>
+                            <option value="kg">KG - Kilogram</option>
+                            <option value="lb">LB - Pound</option>
+                            <option value="lt">LT - Liter</option>
+                            <option value="ml">ML - Milliliter</option>
+                            <option value="mr">MR - Meter</option>
+                            <option value="oz">OZ - Ounce</option>
+                            <option value="pa">PA - Pail</option>
+                            <option value="pc">PC - Piece</option>
+                            <option value="pr">PR - Pair</option>
+                            <option value="pt">PT - Pint</option>
+                            <option value="rl">RL - Roll</option>
+                            <option value="tb">TB - Tube</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ingredients <span style="color:red">*</span></label>
+                    <select id="ingredientsSelect" name="ingredients[]" multiple="multiple" style="width:100%" required></select>
+                    <div id="ingredientsDetails" class="ingredientsDetails"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price ($) <span style="color:red">*</span></label>
+                        <input type="number" step="1" id="recipePrice" name="price">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('addRecipeModal')">Cancel</button>
+            <button class="btn btn-primary" id="saveRecipeBtn">Save Recipe</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Recipe Modal -->
+<div class="modal" id="editRecipeModal">
+    <div class="modal-content large-modal">
+        <div class="modal-header">
+            <h3>Edit Recipe</h3>
+            <button class="modal-close" onclick="closeModal('editRecipeModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="editRecipeForm">
+                <input type="hidden" id="editRecipeId" name="recipeId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Name <span style="color:red">*</span></label>
+                        <input type="text" id="editRecipeName" name="name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Direction <span style="color:red">*</span></label>
+                    <textarea id="editRecipeDescription" name="description" rows="3" required placeholder="Describe the recipe, ingredients, and preparation method"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Unit <span style="color:red">*</span></label>
+                        <select id="editRecipeUnit" name="unit" required>
+                            <option value="" disabled>Select unit</option>
+                            <option value="ba">BA - Bag</option>
+                            <option value="bg">BG - Bag (alt)</option>
+                            <option value="bx">BX - Box</option>
+                            <option value="ca">CA - Case</option>
+                            <option value="cm">CM - Centimeter</option>
+                            <option value="ct">CT - Carton</option>
+                            <option value="dz">DZ - Dozen</option>
+                            <option value="ea">EA - Each</option>
+                            <option value="fl">FL - Fluid Ounce</option>
+                            <option value="ft">FT - Foot</option>
+                            <option value="ga">GA - Gallon</option>
+                            <option value="gm">GM - Gram</option>
+                            <option value="hr">HR - Hour</option>
+                            <option value="in">IN - Inch</option>
+                            <option value="kg">KG - Kilogram</option>
+                            <option value="lb">LB - Pound</option>
+                            <option value="lt">LT - Liter</option>
+                            <option value="ml">ML - Milliliter</option>
+                            <option value="mr">MR - Meter</option>
+                            <option value="oz">OZ - Ounce</option>
+                            <option value="pa">PA - Pail</option>
+                            <option value="pc">PC - Piece</option>
+                            <option value="pr">PR - Pair</option>
+                            <option value="pt">PT - Pint</option>
+                            <option value="rl">RL - Roll</option>
+                            <option value="tb">TB - Tube</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ingredients <span style="color:red">*</span></label>
+                    <select id="editIngredientsSelect" name="ingredients[]" multiple="multiple" style="width:100%" required></select>
+                    <div id="editIngredientsDetails" class="ingredientsDetails"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price ($) <span style="color:red">*</span></label>
+                        <input type="number" step="1" id="editRecipePrice" name="price">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('editRecipeModal')">Cancel</button>
+            <button class="btn btn-primary" id="updateRecipeBtn">Update Recipe</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Recipe Description Popup -->
+<div class="modal" id="recipeDescriptionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Recipe Direction</h3>
+            <button class="modal-close" onclick="closeModal('recipeDescriptionModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="recipeDescriptionPopupText" style="white-space: pre-wrap; word-break: break-word;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('recipeDescriptionModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/views-js/recipes.js?v=@DateTime.Now.Ticks"></script>
+}

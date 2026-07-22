@@ -1,0 +1,16 @@
+﻿<h2>Logout</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<p>You have been logged out. You will be redirected to the login page shortly.</p>
+
+@section Scripts {
+    <script>
+        setTimeout(function () {
+            window.location.href = '/User/Login';
+        }, 2000);
+    </script>
+}

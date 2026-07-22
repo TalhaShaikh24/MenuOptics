@@ -1,0 +1,78 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Menu Optics</title>
+    <script type="importmap"></script>
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+    <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="~/css/styles.css?v=@DateTime.Now.Ticks">
+    <link rel="stylesheet" href="~/css/image-preview.css?v=@DateTime.Now.Ticks">
+    <link rel="stylesheet" href="~/css/auth.css?v=@DateTime.Now.Ticks" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="auth-body">
+
+
+        <!-- Left Side - Branding -->
+        <div class="auth-container">
+
+            @RenderBody()
+        </div>
+
+
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include this before your custom script -->
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            var token = Cookies.get('JwtToken');
+
+            if (token && token.trim() !== '') {
+                $.ajaxSetup({
+                    headers: {
+                        Authorization: 'Bearer ' + token
+                    },
+                    xhrFields: {
+                        withCredentials: true
+                    }
+                });
+            } else {
+                $.ajaxSetup({
+                    xhrFields: {
+                        withCredentials: true
+                    }
+                });
+            }
+
+        
+        });
+
+             // Password toggle function
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+
+
+    <script src="~/js/script.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/image-preview.js?v=@DateTime.Now.Ticks"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

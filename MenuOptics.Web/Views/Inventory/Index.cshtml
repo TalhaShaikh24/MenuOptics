@@ -1,0 +1,128 @@
+﻿@{
+    ViewData["Title"] = "COGS Report";
+}
+
+<link href="~/css/customrangefilter.css" rel="stylesheet" />
+
+<style>
+    .btn {
+        padding: 10px 16px !important;
+        border-radius: 8px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        text-decoration: none !important;
+        border: none !important;
+    }
+
+    .btn-primary {
+        background: #f08d11 !important;
+        color: white !important;
+        border: 1px solid #f08d11 !important;
+    }
+
+    .btn-outline {
+        background: transparent !important;
+        color: #374151 !important;
+        border: 1px solid #d1d5db !important;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+<div class="page-header">
+    <div class="header-text">
+        <h1>Inventory Reporting Suite</h1>
+        <p>Analyze inventory Costs of Good Sold utilizing downloaded supplier purchases and credits.</p>
+    </div>
+    <div class="header-actions" id="exportButtons">
+    </div>
+</div>
+
+
+<div class="filters">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search ingredients..." class="filter-search" id="ingredientSearch">
+    </div>
+    <button class="btn btn-outline" id="clear-filter"><i class="fas fa-times"></i> Clear Filters</button>
+    <div id="dateRange" style="margin-left:auto"></div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-chart-line"></i> Inventory Cost Overview</h3>
+    </div>
+    <div class="card-content">
+        <div class="table-container">
+            <table class="data-table cogs-report-table">
+                <thead>
+                    <tr>
+
+                        <th>Ingredient</th>
+                        <th>Size</th>
+                        <th>Supplier</th>
+                        <th>Opening Count</th>
+                        <th>Opening Value</th>
+                        <th>Purchases Quantity</th>
+                        <th>Purchases Value</th>
+                        <th>Closing Count</th>
+                        <th>Closing Value</th>
+                        <th>COGS</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr><td colspan="9" class="text-center">Please apply a date filter to view the COGS report.</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="9" class="text-right"><strong>Total COGS:</strong></td>
+
+                        <td id="total-cogs-value"><strong>$0.00</strong></td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="text-right"><strong>Total Food Revenue:</strong></td>
+
+                        <td id="total-food-revenue-value"><strong>$0.00</strong></td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="text-right"><strong>Actual Food Cost:</strong></td>
+
+                        <td id="actual-food-cost-value"><strong>0%</strong></td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="text-right"><strong>Theoretical Food Cost:</strong></td>
+                        <td id="theoretical-food-cost-value"><strong>0%</strong></td>
+
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="text-right"><strong>Variance:</strong></td>
+                        <td id="variance-percentage-value"><strong>0%</strong></td>
+
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="text-right"><strong>Variance Value:</strong></td>
+                        <td id="variance-value"><strong>$0.00</strong></td>
+                    </tr>
+
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/js/customrangefilter.js"></script>
+    <script src="~/views-js/CogsReport.js?v=@DateTime.Now.Ticks"></script>
+}
