@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36203.30
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MenuOptics.Models", "MenuOptics.Models\MenuOptics.Models.csproj", "{60CFD43C-667A-40A5-9C31-125401159763}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MenuOptics", "Restaurant\MenuOptics.csproj", "{42A84D18-D729-4948-9D94-D9B6A88BD664}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MenuOptics.API", "MenuOptics.API\MenuOptics.API.csproj", "{D3B7BDF6-F654-4177-8C45-FFE67E68693B}"
 EndProject
