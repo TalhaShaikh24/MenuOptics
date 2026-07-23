@@ -53,13 +53,6 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-        [HttpDelete("DeleteMenuItem/{id}")]
-        public async Task<IActionResult> DeleteMenuItem(int id)
-        {
-            var responseData = await _menuService.DeleteMenuItemAsync(id);
-            return StatusCode(responseData.Status, responseData);
-        }
-
         [HttpPut("ToggleMenuActive/{id}")]
         public async Task<IActionResult> ToggleMenuActive(int id)
         {

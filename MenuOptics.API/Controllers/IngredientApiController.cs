@@ -152,12 +152,6 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(statusCode, body);
         }
 
-        [HttpDelete("DeleteIngredientById/{id}")]
-        public async Task<IActionResult> DeleteIngredientById(int id)
-        {
-            var (statusCode, body) = await _ingredientService.DeleteIngredientByIdAsync(id, CurrentUserId);
-            return StatusCode(statusCode, body);
-        }
 
         [HttpPut("ToggleIngredientActive/{id}")]
         public async Task<IActionResult> ToggleIngredientActive(int id)

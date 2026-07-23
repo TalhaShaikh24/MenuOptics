@@ -3,6 +3,8 @@
 @using MenuOptics.Models
 @using MenuOptics.Utility
 @inject Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper Html
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+
 @{
     var firstName = User?.FindFirst("FirstName")?.Value ?? "John";
     var lastName = User?.FindFirst("LastName")?.Value ?? "Doe";
@@ -244,6 +246,7 @@
                     </div>
                 </div>
             </div>
+            <input type="hidden" id="imageBaseUrl" value="@Configuration["ImageBaseUrl"]" />
         </main>
 
     </div>

@@ -211,8 +211,7 @@ function initDataTable() {
     table = $('.data-table').DataTable({
         paging: true,
         searching: true,
-        ordering: true,
-        order: [[0, 'asc']], // Sort by Name column by default
+        ordering: false,
         pageLength: 10, // Default rows per page
         lengthMenu: [10, 25, 50, 100], // Pagination options
         language: {

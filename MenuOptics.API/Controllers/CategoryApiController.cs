@@ -55,11 +55,5 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-        [HttpDelete("DeleteCategoryById/{id}")]
-        public async Task<IActionResult> DeleteCategoryById(int id)
-        {
-            var responseData = await _categoryService.DeleteCategoryByIdAsync(id, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
     }
 }

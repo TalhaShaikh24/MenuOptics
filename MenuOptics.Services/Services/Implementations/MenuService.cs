@@ -346,42 +346,6 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> DeleteMenuItemAsync(int id)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@MenuItemId", id);
-                parameters.Add("@Action", "DELETE");
-
-                var affectedRows = await connection.ExecuteAsync("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
-                if (affectedRows == 0)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Menu item not found.";
-                    return ResponseDto;
-                }
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Menu item deleted successfully.";
-                ResponseDto.Data = new { MenuItemId = id };
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
         public async Task<ResponseDto> ToggleMenuActiveAsync(int id, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
@@ -427,9 +391,6 @@ namespace MenuOptics.Services
             }
         }
 
-        /// <summary>
-        /// Saves the uploaded featured image under wwwroot/menu and returns its relative URL.
-        /// </summary>
         private async Task<string> SaveFeaturedImageAsync(IFormFile featuredImageFile)
         {
             var uploadsFolder = Path.Combine(_environment.WebRootPath, "menu");

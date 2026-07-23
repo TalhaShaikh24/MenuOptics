@@ -8,9 +8,12 @@
  * Functions stay global: they are referenced by inline onclick handlers.
  * ==========================================================================*/
 
+let imageBaseUrl;
+
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
+    imageBaseUrl = $("#imageBaseUrl").val();
     // Initialize Select2 for ingredients, recipes and categories
     initializeIngredientsSelect('#ingredientsSelect', '#addMenuItemModal', '#ingredientsDetails', '#menuCost');
     initializeIngredientsSelect('#editIngredientsSelect', '#editMenuItemModal', '#editIngredientsDetails', '#editMenuCost');
@@ -760,10 +763,10 @@ function getMenuItemById(id) {
             $('#editMenuCategory').val(menuItem.categoryId).trigger('change');
             $('#editMenuCost').val(menuItem.cost);
             $('#editMenuSellingPrice').val(menuItem.sellingPrice);
-            $('#editFeaturedImage').val(menuItem.featuredImage);
+            $('#editFeaturedImage').val(imageBaseUrl + menuItem.featuredImage);
 
             if (menuItem.featuredImage) {
-                $('#editFeaturedImagePreview').attr('src', menuItem.featuredImage).show();
+                $('#editFeaturedImagePreview').attr('src', imageBaseUrl + menuItem.featuredImage).show();
                 $('#editFeaturedImageLabel').text('Replace featured image');
             } else {
                 $('#editFeaturedImagePreview').hide();
@@ -931,27 +934,32 @@ function refreshMenuGrid() {
             const grid = $('#menuGrid');
             grid.empty();
 
-
             let totalCostPercentage = 0;
+            let totalCurrentCostPercentage = 0;
             let activeItemCount = 0;
             if (menuItems.length > 0) {
                 menuItems.forEach(item => {
                     if (item.isActive && item.sellingPrice > 0) {
                         const itemCostPercent = (item.cost / item.sellingPrice) * 100;
+                        const itemCurrentCostPercent = (item.currentCost / item.sellingPrice) * 100;
                         totalCostPercentage += itemCostPercent;
+                        totalCurrentCostPercentage += itemCurrentCostPercent;
                         activeItemCount++;
                     }
 
                     const availability = item.isAvailable ? 'available' : 'out-of-stock';
                     const actionText = item.isActive ? 'Inactive' : 'Reactivate';
                     const actionIcon = item.isActive ? 'fas fa-ban' : 'fas fa-check';
+                    const costPercentage = ((item.cost / item.sellingPrice) * 100).toFixed(2);
+                    const currentCostPercentage = ((item.currentCost / item.sellingPrice) * 100).toFixed(2);
+
                     const row = `
                     <div class="menu-item-card" data-category="${item.categoryId}">
                         <div class="menu-item-image">
                             <span class="status-badge ${item.isActive ? 'good' : 'critical'}" style="position:absolute; top:10px; left:10px;">
                                 ${item.isActive ? 'Active' : 'Inactive'}
                             </span>
-                            <img src="${item.featuredImage || 'https://via.placeholder.com/300x200'}" alt="${item.name}">
+                            <img src="${imageBaseUrl + item.featuredImage || 'https://via.placeholder.com/300x200'}" alt="${item.name}">
                             <div class="item-badges">
                                 <span class="availability-badge ${availability}">${item.isAvailable ? 'Available' : 'Out of Stock'}</span>
                             </div>
@@ -963,7 +971,17 @@ function refreshMenuGrid() {
                                     <p class="item-description">${item.description}</p>
                                     <div class="item-meta">
                                         <span class="category-tag">${item.categoryName}</span>
-                                        <span class="prep-time"><strong>Food Cost Percentage: </strong>${((item.cost.toFixed(2) / item.sellingPrice.toFixed(2)) * 100).toFixed(2)}%</span>
+                                        <span class="prep-time">
+                                        <strong>Food Cost Percentage: </strong>
+                                        ${item.cost == item.currentCost
+                            ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Cost as a % of selling price, based on today's live ingredient prices">i</span></span>`
+                            : `
+                                                <span class="text-highlight danger">${costPercentage}%<span class="tooltip-icon danger" data-tooltip="Cost % as of when this item was saved, based on ingredient prices at that time">i</span></span>
+                                                <span class="text-highlight">${currentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Cost as a % of selling price, based on today's live ingredient prices">i</span></span>
+                                              `
+                        }
+                                    </span>
+
                                     </div>
                                 </div>
                                 <div class="dropdown">
@@ -981,7 +999,9 @@ function refreshMenuGrid() {
                             <div class="item-details">
                                 <div class="pricing">
                                     <span class="price">$${item.sellingPrice.toFixed(2)}</span>
-                                    <span class="cost">Cost: $${item.cost.toFixed(2)}</span>
+                                    ${item.cost == item.currentCost ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost calculated from ingredient prices at the time this item was saved">i</span></span>`
+                            : `Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}<span class="tooltip-icon danger" data-tooltip="Cost calculated from ingredient prices at the time this item was saved">i</span></span> <span class="cost text-highlight">$${item.currentCost.toFixed(2)}<span class="tooltip-icon success" data-tooltip="Cost recalculated using today's live ingredient prices">i</span></span>`
+                        }
                                 </div>
                             </div>
                             <div class="item-stats">
@@ -998,13 +1018,24 @@ function refreshMenuGrid() {
                     </div>
                 `;
                     grid.append(row);
-
-                    const average = activeItemCount > 0 ? (totalCostPercentage / activeItemCount).toFixed(2) : "0.00";
-                    $('#avgFoodCost').text(`${average}%`);
                 });
+
+                // Compute the average once, after all items have been summed
+                const avgCostPercentage = activeItemCount > 0 ? (totalCostPercentage / activeItemCount).toFixed(2) : "0.00";
+                const avgCurrentCostPercentage = activeItemCount > 0 ? (totalCurrentCostPercentage / activeItemCount).toFixed(2) : "0.00";
+
+                if (avgCostPercentage === avgCurrentCostPercentage) {
+                    $('#avgFoodCost').html(`${avgCurrentCostPercentage}%<span class="tooltip-icon" data-tooltip="Average cost % across active items, based on today's live ingredient prices">i</span>`);
+                } else {
+                    $('#avgFoodCost').html(`
+                        <span class="text-highlight danger">${avgCostPercentage}%<span class="tooltip-icon danger" data-tooltip="Average cost % across active items, based on ingredient prices at the time each item was saved">i</span></span>
+                        <span class="text-highlight">${avgCurrentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Average cost % across active items, based on today's live ingredient prices">i</span></span>
+                    `);
+                }
             }
             else {
                 grid.append(`<h2>No Menu Items Added</h2>`);
+                $('#avgFoodCost').html('0.00%');
             }
         },
         onError: function (xhr, status, error) {
@@ -1086,7 +1117,7 @@ async function generateMenuPDF(menuData, filename) {
         let itemImageBase64 = null;
         if (item.featuredImage) {
             try {
-                itemImageBase64 = await getImageAsPngBase64(item.featuredImage);
+                itemImageBase64 = await getImageAsPngBase64(imageBaseUrl + item.featuredImage);
             } catch (e) {
                 console.warn(`Could not load image for ${item.name}`, e);
             }

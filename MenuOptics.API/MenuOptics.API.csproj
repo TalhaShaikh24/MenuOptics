@@ -23,4 +23,8 @@
     <ProjectReference Include="..\MenuOptics.Services\MenuOptics.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
 </Project>

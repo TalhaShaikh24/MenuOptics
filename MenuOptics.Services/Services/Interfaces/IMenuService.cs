@@ -9,7 +9,6 @@ namespace MenuOptics.Services
         Task<ResponseDto> GetAllMenuItemsByAdminAsync();
         Task<ResponseDto> GetAllMenuItemsAsync(int currentUserId);
         Task<ResponseDto> UpdateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId);
-        Task<ResponseDto> DeleteMenuItemAsync(int id);
         Task<ResponseDto> ToggleMenuActiveAsync(int id, int currentUserId);
     }
 }

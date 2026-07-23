@@ -301,43 +301,6 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> DeleteRecipeAsync(int id, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@RecipeId", id);
-                parameters.Add("@UserId", currentUserId);
-                parameters.Add("@Action", "DELETE");
-
-                var affectedRows = await connection.ExecuteAsync("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
-                if (affectedRows == 0)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Recipe not found.";
-                    return ResponseDto;
-                }
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Recipe deleted successfully.";
-                ResponseDto.Data = new { RecipeId = id };
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
         public async Task<ResponseDto> ToggleRecipeActiveAsync(int id, int currentUserId)
         {
             var ResponseDto = new ResponseDto();

@@ -16,7 +16,6 @@ namespace MenuOptics.Services
         Task<(int StatusCode, object Body)> GetAllIngredientsByUserIdParamAsync(int userId, IQueryCollection query);
         Task<(int StatusCode, object Body)> UpdateIngredientAsync(Ingredient model, int currentUserId);
         Task<(int StatusCode, object Body)> PatchIngredientDetailsAsync(UpdateIngredientDetailsDto model, int currentUserId, string requestId);
-        Task<(int StatusCode, object Body)> DeleteIngredientByIdAsync(int id, int currentUserId);
         Task<(int StatusCode, object Body)> ToggleIngredientActiveAsync(int id, int currentUserId);
     }
 }

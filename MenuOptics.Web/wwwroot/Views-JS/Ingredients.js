@@ -15,6 +15,29 @@ let table;
 
 /* ── 6. Helpers — server-side DataTable ───────────────────────────────── */
 
+// Pack Item  -> Size & Pack Size both enabled and required
+// Catch Weight -> Pack Size disabled (not required); Size forced to 1 and disabled
+function toggleSizePackSizeByType(typeValue, sizeSelector, packSizeSelector) {
+    const $size = $(sizeSelector);
+    const $packSize = $(packSizeSelector);
+    const $packSizeRequired = $(packSizeSelector + 'Required'); 
+
+    if (typeValue === 'packItem') {
+        $size.prop('disabled', false).prop('required', true);
+        $packSize.prop('disabled', false).prop('required', true);
+        $packSizeRequired.show();
+    } else if (typeValue === 'catchWeight') {
+        $packSize.prop('disabled', true).prop('required', false).val('');
+        $size.prop('disabled', true).prop('required', false).val(1);
+        $packSizeRequired.hide();
+    } else {
+        $size.prop('disabled', false).prop('required', true);
+        $packSize.prop('disabled', false).prop('required', false);
+        $packSizeRequired.hide();
+    }
+}
+
+
 function initIngredientsTable() {
     if ($.fn.DataTable.isDataTable('.ingredients-table')) {
         $('.ingredients-table').DataTable().destroy();
@@ -23,22 +46,19 @@ function initIngredientsTable() {
     table = $('.ingredients-table').DataTable({
         serverSide: true,
         processing: true,
+        ordering: false, 
         ajax: function (dtParams, callback, settings) {
             // Map DataTables params → our API query params
             const searchValue = dtParams.search ? dtParams.search.value : '';
-            const orderCol    = dtParams.order  && dtParams.order.length  ? dtParams.order[0].column : 1;
-            const orderDir    = dtParams.order  && dtParams.order.length  ? dtParams.order[0].dir    : 'asc';
 
             $.ajax({
                 url: '/api/IngredientApi/GetAllActiveInactiveIngredients',
                 method: 'GET',
                 data: {
-                    draw:        dtParams.draw,
-                    start:       dtParams.start,
-                    length:      dtParams.length,
-                    searchValue: searchValue,
-                    orderColumn: orderCol,
-                    orderDir:    orderDir
+                    draw: dtParams.draw,
+                    start: dtParams.start,
+                    length: dtParams.length,
+                    searchValue: searchValue
                 },
                 success: function (response) {
                     // Rebuild supplier dropdown from current page data
@@ -53,10 +73,10 @@ function initIngredientsTable() {
                     if (existing) supplierFilter.val(existing);
 
                     callback({
-                        draw:            response.draw,
-                        recordsTotal:    response.recordsTotal,
+                        draw: response.draw,
+                        recordsTotal: response.recordsTotal,
                         recordsFiltered: response.recordsFiltered,
-                        data:            response.data || []
+                        data: response.data || []
                     });
                 },
                 error: function (xhr) {
@@ -66,16 +86,16 @@ function initIngredientsTable() {
             });
         },
         columns: [
-            
+
             {
                 data: 'name',
                 render: function (name, type, row) {
                     const date = DateFormatter.formatWithComma(row.createdOn);
-                    
+
                     return `<div class="ingredient-info">
                                 <p class="ingredient-name">${name.trim().includes(' ') ? name.split(' ').slice(1).join(' ') : name}</p>
                                 <p class="ingredient-meta">Brand: ${name.split(' ')[0]}</p>
-                               ${row.packSize != null && row.packSize > 1 ? `<p class="ingredient-meta text-highlight">It comes with pack size "${row.packSize}"</p>` :''} 
+                               ${row.packSize == null ? `<p class="ingredient-meta text-highlight danger">Catch Weight Item</p>` : `<p class="ingredient-meta text-highlight">Pack size: ${row.packSize}</p>`} 
                             </div>`;
                 }
             },
@@ -84,9 +104,6 @@ function initIngredientsTable() {
                 render: val => `<span class="${val != null ? 'category-badge' : ''}">${val || ''}</span>`
             },
             {
-                // Size — not sortable, not searchable
-                orderable: false,
-                searchable: false,
                 data: 'size',
                 render: (val, type, row) => `<span class="${val != null ? 'category-badge-size' : ''}">${val ? `${val} ${row.unit || ''}` : ''}</span>`
             },
@@ -102,17 +119,15 @@ function initIngredientsTable() {
             {
                 data: 'isActive',
                 render: function (active) {
-                    const cls  = active ? 'good' : 'critical';
-                    const lbl  = active ? 'Active' : 'In Active';
+                    const cls = active ? 'good' : 'critical';
+                    const lbl = active ? 'Active' : 'In Active';
                     return `<span class="status-badge ${cls}">${lbl}</span>`;
                 }
             },
-           
-           
+
+
             {
-                // Actions — not sortable
-                orderable: false,
-                searchable: false,
+
                 data: null,
                 render: function (data, type, row) {
                     const addStock = (!row.vendorId || row.vendorId <= 0)
@@ -147,8 +162,6 @@ function initIngredientsTable() {
         ],
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
-        ordering: true,
-        order: [[1, 'asc']],
         language: {
             search: '',
             searchPlaceholder: 'Search ingredients...',
@@ -188,17 +201,32 @@ function refreshIngredientsTable() {
 
 $(document).ready(function () {
 
+    // ── Type toggle: Pack Item disables Size, Catch Weight disables Pack Size ──
+    $('#ingredientType').on('change', function () {
+        toggleSizePackSizeByType($(this).val(), '#ingredientSize', '#ingredientPackSize');
+    });
+    $('#editIngredientType').on('change', function () {
+        toggleSizePackSizeByType($(this).val(), '#editIngredientSize', '#editIngredientPackSize');
+    });
+
     // ── Save new ingredient ───────────────────────────────────────────────────
     $('#addIngredientBtn2').on('click', function () {
         const ingredientData = {
-            name:          $('#ingredientName').val(),
-            unit:          $('#ingredientUnit').val(),
-            price:         parseFloat($('#ingredientPrice').val()) || 0,
-            stock:         $('#ingredientStock').val() || 0,
-            size:          $('#ingredientSize').val(), 
-            packSize:      Number($('#ingredientPackSize').val())
+            name: $('#ingredientName').val(),
+            unit: $('#ingredientUnit').val(),
+            price: parseFloat($('#ingredientPrice').val()) || 0,
+            stock: $('#ingredientStock').val() || 0,
+            ingredientType: $('#ingredientType').val(),
+            size: $('#ingredientSize').val(),
+            packSize: $('#ingredientPackSize').prop('disabled') ? null : Number($('#ingredientPackSize').val())
         };
-        if (ingredientData.name && ingredientData.unit && ingredientData.size) {
+        if (isFormValid('#addIngredientForm')) {
+
+            if (ingredientData.packSize == 0) {
+                showNotification('Pack size must be greater than 0', 'error');
+                return false;
+            }
+
             addIngredientByUserId(ingredientData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -208,14 +236,22 @@ $(document).ready(function () {
     // ── Update ingredient ─────────────────────────────────────────────────────
     $('#updateIngredientBtn').on('click', function () {
         const ingredientData = {
-            ingredientId:  $('#editIngredientId').val(),
-            name:          $('#editIngredientName').val(),
-            unit:          $('#editIngredientUnit').val(),
-            price:         parseFloat($('#editIngredientPrice').val()) || 0,
-            size:         parseFloat($('#editIngredientSize').val()),
-            packSize:         Number($('#editIngredientPackSize').val()),
+            ingredientId: $('#editIngredientId').val(),
+            name: $('#editIngredientName').val(),
+            unit: $('#editIngredientUnit').val(),
+            price: parseFloat($('#editIngredientPrice').val()) || 0,
+            ingredientType: $('#editIngredientType').val(),
+            size: parseFloat($('#editIngredientSize').val()),
+            packSize: $('#editIngredientPackSize').prop('disabled') ? null : Number($('#editIngredientPackSize').val())
         };
-        if (ingredientData.name && ingredientData.unit && ingredientData.size) {
+        if (isFormValid('#editIngredientForm')) {
+
+            if (ingredientData.packSize == 0) {
+
+                showNotification('Pack size must be greater than 0', 'error');
+                return false;
+            }
+
             updateIngredient(ingredientData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -224,7 +260,7 @@ $(document).ready(function () {
 
     // ── Bulk actions ──────────────────────────────────────────────────────────
     $('#bulkDeleteBtn').on('click', function () { bulkDeleteIngredients(); });
-    $('#bulkToggleBtn').on('click',  function () { bulkToggleIngredients(); });
+    $('#bulkToggleBtn').on('click', function () { bulkToggleIngredients(); });
 
     // ── Export CSV ────────────────────────────────────────────────────────────
     $('#exportCSVBtn').on('click', function () {
@@ -242,7 +278,7 @@ $(document).ready(function () {
                 });
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
-                const url  = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
                 link.setAttribute('href', url);
                 link.setAttribute('download', `Ingredients_${new Date().toISOString().slice(0, 10)}.csv`);
                 link.style.visibility = 'hidden';
@@ -264,7 +300,7 @@ $(document).ready(function () {
             method: 'GET',
             showMessage: false,
             onSuccess: function (response) {
-                
+
                 const ingredients = response.data;
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
@@ -273,7 +309,7 @@ $(document).ready(function () {
                 doc.setFontSize(10);
                 doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 28);
                 const headers = [['Name', 'Size', 'Physical Count']];
-                const data = ingredients.map(i => [i.name, i.size == null ? '' : i.size  + ' ' + i.unit || '', '']);
+                const data = ingredients.map(i => [i.name, i.size == null ? '' : i.size + ' ' + i.unit || '', '']);
                 doc.autoTable({
                     head: headers,
                     body: data,
@@ -306,16 +342,17 @@ function addIngredientByUserId(ingredientData) {
         url: '/api/IngredientApi/CreateIngredient',
         method: 'POST',
         data: {
-            Name:         ingredientData.name,
-            Price:        ingredientData.price,
-            Unit:         ingredientData.unit,
-            Size:         ingredientData.size,
-            PackSize:     ingredientData.packSize,
-            Stock:        ingredientData.stock
+            Name: ingredientData.name,
+            Price: ingredientData.price,
+            Unit: ingredientData.unit,
+            Size: ingredientData.size,
+            PackSize: ingredientData.packSize,
+            Stock: ingredientData.stock
         },
         onSuccess: function () {
             refreshIngredientsTable();
             $('#addIngredientForm')[0].reset();
+            toggleSizePackSizeByType('', '#ingredientSize', '#ingredientPackSize');
             closeModal('addIngredientModal');
         },
         onError: function () {
@@ -338,7 +375,11 @@ function getIngredientById(id) {
             $('#editIngredientPrice').val(ingredient.price);
             $('#editIngredientSize').val(ingredient.size);
             $('#editIngredientPackSize').val(ingredient.packSize);
-            
+            // No Type column from API — derive it from packSize instead
+            const ingredientType = (ingredient.packSize != null) ? 'packItem' : 'catchWeight';
+            $('#editIngredientType').val(ingredientType).prop("disabled",true);
+            toggleSizePackSizeByType(ingredientType, '#editIngredientSize', '#editIngredientPackSize');
+
             if (ingredient.vendorId > 0) {
                 $('#editIngredientName').prop('disabled', true);
                 $('#editIngredientUnit').prop('disabled', true);
@@ -362,19 +403,19 @@ function updateIngredient(ingredientData) {
         url: '/api/IngredientApi/UpdateIngredient',
         method: 'PUT',
         data: {
-            IngredientId:  ingredientData.ingredientId,
-            Name:          ingredientData.name,
-            Price:         ingredientData.price,
-            Unit:          ingredientData.unit,
-            Size:          ingredientData.size,
-            PackSize:      ingredientData.packSize
+            IngredientId: ingredientData.ingredientId,
+            Name: ingredientData.name,
+            Price: ingredientData.price,
+            Unit: ingredientData.unit,
+            Size: ingredientData.size,
+            PackSize: ingredientData.packSize
         },
         onSuccess: function () {
             refreshIngredientsTable();
             closeModal('editIngredientModal');
             showNotification('Ingredient updated successfully.', 'success');
         }
-        
+
     });
 }
 
@@ -408,7 +449,7 @@ function addStock(ingredientId) {
 
 $('#saveStockBtn').on('click', function () {
     const ingredientId = $('#addStockIngredientId').val();
-    const stock        = parseFloat($('#addStock').val());
+    const stock = parseFloat($('#addStock').val());
     if (!stock || stock <= 0) {
         showNotification('Please enter a valid stock.', 'error');
         return;
@@ -439,7 +480,7 @@ function bulkDeleteIngredients() {
     }
     if (confirm(`Are you sure you want to delete ${selectedIds.length} selected ingredient(s)?`)) {
         let completed = 0;
-        let hasError  = false;
+        let hasError = false;
         selectedIds.forEach(id => {
             ajaxRequest({
                 url: `/api/IngredientApi/DeleteIngredientById/${id}`,
@@ -477,7 +518,7 @@ function bulkToggleIngredients() {
     }
     if (confirm(`Are you sure you want to toggle the active status of ${selectedIds.length} selected ingredient(s)?`)) {
         let completed = 0;
-        let hasError  = false;
+        let hasError = false;
         selectedIds.forEach(id => {
             ajaxRequest({
                 url: `/api/IngredientApi/ToggleIngredientActive/${id}`,
@@ -511,10 +552,10 @@ function refreshVendors() {
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            const vendors         = response.data;
-            const vendorGrid      = $('.vendor-grid');
+            const vendors = response.data;
+            const vendorGrid = $('.vendor-grid');
             const linkedVendorsList = $('.linked-vendors-list');
-            const addVendorEmpty   = $('.add-vendor-empty');
+            const addVendorEmpty = $('.add-vendor-empty');
             const linkedVendorEmpty = $('.linked-vendor-empty');
 
             vendorGrid.empty();
@@ -523,7 +564,7 @@ function refreshVendors() {
             linkedVendorEmpty.hide();
 
             let hasUnlinked = false;
-            let hasLinked   = false;
+            let hasLinked = false;
 
             vendors.forEach(vendor => {
                 const name = vendor.restaurantName || vendor.firstName + ' ' + vendor.lastName;
@@ -571,7 +612,7 @@ function refreshVendors() {
             });
 
             if (!hasUnlinked) addVendorEmpty.show();
-            if (!hasLinked)   linkedVendorEmpty.show();
+            if (!hasLinked) linkedVendorEmpty.show();
         },
         onError: function () {
             showNotification('Failed to fetch vendors.', 'error');
@@ -597,7 +638,7 @@ $(".tab-btn").on("click", function () {
 // Link vendor
 $(document).on("click", ".link-vendor-btn", function () {
     const vendorName = $(this).data("vendor");
-    const vendorId   = $(this).data("vendor-id");
+    const vendorId = $(this).data("vendor-id");
     $(this).addClass("loading").text("Linking...");
 
     ajaxRequest({
@@ -618,7 +659,7 @@ $(document).on("click", ".link-vendor-btn", function () {
 // Unlink vendor
 $(document).on("click", ".unlink-vendor-btn", function () {
     const vendorName = $(this).data("vendor");
-    const vendorId   = $(this).data("vendor-id");
+    const vendorId = $(this).data("vendor-id");
 
     if (confirm(`Are you sure you want to unlink ${vendorName}?`)) {
         $(this).addClass("loading").text("Unlinking...");

@@ -53,11 +53,6 @@ $(document).ready(() => {
         }
     })
 
-
-
-
-
-
     // Settings save button
     $("#saveSettingsBtn").on("click", () => {
         saveSettings()
@@ -92,6 +87,19 @@ $(document).ready(() => {
 })
 
 
+function isFormValid(formSelector) {
+    let valid = true;
+    $(formSelector).find('[required]').each(function () {
+        const $field = $(this);
+        if ($field.prop('disabled')) return; // disabled fields aren't part of the submission
+        const val = $field.val();
+        if (val === null || val === undefined || String(val).trim() === '') {
+            valid = false;
+            return false; // break out of .each
+        }
+    });
+    return valid;
+}
 function initializeDashboard() {
     // Animate stats on load
     animateStats()

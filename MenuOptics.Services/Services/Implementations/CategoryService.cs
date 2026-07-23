@@ -155,6 +155,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@CategoryId", id);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Action", "SELECT_BY_ID");
 
                 var category = await connection.QueryFirstOrDefaultAsync<Category>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -191,34 +192,5 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> DeleteCategoryByIdAsync(int id, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@CategoryId", id);
-                parameters.Add("@ModifiedBy", currentUserId);
-                parameters.Add("@Action", "DELETE");
-
-                await connection.ExecuteAsync("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Category deleted successfully.";
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
     }
 }

@@ -55,16 +55,19 @@ namespace MenuOptics.Services
                 connection.Open();
 
                 decimal basePrice = 0;
+                decimal size = 0;
 
                 // When PackSize given
                 if (model.PackSize != null && model.PackSize > 0)
                 {
                     basePrice = model.BasePrice / model.PackSize.Value;
+                    size = model.Size;
                 }
                 // When Weight given
                 else if (model.Weight != null && model.Weight > 0)
                 {
-                    basePrice = model.BasePrice / (model.Weight.Value / model.Size);
+                    basePrice = model.BasePrice;
+                    size = 1;
                 }
                 else
                 {
@@ -73,7 +76,7 @@ namespace MenuOptics.Services
                     await _activityLog.LogAsync(currentUserId, requestId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
                         System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
                     return (400, ResponseDto);
-                }
+                } 
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", currentUserId);
@@ -81,7 +84,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", basePrice);
                 parameters.Add("@Unit", model.Unit);
-                parameters.Add("@Size", model.Size);
+                parameters.Add("@Size", size);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@VendorProductId", model.VendorProductId);
                 parameters.Add("@CreatedBy", currentUserId);
@@ -95,7 +98,7 @@ namespace MenuOptics.Services
                             g => g.Key.ToString(),
                             g => model.PackSize != null && model.PackSize > 0
                                 ? g.Last().Price / model.PackSize.Value
-                                : g.Last().Price / model.Weight.Value
+                                : g.Last().Price
                         );
 
                     parameters.Add("@RestaurantIds", string.Join(",", deduped.Keys));
@@ -172,7 +175,7 @@ namespace MenuOptics.Services
                 }
                 else if (model.Weight != null && model.Weight > 0)
                 {
-                    basePrice = model.BasePrice / (model.Weight.Value / ingredient.Size);
+                    basePrice = model.BasePrice;
                 }
                 else
                 {
@@ -202,7 +205,7 @@ namespace MenuOptics.Services
                             {
                                 Price = model.PackSize != null && model.PackSize > 0
                                     ? Math.Abs(g.Last().Price) / model.PackSize.Value
-                                    : Math.Abs(g.Last().Price) / model.Weight!.Value,
+                                    : Math.Abs(g.Last().Price),
                                 IsActive = g.Last().IsActive
                             }
                         );
@@ -286,7 +289,6 @@ namespace MenuOptics.Services
                 return (400, ResponseDto);
             }
 
-           
 
             try
             {
@@ -461,8 +463,6 @@ namespace MenuOptics.Services
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
-                    parameters.Add("@OrderBy", orderBy);
-                    parameters.Add("@OrderDir", dt.OrderDir);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                     var ingredients = await connection.QueryAsync<Ingredient>(
@@ -532,8 +532,6 @@ namespace MenuOptics.Services
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
-                    parameters.Add("@OrderBy", orderBy);
-                    parameters.Add("@OrderDir", dt.OrderDir);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                     var ingredients = await connection.QueryAsync<Ingredient>(
@@ -606,8 +604,6 @@ namespace MenuOptics.Services
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
-                    parameters.Add("@OrderBy", orderBy);
-                    parameters.Add("@OrderDir", dt.OrderDir);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                     var ingredients = await connection.QueryAsync<Ingredient>(
@@ -680,8 +676,6 @@ namespace MenuOptics.Services
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
-                    parameters.Add("@OrderBy", orderBy);
-                    parameters.Add("@OrderDir", dt.OrderDir);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                     var ingredients = await connection.QueryAsync<Ingredient>(
@@ -750,8 +744,6 @@ namespace MenuOptics.Services
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
-                    parameters.Add("@OrderBy", orderBy);
-                    parameters.Add("@OrderDir", dt.OrderDir);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
                     var ingredients = await connection.QueryAsync<Ingredient>(
@@ -925,15 +917,9 @@ namespace MenuOptics.Services
 
             try
             {
-                // Fetch current values so we only change what was explicitly supplied
-                var fetchParams = new DynamicParameters();
-                fetchParams.Add("@IngredientId", model.IngredientId);
-                fetchParams.Add("@Action", "SELECT");
-                var existing = await connection.QueryFirstOrDefaultAsync<Ingredient>(
-                    "sp_IngredientCRUD", fetchParams, commandType: CommandType.StoredProcedure
-                );
+                Ingredient ingredient = (Ingredient)((ResponseDto)(await GetIngredientAsync(model.IngredientId)).Body).Data;
 
-                if (existing == null)
+                if (ingredient == null)
                 {
                     ResponseDto.Status = 400;
                     ResponseDto.ResponseMsg = "Ingredient not found.";
@@ -949,14 +935,31 @@ namespace MenuOptics.Services
                     return (404, ResponseDto);
                 }
 
+                decimal price = 0;
+                decimal size = 0;
+
+                // When PackSize given
+                if (model.Size!=null)
+                {
+                    if (ingredient.PackSize!=null)
+                    {
+                        price = (ingredient.Price/ingredient.Size)*model.Size.Value;
+                        size=model.Size.Value;
+                    }
+                    else
+                    {
+                        size = 1;
+                    }
+                }
+
                 // Merge: use incoming value if provided, otherwise keep existing
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@UserId", currentUserId);
-                parameters.Add("@Name", model.Name ?? existing.Name);
-                parameters.Add("@Unit", model.Unit ?? existing.Unit);
-                parameters.Add("@IsActive", model.IsActive ?? existing.IsActive);
-                parameters.Add("@Price", existing.Price);
+                parameters.Add("@Name", model.Name ?? ingredient.Name);
+                parameters.Add("@Unit", model.Unit ?? ingredient.Unit);
+                parameters.Add("@IsActive", model.IsActive ?? ingredient.IsActive);
+                parameters.Add("@Price", price);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "UPDATE");
@@ -1017,55 +1020,6 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> DeleteIngredientByIdAsync(int id, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@IngredientId", id);
-                parameters.Add("@Userid", currentUserId);
-                parameters.Add("@Action", "DELETE");
-
-                var affectedRows = await connection.ExecuteAsync("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-                if (affectedRows == 0)
-                {
-                    ResponseDto.Status = 400;
-                    ResponseDto.ResponseMsg = "Ingredient not found.";
-                    return (404, ResponseDto);
-                }
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Ingredient deleted successfully.";
-                ResponseDto.Data = new { IngredientId = id };
-                return (200, ResponseDto);
-            }
-            catch (SqlException sqlEx)
-            {
-                // SQL Server specific exceptions
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Expection: {sqlEx.Message}";
-                return (500, ResponseDto);
-            }
-            catch (InvalidOperationException invalidOpEx)
-            {
-                ResponseDto.Status = 400;
-                ResponseDto.ResponseMsg = $"Invalid operation: {invalidOpEx.Message}";
-                return (400, ResponseDto);
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return (500, ResponseDto);
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
 
         public async Task<(int StatusCode, object Body)> ToggleIngredientActiveAsync(int id, int currentUserId)
         {

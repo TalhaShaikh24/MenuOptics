@@ -161,7 +161,7 @@ body {
         background: white;
     }
 
-    input:disabled{
+    input:disabled, select:disabled {
         cursor:not-allowed!important;
     }
 
@@ -2593,6 +2593,10 @@ span.select2-selection:has(.select2-search__field):focus {
     font-weight: 600;
     color: #111827;
 }
+#avgFoodCost .text-highlight {
+    font-size: 14px;
+    padding: 3px 8px;
+}
 
 .linked-vendor-item .vendor-actions {
     display: flex;
@@ -2825,3 +2829,82 @@ h4.event-heading {
     width: fit-content;
     color: #065f46;
 }
+.text-highlight.danger {
+    background-color: #fee2e2;
+    color:#991b1b;
+}
+
+
+/* ── Tooltip component ───────────────────────────────────────────────── */
+.tooltip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    margin-left: 5px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #6b7280;
+    font-size: 10px;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1;
+    cursor: help;
+    position: relative;
+    vertical-align: middle;
+    margin-bottom: 2px;
+}
+    .tooltip-icon.success {
+        background: #abe9c9;
+        color: #065f46;
+    }
+    .tooltip-icon.danger {
+        background-color: #f9bbbb;
+        color: #991b1b;
+    }
+
+    .tooltip-icon::before {
+        content: '';
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: #111827;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease, visibility 0.15s ease;
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    .tooltip-icon::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 135%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #111827;
+        color: #fff;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+        white-space: normal;
+        width: max-content;
+        max-width: 190px;
+        text-align: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.15s ease, visibility 0.15s ease;
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    .tooltip-icon:hover::after,
+    .tooltip-icon:hover::before {
+        opacity: 1;
+        visibility: visible;
+    }

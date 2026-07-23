@@ -87,8 +87,7 @@ function initRecipeTable() {
     recipeTable = $('#recipesTable').DataTable({
         paging: true,
         searching: true,
-        ordering: true,
-        order: [[0, 'asc']],
+        ordering: false,
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
         language: {
@@ -455,6 +454,10 @@ function refreshRecipesTable() {
                 // Get the ingredient names as a comma-separated string
                 const ingredientNames = item.ingredients ? item.ingredients.map(ingredient => ingredient.ingredientName).join(', ') : '';
 
+
+                const cls = item.isActive ? 'good' : 'critical';
+                const lbl = item.isActive ? 'Active' : 'In Active';
+
                 const row = `
                     <tr>
                         <td>
@@ -469,13 +472,18 @@ function refreshRecipesTable() {
                         <td>${item.unit}</td>
                         <td>$${item.price.toFixed(2)}</td>
                         <td><span class="status-badge good">${ingredientNames}</span></td>
+                        <td><span class="status-badge ${cls}" > ${lbl}</span ></td>
+                        
                      
                         <td>
                             <div class="dropdown">
                                 <button class="dropdown-toggle"><i class="fas fa-ellipsis-h"></i></button>
                                 <div class="dropdown-menu">
                                     <a href="#" onclick="getRecipeById(${item.recipeId})"><i class="fas fa-edit"></i> Edit</a>
-                                    <a href="#" onclick="deleteRecipe(${item.recipeId})"><i class="fas fa-trash"></i> Delete</a>
+                                    <a href = "#" onclick = "toggleRecipeActive(${item.recipeId})" >
+                                        <i class="fas fa-ban"></i>
+                                        ${item.isActive ? 'Deactivate' : 'Activate' }
+                                   </a>
                                     <a href="#" onclick="exportSingleRecipePDF(${item.recipeId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
                                 </div>
                             </div>

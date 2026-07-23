@@ -26,6 +26,10 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+builder.Services.AddDataProtection()
+    .SetApplicationName("MenuOptics")
+    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\MenuOptics-SharedKeys")); // same path on server
+
 
 // Infrastructure services
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
@@ -65,7 +69,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/User/AccessDenied";
         options.Cookie.Name = "RestaurantAuthCookie";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.ExpireTimeSpan = TimeSpan.FromHours(1);
     })
 // 2. JWT Bearer configure karein
@@ -157,6 +162,7 @@ else
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
 app.UseRouting();
 app.UseRequestId();
 

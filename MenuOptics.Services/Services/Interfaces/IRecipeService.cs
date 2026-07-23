@@ -8,7 +8,6 @@ namespace MenuOptics.Services
         Task<ResponseDto> UpdateRecipeAsync(Recipe model, string ingredients, int currentUserId);
         Task<ResponseDto> GetRecipeAsync(int id);
         Task<ResponseDto> GetAllRecipesAsync(int currentUserId);
-        Task<ResponseDto> DeleteRecipeAsync(int id, int currentUserId);
         Task<ResponseDto> ToggleRecipeActiveAsync(int id, int currentUserId);
     }
 }

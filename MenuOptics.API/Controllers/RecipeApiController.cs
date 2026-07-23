@@ -46,13 +46,6 @@ namespace MenuOptics.Controllers.API
             return StatusCode(responseData.Status, responseData);
         }
 
-        [HttpDelete("DeleteRecipe/{id}")]
-        public async Task<IActionResult> DeleteRecipe(int id)
-        {
-            var responseData = await _recipeService.DeleteRecipeAsync(id, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
         [HttpPut("ToggleRecipeActive/{id}")]
         public async Task<IActionResult> ToggleRecipeActive(int id)
         {

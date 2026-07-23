@@ -9,6 +9,5 @@ namespace MenuOptics.Services
         Task<ResponseDto> CreateCategoryAsync(Category model, int currentUserId);
         Task<ResponseDto> UpdateCategoryAsync(Category model, int currentUserId);
         Task<ResponseDto> ToggleCategoryActiveAsync(int id, int currentUserId);
-        Task<ResponseDto> DeleteCategoryByIdAsync(int id, int currentUserId);
     }
 }
