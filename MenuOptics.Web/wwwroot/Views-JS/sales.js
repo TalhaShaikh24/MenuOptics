@@ -345,16 +345,20 @@ function completeSale() {
         return;
     }
 
-    const total = currentOrder.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
+    const subTotal = currentOrder.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
+    const tax = 0;
 
     const saleData = {
         saleDate: salesDate,
         endSaleDate: endSalesDate,
-        total: total,
+        subTotal: subTotal,
+        tax: tax,
+        total: subTotal + tax,
         items: currentOrder.map(item => ({
             menuItemId: item.menuItemId,
             quantity: item.quantity,
-            price: item.sellingPrice
+            price: item.sellingPrice * item.quantity,
+            cost: item.cost
         }))
     };
 

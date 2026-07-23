@@ -47,6 +47,7 @@ namespace MenuOptics.Services
                     itemParameters.Add("@MenuItemId", item.MenuItemId);
                     itemParameters.Add("@Quantity", item.Quantity);
                     itemParameters.Add("@Price", item.Price);
+                    itemParameters.Add("@Cost", item.Cost);
                     itemParameters.Add("@CreatedBy", currentUserId);
                     itemParameters.Add("@UserId", currentUserId); // Added for sp_SaleCRUD
                     itemParameters.Add("@Action", "INSERT_ITEM");

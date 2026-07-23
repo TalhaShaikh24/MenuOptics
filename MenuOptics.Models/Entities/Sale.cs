@@ -35,6 +35,7 @@ namespace MenuOptics.Models
         public string? Name { get; set; }
         public int Quantity { get; set; }
         public decimal Price { get; set; }
+        public decimal Cost { get; set; }
         public DateTime CreatedOn { get; set; }
         public int? CreatedBy { get; set; }
         public bool IsActive { get; set; }
