@@ -27,7 +27,7 @@ namespace MenuOptics.Services
                 parameters.Add("@EndDate", endDate);
 
                 using var multi = await connection.QueryMultipleAsync(
-                    "usp_GetRestaurantAnalytics",
+                    "sp_GetRestaurantAnalytics",
                     parameters,
                     commandType: CommandType.StoredProcedure
                 );

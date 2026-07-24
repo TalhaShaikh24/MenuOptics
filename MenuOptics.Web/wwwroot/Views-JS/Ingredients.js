@@ -181,9 +181,9 @@ function initIngredientsTable() {
         table.search(this.value).draw();
     });
 
-    // Supplier filter → search on supplier column (index 5)
+    // Supplier filter → search on supplier column (index 4)
     $('#supplierFilter').off('change').on('change', function () {
-        table.column(7).search(this.value).draw();
+        table.column(4).search(this.value).draw();
     });
 }
 

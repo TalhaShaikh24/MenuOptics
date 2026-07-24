@@ -138,11 +138,11 @@ function initDataTable() {
     table = $('.menu-engineering-table').DataTable({
         paging: true,
         searching: true,
-        ordering: true,
-        order: [[8, 'asc']], // Sort by Quadrant column
+        ordering: false,
+        orderable: false,
         columnDefs: [
             { type: 'quadrant', targets: 8 }, // Apply custom type to Quadrant column
-            { targets: [0, 9, 10], orderable: false, searchable: false }, // Disable sorting/searching for non-data columns
+            { searchable: false }, // Disable sorting/searching for non-data columns
             { targets: [1, 2, 3, 4, 5, 6, 7], className: 'dt-body-left' } // Right-align numeric columns
         ],
         pageLength: 10,
@@ -217,9 +217,6 @@ function formatExportCell(data, row, column, node) {
 
 // Builds a single insight table row (same markup as before refactoring)
 function buildInsightRow(insight) {
-    const createdDate = DateFormatter.formatWithComma(insight.createdOn || new Date());
-    const actionText = insight.isActive ? 'Inactive' : 'Reactivate';
-    const actionIcon = insight.isActive ? 'fas fa-ban' : 'fas fa-check';
 
     // Clean numerics for sorting
     const sellingPrice = Number(insight.sellingPrice || 0);
@@ -229,6 +226,7 @@ function buildInsightRow(insight) {
     const cm = Number(insight.contributionMargin || 0);
     const prof = Number(insight.profitabilityScore || 0);
     const popShare = Number(insight.popularityShare || 0);
+    const quadrantTooltips = insight.menuQuadrant === "";
     const quadrant = insight.menuQuadrant || 'N/A';
 
     return `
@@ -245,12 +243,12 @@ function buildInsightRow(insight) {
                         <td data-order="${costPct.toFixed(2)}">${costPct.toFixed(2)}%</td>
                         <td data-order="${unitsSold}">${unitsSold}</td>
                         <td data-order="${cm}">$${cm.toFixed(2)}</td>
-                        <td data-order="${prof}">${prof.toFixed(2)}</td>
+                        <td data-order="${prof}">$${prof.toFixed(2)}</td>
                         <td data-order="${popShare.toFixed(2)}">${popShare.toFixed(2)}%</td>
 
                         <!-- Quadrant icon; the span carries data-quadrant for custom sort -->
                         <td>
-                            <span class="quadrant-icon" data-quadrant="${quadrant}">
+                            <span class="quadrant-icon tooltip-icon" data-quadrant="${quadrant}"data-tooltip="${getQuadrantTooltipText(quadrant) }">
                                 ${getQuadrantIcon(quadrant)}
                             </span>
                         </td>
@@ -261,21 +259,7 @@ function buildInsightRow(insight) {
                             </span>
                         </td>
 
-                        <td>
-                            <div class="dropdown">
-                                <button class="dropdown-toggle">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="hidden" href="#" onclick="toggleMenuItemActive(${insight.menuItemId})">
-                                        <i class="${actionIcon}"></i> ${actionText}
-                                    </a>
-                                    <a href="#" onclick="deleteMenuItem(${insight.menuItemId})">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </a>
-                                </div>
-                            </div>
-                        </td>
+                        
                     </tr>
                 `;
 }
@@ -285,14 +269,28 @@ function buildInsightRow(insight) {
 function getQuadrantIcon(quadrant) {
     switch (quadrant) {
         case 'Star':
-            return '<span class="quadrant-icon" data-quadrant="Star">⭐</span>';
+            return '⭐';
         case 'Plowhorse':
-            return '<span class="quadrant-icon" data-quadrant="Plowhorse">🐴</span>';
+            return '🐴';
         case 'Puzzle':
-            return '<span class="quadrant-icon" data-quadrant="Puzzle">🧩</span>';
+            return '🧩';
         case 'Dog':
-            return '<span class="quadrant-icon" data-quadrant="Dog">🐶</span>';
+            return '🐶';
         default:
-            return '<span class="quadrant-icon" data-quadrant="N/A">❓</span>';
+            return '❓';
+    }
+}
+function getQuadrantTooltipText(quadrant) {
+    switch (quadrant) {
+        case 'Star':
+            return 'High Popularity + High Profitability';
+        case 'Plowhorse':
+            return 'High Popularity + Low Profitability';
+        case 'Puzzle':
+            return 'Low Popularity + High Profitability ';
+        case 'Dog':
+            return 'Low Popularity + Low Profitability';
+        default:
+            return '';
     }
 }

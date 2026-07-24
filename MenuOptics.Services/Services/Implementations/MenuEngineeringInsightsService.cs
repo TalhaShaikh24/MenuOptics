@@ -26,7 +26,7 @@ namespace MenuOptics.Services
                 parameters.Add("@EndDate", endDate);
                 parameters.Add("@UserId", currentUserId);
 
-                var insights = await connection.QueryAsync<MenuEngineeringInsightsDto>("sp_GetMenuEngineeringInsightsByUserId", parameters, commandType: CommandType.StoredProcedure);
+                var insights = await connection.QueryAsync<MenuEngineeringInsightsDto>("sp_GetMenuEngineeringInsights", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Menu engineering insights retrieved successfully.";

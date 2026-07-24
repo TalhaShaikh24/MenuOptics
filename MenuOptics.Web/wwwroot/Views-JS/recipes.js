@@ -465,7 +465,6 @@ function refreshRecipesTable() {
                         <td>
                             <div class="recipe-info">
                                 <p class="recipe-name">${item.name}</p>
-                                <p class="recipe-meta">Added on: ${created}</p>
                             </div>
                         </td>
                         <td>

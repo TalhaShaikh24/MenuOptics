@@ -238,14 +238,13 @@ function renderCategoriesTable(categories) {
 // Builds a single category table row (same markup as before refactoring)
 function buildCategoryRow(category) {
     const createdDate = DateFormatter.formatWithComma(category.createdOn);
-    const actionText = category.isActive ? 'Deactivate' : 'Reactivate';
+    const actionText = category.isActive ? 'Deactivate' : 'Activate';
     const actionIcon = category.isActive ? 'fas fa-ban' : 'fas fa-check';
     return `
                     <tr>
                         <td>
                             <div class="category-info">
                                 <p class="category-name">${category.name}</p>
-                                <p class="category-meta">Added on: ${createdDate}</p>
                             </div>
                         </td>
                         <td><i class="fas fa-calendar"></i> ${createdDate}</td>
@@ -258,7 +257,6 @@ function buildCategoryRow(category) {
                                 <div class="dropdown-menu">
                                     <a href="#" onclick="editCategory(${category.categoryId})"><i class="fas fa-edit"></i> Edit Details</a>
                                     <a href="#" onclick="toggleCategoryActive(${category.categoryId})"><i class="${actionIcon}"></i> ${actionText}</a>
-                                    <a href="#" onclick="deleteCategory(${category.categoryId})"><i class="fas fa-trash"></i> Delete</a>
                                 </div>
                             </div>
                         </td>

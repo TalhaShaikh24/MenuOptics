@@ -946,7 +946,7 @@ function refreshMenuGrid() {
                     }
 
                     const availability = item.isAvailable ? 'available' : 'out-of-stock';
-                    const actionText = item.isActive ? 'Inactive' : 'Reactivate';
+                    const actionText = item.isActive ? 'Deactivate' : 'Activate';
                     const actionIcon = item.isActive ? 'fas fa-ban' : 'fas fa-check';
                     const costPercentage = ((item.cost / item.sellingPrice) * 100).toFixed(2);
                     const currentCostPercentage = ((item.currentCost / item.sellingPrice) * 100).toFixed(2);

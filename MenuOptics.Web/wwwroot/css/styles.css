@@ -363,6 +363,12 @@ button.quadrant-filter:hover {
     border-color: #f08d11;
     color: #fff !important;
 }
+.quadrant-icon {
+    width: unset !important;
+    height: unset !important;
+    font-size: unset !important;
+    background: unset !important;
+}
 
 .hidden {
     display: none !important;
@@ -1106,11 +1112,15 @@ hr {
         padding: 16px 12px;
         border-top: none !important;
         border-bottom: 1px solid #f3f4f6;
-        vertical-align: top;
+        vertical-align: middle;
     }
 
     .data-table tr:hover {
         background: #f9fafb;
+    }
+
+    td{
+        vertical-align: middle;
     }
 
 /* Ingredient Table Specific */
