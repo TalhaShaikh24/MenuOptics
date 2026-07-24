@@ -287,7 +287,7 @@ function getQuadrantTooltipText(quadrant) {
         case 'Plowhorse':
             return 'High Popularity + Low Profitability';
         case 'Puzzle':
-            return 'Low Popularity + High Profitability ';
+            return 'Low Popularity + High Profitability';
         case 'Dog':
             return 'Low Popularity + Low Profitability';
         default:

@@ -361,13 +361,24 @@ body {
 button.quadrant-filter:hover {
     background: #f08d11;
     border-color: #f08d11;
-    color: #fff !important;
 }
 .quadrant-icon {
     width: unset !important;
     height: unset !important;
     font-size: unset !important;
     background: unset !important;
+    display: unset!important;
+     align-items: unset!important; 
+     justify-content: unset!important; 
+     width: unset!important; 
+     height: unset!important; 
+     margin-left: unset!important; 
+     border-radius: unset!important; 
+     background: unset!important; 
+     color: unset!important; 
+     font-weight: unset!important; 
+     font-style: unset!important; 
+     line-height: unset!important; 
 }
 
 .hidden {
