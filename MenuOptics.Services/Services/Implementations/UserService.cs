@@ -18,6 +18,7 @@ namespace MenuOptics.Services
         private readonly IActivityLogService _activityLog;
         private readonly ITokenService _tokenService;
         private readonly IEmailService _emailService;
+        private readonly IFileUploadService _fileService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public UserService(
@@ -26,6 +27,7 @@ namespace MenuOptics.Services
             IActivityLogService activityLog,
             ITokenService tokenService,
             IEmailService emailService,
+            IFileUploadService fileService,
             IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
@@ -33,6 +35,7 @@ namespace MenuOptics.Services
             _activityLog = activityLog;
             _tokenService = tokenService;
             _emailService = emailService;
+            _fileService = fileService;
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -123,10 +126,10 @@ namespace MenuOptics.Services
             connection.Open();
             try
             {
-                var filePathUrl = "";
+                string filePathUrl = null;
                 if (model.File != null)
                 {
-                    filePathUrl = await SaveUploadedFileAsync(model.File, requestBaseUrl);
+                    filePathUrl = await _fileService.UploadFileAsync(model.File, "uploads");
                 }
 
                 var parameters = new DynamicParameters();
@@ -321,7 +324,7 @@ namespace MenuOptics.Services
                 var filePathUrl = model.ProfilePic;
                 if (model.File != null)
                 {
-                    filePathUrl = await SaveUploadedFileAsync(model.File, requestBaseUrl);
+                    filePathUrl = await _fileService.UploadFileAsync(model.File, "uploads");
                 }
 
                 var parameters = new DynamicParameters();
@@ -768,7 +771,7 @@ namespace MenuOptics.Services
                 var filePathUrl = model.ProfilePic;
                 if (model.File != null)
                 {
-                    filePathUrl = await SaveUploadedFileAsync(model.File, requestBaseUrl);
+                    filePathUrl = await _fileService.UploadFileAsync(model.File, "uploads");
                 }
 
                 var parameters = new DynamicParameters();
@@ -1102,10 +1105,10 @@ namespace MenuOptics.Services
             try
             {
                 // 1. Upload profile picture if provided
-                var profilePicUrl = model.ProfilePic; // keep existing if no new file
+                var profilePicUrl = model.ProfilePic; 
                 if (model.File != null)
                 {
-                    profilePicUrl = await SaveUploadedFileAsync(model.File, requestBaseUrl);
+                    profilePicUrl = await _fileService.UploadFileAsync(model.File, "uploads");
                 }
 
                 // 2. Persist changes via SP
@@ -1275,22 +1278,6 @@ namespace MenuOptics.Services
             {
                 connection.Close();
             }
-        }
-        private async Task<string> SaveUploadedFileAsync(IFormFile file, string requestBaseUrl)
-        {
-            string uploadsFolder = Path.Combine(_environment.WebRootPath ?? Directory.GetCurrentDirectory(), "Uploads");
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-            string filePath = Path.Combine(uploadsFolder, fileName);
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-            return $"{requestBaseUrl}/Uploads/{fileName}";
         }
         private async Task SignInWithCookieAsync(UserDto user, int effectiveUserId, bool isParent)
         {

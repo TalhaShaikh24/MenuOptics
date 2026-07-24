@@ -8,12 +8,10 @@
  * Functions stay global: they are referenced by inline onclick handlers.
  * ==========================================================================*/
 
-let imageBaseUrl;
-
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
-    imageBaseUrl = $("#imageBaseUrl").val();
+    
     // Initialize Select2 for ingredients, recipes and categories
     initializeIngredientsSelect('#ingredientsSelect', '#addMenuItemModal', '#ingredientsDetails', '#menuCost');
     initializeIngredientsSelect('#editIngredientsSelect', '#editMenuItemModal', '#editIngredientsDetails', '#editMenuCost');
@@ -974,10 +972,10 @@ function refreshMenuGrid() {
                                         <span class="prep-time">
                                         <strong>Food Cost Percentage: </strong>
                                         ${item.cost == item.currentCost
-                            ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Cost as a % of selling price, based on today's live ingredient prices">i</span></span>`
+                        ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>`
                             : `
-                                                <span class="text-highlight danger">${costPercentage}%<span class="tooltip-icon danger" data-tooltip="Cost % as of when this item was saved, based on ingredient prices at that time">i</span></span>
-                                                <span class="text-highlight">${currentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Cost as a % of selling price, based on today's live ingredient prices">i</span></span>
+                                                <span class="text-highlight danger">${costPercentage}%<span class="tooltip-icon danger" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>
+                                                <span class="text-highlight">${currentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Food Cost % according to the current prices.">i</span></span>
                                               `
                         }
                                     </span>
@@ -991,7 +989,6 @@ function refreshMenuGrid() {
                                     <div class="dropdown-menu">
                                         <a href="#" onclick="editMenuItem(${item.menuItemId})"><i class="fas fa-edit"></i> Edit Item</a>
                                         <a href="#" onclick="toggleMenuItemActive(${item.menuItemId})"><i class="${actionIcon}"></i> ${actionText}</a>
-                                        <a href="#" onclick="deleteMenuItem(${item.menuItemId})"><i class="fas fa-trash"></i> Delete</a>
                                         <a href="#" onclick="exportSingleMenuPDF(${item.menuItemId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
                                     </div>
                                 </div>
@@ -999,8 +996,8 @@ function refreshMenuGrid() {
                             <div class="item-details">
                                 <div class="pricing">
                                     <span class="price">$${item.sellingPrice.toFixed(2)}</span>
-                                    ${item.cost == item.currentCost ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost calculated from ingredient prices at the time this item was saved">i</span></span>`
-                            : `Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}<span class="tooltip-icon danger" data-tooltip="Cost calculated from ingredient prices at the time this item was saved">i</span></span> <span class="cost text-highlight">$${item.currentCost.toFixed(2)}<span class="tooltip-icon success" data-tooltip="Cost recalculated using today's live ingredient prices">i</span></span>`
+                                    ${item.cost == item.currentCost ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
+                        : `Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}<span class="tooltip-icon danger" data-tooltip="Cost at the time this item was created/updated.">i</span></span> <span class="cost text-highlight">$${item.currentCost.toFixed(2)}<span class="tooltip-icon success" data-tooltip="Cost according to the current prices.">i</span></span>`
                         }
                                 </div>
                             </div>
@@ -1025,11 +1022,11 @@ function refreshMenuGrid() {
                 const avgCurrentCostPercentage = activeItemCount > 0 ? (totalCurrentCostPercentage / activeItemCount).toFixed(2) : "0.00";
 
                 if (avgCostPercentage === avgCurrentCostPercentage) {
-                    $('#avgFoodCost').html(`${avgCurrentCostPercentage}%<span class="tooltip-icon" data-tooltip="Average cost % across active items, based on today's live ingredient prices">i</span>`);
+                    $('#avgFoodCost').html(`${avgCurrentCostPercentage}%<span class="tooltip-icon" data-tooltip="Average Food Cost % at the time menu items were created/updated.">i</span>`);
                 } else {
                     $('#avgFoodCost').html(`
-                        <span class="text-highlight danger">${avgCostPercentage}%<span class="tooltip-icon danger" data-tooltip="Average cost % across active items, based on ingredient prices at the time each item was saved">i</span></span>
-                        <span class="text-highlight">${avgCurrentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Average cost % across active items, based on today's live ingredient prices">i</span></span>
+                        <span class="text-highlight danger">${avgCostPercentage}%<span class="tooltip-icon danger" data-tooltip="Average Food Cost % at the time menu items were created/updated.">i</span></span>
+                        <span class="text-highlight">${avgCurrentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Average Food Cost % according to the current prices.">i</span></span>
                     `);
                 }
             }

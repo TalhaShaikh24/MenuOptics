@@ -238,7 +238,7 @@ function renderCategoriesTable(categories) {
 // Builds a single category table row (same markup as before refactoring)
 function buildCategoryRow(category) {
     const createdDate = DateFormatter.formatWithComma(category.createdOn);
-    const actionText = category.isActive ? 'Inactive' : 'Reactivate';
+    const actionText = category.isActive ? 'Deactivate' : 'Reactivate';
     const actionIcon = category.isActive ? 'fas fa-ban' : 'fas fa-check';
     return `
                     <tr>

@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using Stripe;
 using System.Data;
 
 namespace MenuOptics.Services
@@ -8,12 +9,15 @@ namespace MenuOptics.Services
     public class ProfileService : IProfileService
     {
         private readonly DapperContext _context;
+        private readonly IFileUploadService _fileService;
         private readonly IWebHostEnvironment _environment;
 
-        public ProfileService(DapperContext context, IWebHostEnvironment environment)
+        public ProfileService(DapperContext context, IWebHostEnvironment environment, IFileUploadService fileService)
         {
             _context = context;
             _environment = environment;
+            _fileService = fileService;
+
         }
 
         public async Task<(int StatusCode, object Body)> GetCurrentUserAsync(string? userId)
@@ -43,17 +47,7 @@ namespace MenuOptics.Services
 
                 if (model.File != null)
                 {
-                    string uploadsFolder = Path.Combine(_environment.WebRootPath, "Uploads");
-                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(model.File.FileName);
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await model.File.CopyToAsync(stream);
-                    }
-                    filePathUrl = $"{requestBaseUrl}/Uploads/{fileName}";
+                    filePathUrl = await _fileService.UploadFileAsync(model.File, "uploads");
                 }
 
                 var parameters = new DynamicParameters();

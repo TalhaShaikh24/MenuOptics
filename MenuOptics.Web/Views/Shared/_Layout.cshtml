@@ -280,7 +280,9 @@
     
 
     <script>
+        let imageBaseUrl;
         $(document).ready(function () {
+            imageBaseUrl = $("#imageBaseUrl").val();
             var token = Cookies.get('JwtToken');
 
             if (token && token.trim() !== '') {

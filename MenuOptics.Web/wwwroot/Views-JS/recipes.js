@@ -457,6 +457,8 @@ function refreshRecipesTable() {
 
                 const cls = item.isActive ? 'good' : 'critical';
                 const lbl = item.isActive ? 'Active' : 'In Active';
+                const price = item.price;
+                const currentPrice = item.currentPrice;
 
                 const row = `
                     <tr>
@@ -470,11 +472,30 @@ function refreshRecipesTable() {
                             <span class="recipeDescription" style="cursor:pointer;" onclick="showRecipeDescription(${item.recipeId})">${item.description}</span>
                         </td>
                         <td>${item.unit}</td>
-                        <td>$${item.price.toFixed(2)}</td>
+                        <td>
+                         ${
+                                currentPrice == null || price === currentPrice
+                                    ? `
+                                  <span>
+                                    ${price}
+                                    <span class="tooltip-icon" data-tooltip="Price at the time this recipe was created/updated">i</span>
+                                  </span>
+                                `
+                                                    : `
+                                  <span class="text-highlight danger">
+                                    ${price}
+                                    <span class="tooltip-icon danger" data-tooltip="Price at the time this recipe was created/updated">i</span>
+                                  </span>
+                                    <br>
+                                  <span class="text-highlight success">
+                                    ${currentPrice}
+                                    <span class="tooltip-icon success" data-tooltip="Current price">i</span>
+                                  </span>
+                                `
+                            }
+                        </td>
                         <td><span class="status-badge good">${ingredientNames}</span></td>
                         <td><span class="status-badge ${cls}" > ${lbl}</span ></td>
-                        
-                     
                         <td>
                             <div class="dropdown">
                                 <button class="dropdown-toggle"><i class="fas fa-ellipsis-h"></i></button>

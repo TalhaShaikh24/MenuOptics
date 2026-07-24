@@ -150,7 +150,7 @@ function displayMenuItems(items) {
         const menuItemHtml = `
             <div class="menu-item" data-id="${item.menuItemId}" data-category="${item.categoryId}">
                 <div class="menu-item-image">
-                    <img src="${item.featuredImage || '/placeholder.svg?height=120&width=280&text=' + encodeURIComponent(item.name)}" alt="${item.name}">
+                    <img src="${imageBaseUrl+item.featuredImage || '/placeholder.svg?height=120&width=280&text=' + encodeURIComponent(item.name)}" alt="${item.name}">
                 </div>
                 <div class="menu-item-content">
                     <h4 class="menu-item-name">${item.name}</h4>

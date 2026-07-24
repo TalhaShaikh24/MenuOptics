@@ -2,6 +2,7 @@ using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
 using Newtonsoft.Json;
+using Stripe;
 using System.Data;
 
 namespace MenuOptics.Services
@@ -9,12 +10,15 @@ namespace MenuOptics.Services
     public class MenuService : IMenuService
     {
         private readonly DapperContext _context;
+        private readonly IFileUploadService _fileService;
         private readonly IWebHostEnvironment _environment;
 
-        public MenuService(DapperContext context, IWebHostEnvironment environment)
+        public MenuService(DapperContext context,  IWebHostEnvironment environment, IFileUploadService fileService)
         {
             _context = context;
             _environment = environment;
+            _fileService = fileService;
+
         }
 
         public async Task<ResponseDto> CreateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId)
@@ -37,7 +41,7 @@ namespace MenuOptics.Services
 
                 if (model.FeaturedImageFile != null && model.FeaturedImageFile.Length > 0)
                 {
-                    featuredImagePath = await SaveFeaturedImageAsync(model.FeaturedImageFile);
+                    featuredImagePath = await _fileService.UploadFileAsync(model.FeaturedImageFile, "menu");
                 }
 
                 var parameters = new DynamicParameters();
@@ -264,7 +268,7 @@ namespace MenuOptics.Services
 
                 if (model.FeaturedImageFile != null && model.FeaturedImageFile.Length > 0)
                 {
-                    featuredImagePath = await SaveFeaturedImageAsync(model.FeaturedImageFile);
+                    featuredImagePath = await _fileService.UploadFileAsync(model.FeaturedImageFile, "menu");
                 }
 
                 var parameters = new DynamicParameters();
@@ -391,20 +395,6 @@ namespace MenuOptics.Services
             }
         }
 
-        private async Task<string> SaveFeaturedImageAsync(IFormFile featuredImageFile)
-        {
-            var uploadsFolder = Path.Combine(_environment.WebRootPath, "menu");
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-            var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(featuredImageFile.FileName);
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await featuredImageFile.CopyToAsync(fileStream);
-            }
-            return $"/menu/{uniqueFileName}";
-        }
+        
     }
 }

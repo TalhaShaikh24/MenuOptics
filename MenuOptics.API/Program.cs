@@ -55,6 +55,8 @@ builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddScoped<IStripeWebhookService, StripeWebhookService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IVendorService, VendorService>();
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+
 
 
 // 1. Read JWT settings from configuration (appsettings.json) and create a key for token validation
@@ -136,11 +138,19 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Restaurant API", Version = "v1" });
 });
 
+var allowedOrigins = builder.Configuration
+    .GetSection("WebBaseUrl")
+    .Get<string[]>() ?? [];
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", builder =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials(); // Required for cookie-based auth
     });
 });
 
@@ -162,11 +172,11 @@ else
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowAll");       // Must be before UseStaticFiles so /uploads/ images get CORS headers
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRequestId();
-
-app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

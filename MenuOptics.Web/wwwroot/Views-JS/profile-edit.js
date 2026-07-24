@@ -17,7 +17,7 @@ $(document).ready(function () {
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                $('#profilePreview').attr('src', e.target.result);
+                $('#profilePreview').attr('src',e.target.result);
             };
             reader.readAsDataURL(file);
         }
@@ -34,7 +34,7 @@ $(document).ready(function () {
             contentType: false,
             processData: false,
             onSuccess: function (response) {
-                localStorage.setItem("profilePic", response.data.profilePic);
+                localStorage.setItem("profilePic", imageBaseUrl+response.data.profilePic);
                 showNotification('Profile updated successfully!', 'success');
             }
         });
@@ -61,10 +61,10 @@ function loadCurrentProfile() {
             form.find('[name="address"]').val(user.address);
             form.find('[name="city"]').val(user.city);
             form.find('[name="zip"]').val(user.zip);
-            form.find('#existingProfilePic').val(user.profilePic);
-
+            form.find('#existingProfilePic').val(imageBaseUrl+user.profilePic);
+           
             if (user.profilePic) {
-                $('#profilePreview').attr('src', user.profilePic);
+                $('#profilePreview').attr('src', imageBaseUrl+user.profilePic);
             }
         }
     });

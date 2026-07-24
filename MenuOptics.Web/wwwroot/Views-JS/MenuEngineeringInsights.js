@@ -235,7 +235,7 @@ function buildInsightRow(insight) {
                     <tr>
                         <td>
                             <div class="insight-info">
-                                <img class="table-image" src="${insight.featuredImage}"/>
+                                <img class="table-image" src="${imageBaseUrl+insight.featuredImage}"/>
                                 <p class="insight-name">${insight.name || ''}</p>
                             </div>
                         </td>
