@@ -20,7 +20,7 @@ $(document).ready(function () {
             startDate = DateFormatter.formatDashUS(selectedDates.startDate);
             endDate = DateFormatter.formatDashUS(selectedDates.endDate);
             currentEndDate = endDate;
-            console.log('Filter Applied:', filterType, selectedDates);
+
             refreshCogsReportTable(startDate, endDate);
         },
         initialFilter: "Last 30 Days"
@@ -40,6 +40,7 @@ $(document).ready(function () {
 
     startDate = DateFormatter.formatDashUS(last30Days);
     endDate = DateFormatter.formatDashUS(today);
+    currentEndDate = endDate;
 
     refreshCogsReportTable(startDate, endDate);
 
@@ -78,7 +79,7 @@ function refreshCogsReportTable(startDate = null, endDate = null) {
             if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
                 table.destroy();
             }
-            debugger
+            
             const tbody = $('.cogs-report-table tbody');
             tbody.empty();
 
@@ -126,7 +127,7 @@ function refreshCogsReportTable(startDate = null, endDate = null) {
             <td data-order="${closingCount}" class="editable-closing" data-ingredient-id="${item.ingredientId || ''}" >
                 ${closingCount.toFixed(2)}
             </td>
-            <td data-order="${closingValue}">$${closingValue.toFixed(2)}</td>
+            <td data-order="${closingValue}" id="closingValue_${item.ingredientId}">$${closingValue.toFixed(2)}</td>
             <td data-order="${cogs}">$${cogs.toFixed(2)}</td>
         </tr>`;
 
@@ -355,30 +356,39 @@ function resetFooterValues() {
 function makeClosingCountEditable() {
     $('.cogs-report-table tbody').off('click', 'td.editable-closing');
     $('.cogs-report-table tbody').on('click', 'td.editable-closing', function (e) {
-        const $td = $(this);
-        if ($td.find('input').length) return;
+        const $closingCountTd = $(this);
+        if ($closingCountTd.find('input').length) return;
 
-        const oldVal = $td.text().trim().replace(/,/g, '');
-        const $input = $(`<input type="text" class="form-control form-control-sm" style="width:80px;" value="${oldVal}">`);
-        $td.html($input);
-        $input.focus().select();
+        const ingredientId = $closingCountTd.attr('data-ingredient-id');
+        if (!ingredientId) { console.warn('ingredientId missing'); return; }
 
+        const oldClosingCount = $closingCountTd.text().trim().replace(/,/g, '');
+        const $closingCountInput = $(`<input type="text" class="form-control form-control-sm" style="width:80px;" value="${oldClosingCount}">`);
+        $closingCountTd.html($closingCountInput);
+        $closingCountInput.focus().select();
+
+        const $closingValueTd = $('#closingValue_' + ingredientId);
+        const oldClosingValue = $closingValueTd.text().replace('$', '');
+        const price = oldClosingValue / oldClosingCount;
+      
+        
         const finish = () => {
-            const newVal = parseFloat($input.val().replace(/[^0-9.-]/g, '')) || 0;
-            $td.text(newVal.toFixed(2));
-            $td.removeClass('editing');
+            const newClosingCount = parseFloat($closingCountInput.val().replace(/[^0-9.-]/g, '')) || 0;
+            $closingCountTd.text(newClosingCount.toFixed(2));
+            $closingCountTd.removeClass('editing');
 
-            const ingredientId = $td.attr('data-ingredient-id');
-            if (!ingredientId) { console.warn('ingredientId missing'); return; }
+            const newClosingValue = newClosingCount * price;
+            $closingValueTd.text('$' + newClosingValue.toFixed(2));
 
             saveClosingCount({
                 ingredientId: parseInt(ingredientId),
-                closingCount: newVal,
+                closingCount: newClosingCount,
+                closingValue: newClosingValue,
                 closingDate: currentEndDate
             });
         };
 
-        $input.on('blur', finish)
+        $closingCountInput.on('blur', finish)
             .on('keydown', function (e) { if (e.which === 13) finish(); });
     });
 }

@@ -241,36 +241,36 @@ function saveIngredient() {
     closeModal('addIngredientModal');
 }
 
-//function animateStats() {
-//    $(".stat-value").each(function () {
-//        const $this = $(this)
-//        const finalValue = $this.text()
-//        const numericValue = Number.parseFloat(finalValue.replace(/[^0-9.-]+/g, ""))
+function animateStats() {
+    $(".stat-value").each(function () {
+        const $this = $(this)
+        const finalValue = $this.text()
+        const numericValue = Number.parseFloat(finalValue.replace(/[^0-9.-]+/g, ""))
 
-//        if (!isNaN(numericValue)) {
-//            $this.text("0")
-//            $({ value: 0 }).animate(
-//                { value: numericValue },
-//                {
-//                    duration: 2000,
-//                    easing: "swing",
-//                    step: function () {
-//                        if (finalValue.includes("$")) {
-//                            $this.text("$" + Math.floor(this.value).toLocaleString())
-//                        } else if (finalValue.includes("%")) {
-//                            $this.text(Math.floor(this.value) + "%")
-//                        } else {
-//                            $this.text(Math.floor(this.value).toLocaleString())
-//                        }
-//                    },
-//                    complete: () => {
-//                        $this.text(finalValue)
-//                    },
-//                },
-//            )
-//        }
-//    })
-//}
+        if (!isNaN(numericValue)) {
+            $this.text("0")
+            $({ value: 0 }).animate(
+                { value: numericValue },
+                {
+                    duration: 2000,
+                    easing: "swing",
+                    step: function () {
+                        if (finalValue.includes("$")) {
+                            $this.text("$" + Math.floor(this.value).toLocaleString())
+                        } else if (finalValue.includes("%")) {
+                            $this.text(Math.floor(this.value) + "%")
+                        } else {
+                            $this.text(Math.floor(this.value).toLocaleString())
+                        }
+                    },
+                    complete: () => {
+                        $this.text(finalValue)
+                    },
+                },
+            )
+        }
+    })
+}
 
 //function initializeCharts() {
 //    // Revenue Chart

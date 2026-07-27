@@ -221,6 +221,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@ClosingCount", model.ClosingCount);
+                parameters.Add("@ClosingValue", model.ClosingValue);
                 parameters.Add("@ClosingDate", model.ClosingDate);
 
                 int rows = await connection.ExecuteAsync(
