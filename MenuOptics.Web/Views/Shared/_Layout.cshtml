@@ -101,104 +101,147 @@
 
             <!-- Navigation -->
             <nav class="sidebar-nav">
+
                 @if (User.IsInRole("Admin"))
                 {
-                    <a href="@Url.Action("Index", "User")" class="nav-item @Html.IsActive("User", "Index")">
-                        <i class="fas fa-users"></i>
-                        <span>Users</span>
-                    </a>
-                    <a href="@Url.Action("Index", "Restaurant")" class="nav-item @Html.IsActive("Restaurant", "Index")">
-                        <i class="fas fa-store"></i>
-                        <span>Restaurants</span>
-                    </a>
-                }
+                    <!-- Admin: Management Group -->
+                    <div class="nav-group">
+                        <button class="nav-group-toggle" data-target="admin-management">
+                            <span class="nav-group-left">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Management</span>
+                            </span>
+                            <i class="fas fa-chevron-down nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items" id="admin-management">
+                            <a href="@Url.Action("Index", "User")" class="nav-item nav-child @Html.IsActive("User", "Index")">
+                                <i class="fas fa-users"></i>
+                                <span>Users</span>
+                            </a>
+                            <a href="@Url.Action("Index", "Restaurant")" class="nav-item nav-child @Html.IsActive("Restaurant", "Index")">
+                                <i class="fas fa-store"></i>
+                                <span>Restaurants</span>
+                            </a>
+                        </div>
+                    </div>
 
-                @if (User.IsInRole("Restaurant"))
-                {
-                    <a href="@Url.Action("Index", "Ingredient")" class="nav-item @Html.IsActive("Ingredient", "Index")">
-                        <i class="fas fa-box"></i>
-                        <span>Ingredients</span>
-                    </a>
-                    <a href="@Url.Action("Index", "Recipe")" class="nav-item @Html.IsActive("Recipe", "Index")">
-                       <i class="fas fa-utensils"></i>  
-
-                        <span>Recipes</span>
-                    </a>
-                    <a href="@Url.Action("Index", "Category")" class="nav-item @Html.IsActive("Category", "Index")">
-                        <i class="fas fa-tags"></i>
-                        <span>Categories</span>
-                    </a>
-                    <a href="@Url.Action("Index", "Menu")" class="nav-item @Html.IsActive("Menu", "Index")">
-                        <i class="fas fa-utensils"></i>
-                        <span>Menu Items</span>
-                    </a>
-
-                    
-                }
-
-
-                @if (User.IsInRole("Admin") || User.IsInRole("Restaurant"))
-                         
-
-                            @if (User.IsInRole("Vendor"))
-                            {
-                                <a href="@Url.Action("VendorIngredients", "Ingredient")" class="nav-item @Html.IsActive("Ingredient", "VendorIngredients")">
-                    <i class="fas fa-box"></i>
-                    <span>Ingredients</span>
-                </a>
-                            }
-
-                @if (User.IsInRole("Restaurant"))
-                {
-                    
-                    <a href="@Url.Action("Index", "Event")" class="nav-item @Html.IsActive("Event", "Index")">
-                        <i class="fa-solid fa-bell-concierge"></i>
-                        <span>Event & Catering</span>
-                    </a>
-                    
-                    <a href="@Url.Action("Index", "Sales")" class="nav-item @Html.IsActive("Sales", "Index")">
-                        <i class="fas fa-dollar-sign"></i>
-                        <span>Sales</span>
-                    </a>
-
-                    <a href="@Url.Action("Index", "MenuEngineeringInsights")" class="nav-item @Html.IsActive("MenuEngineeringInsights", "Index")">
-                        <i class="fas fa-chart-pie"></i>
-                        <span>Menu Insights</span>
-                    </a>
-                    
-                    <a href="@Url.Action("Index", "Analytics")" class="nav-item @Html.IsActive("Analytics", "Index") hidden">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Analytics</span>
-                    </a>
-                    <a href="@Url.Action("Index", "Inventory")" class="nav-item @Html.IsActive("Inventory", "Index")">
-                        <i class="fas fa-file"></i>
-                        <span>Inventory Suite</span>
-                    </a>
-                    
-                    
-                    
-                }
-
-                 @if (User.IsInRole("Restaurant") && isParent)
-                {
-                     <a href="@Url.Action("Index", "Profile")" class="nav-item @Html.IsActive("Profile", "Index")">
-                        <i class="fas fa-edit"></i>
-                        <span>Edit Profile</span>
-                    </a>
-                }
-                @if (User.IsInRole("Restaurant") && isParent)
-                {
-                    <a href="@Url.Action("Members", "Restaurant")" class="nav-item @Html.IsActive("Restaurant", "Members")">
-                        <i class="fas fa-users-cog"></i>
-                        <span>Staff Members</span>
-                    </a>
-                }
-                @if (User.IsInRole("Admin"))
-                {
                     <a href="@Url.Action("Index", "Policies")" class="nav-item @Html.IsActive("Policies", "Index")">
-                        <i class="fas fa-users"></i>
+                        <i class="fas fa-file-contract"></i>
                         <span>Policy Management</span>
                     </a>
+                }
+
+                @if (User.IsInRole("Restaurant"))
+                {
+                    <!-- Restaurant: Menu Management Group -->
+                    <div class="nav-group">
+                        <button class="nav-group-toggle" data-target="menu-management">
+                            <span class="nav-group-left">
+                                <i class="fas fa-utensils"></i>
+                                <span>Menu Management</span>
+                            </span>
+                            <i class="fas fa-chevron-down nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items" id="menu-management">
+                            <a href="@Url.Action("Index", "Ingredient")" class="nav-item nav-child @Html.IsActive("Ingredient", "Index")">
+                                <i class="fas fa-box"></i>
+                                <span>Ingredients</span>
+                            </a>
+                            <a href="@Url.Action("Index", "Recipe")" class="nav-item nav-child @Html.IsActive("Recipe", "Index")">
+                                <i class="fas fa-book-open"></i>
+                                <span>Recipes</span>
+                            </a>
+                            <a href="@Url.Action("Index", "Category")" class="nav-item nav-child @Html.IsActive("Category", "Index")">
+                                <i class="fas fa-tags"></i>
+                                <span>Menu Categories</span>
+                            </a>
+                            <a href="@Url.Action("Index", "Menu")" class="nav-item nav-child @Html.IsActive("Menu", "Index")">
+                                <i class="fas fa-list"></i>
+                                <span>Menu Items</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Restaurant: Business & Analytics Group -->
+                    <div class="nav-group">
+                        <button class="nav-group-toggle" data-target="business-analytics">
+                            <span class="nav-group-left">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Business & Analytics</span>
+                            </span>
+                            <i class="fas fa-chevron-down nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items" id="business-analytics">
+                            <a href="@Url.Action("Index", "Sales")" class="nav-item nav-child @Html.IsActive("Sales", "Index")">
+                                <i class="fas fa-dollar-sign"></i>
+                                <span>Sales</span>
+                            </a>
+                            <a href="@Url.Action("Index", "MenuEngineeringInsights")" class="nav-item nav-child @Html.IsActive("MenuEngineeringInsights", "Index")">
+                                <i class="fas fa-chart-pie"></i>
+                                <span>Menu Insights</span>
+                            </a>
+                            <a href="@Url.Action("Index", "Analytics")" class="nav-item nav-child @Html.IsActive("Analytics", "Index") hidden">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Analytics</span>
+                            </a>
+                            <a href="@Url.Action("Index", "Inventory")" class="nav-item nav-child @Html.IsActive("Inventory", "Index")">
+                                <i class="fas fa-file"></i>
+                                <span>Inventory Suite</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Restaurant: Operations Group -->
+                    <div class="nav-group">
+                        <button class="nav-group-toggle" data-target="operations">
+                            <span class="nav-group-left">
+                                <i class="fas fa-concierge-bell"></i>
+                                <span>Operations</span>
+                            </span>
+                            <i class="fas fa-chevron-down nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items" id="operations">
+                            <a href="@Url.Action("Index", "Event")" class="nav-item nav-child @Html.IsActive("Event", "Index")">
+                                <i class="fa-solid fa-bell-concierge"></i>
+                                <span>Event & Catering</span>
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                @if (User.IsInRole("Admin") || User.IsInRole("Restaurant"))
+                {
+                    @if (User.IsInRole("Vendor"))
+                    {
+                        <a href="@Url.Action("VendorIngredients", "Ingredient")" class="nav-item @Html.IsActive("Ingredient", "VendorIngredients")">
+                            <i class="fas fa-box"></i>
+                            <span>Ingredients</span>
+                        </a>
+                    }
+                }
+
+                @if (User.IsInRole("Restaurant") && isParent)
+                {
+                    <!-- Restaurant (Parent): Settings Group -->
+                    <div class="nav-group">
+                        <button class="nav-group-toggle" data-target="settings">
+                            <span class="nav-group-left">
+                                <i class="fas fa-cog"></i>
+                                <span>Settings</span>
+                            </span>
+                            <i class="fas fa-chevron-down nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items" id="settings">
+                            <a href="@Url.Action("Index", "Profile")" class="nav-item nav-child @Html.IsActive("Profile", "Index")">
+                                <i class="fas fa-edit"></i>
+                                <span>Edit Profile</span>
+                            </a>
+                            <a href="@Url.Action("Members", "Restaurant")" class="nav-item nav-child @Html.IsActive("Restaurant", "Members")">
+                                <i class="fas fa-users-cog"></i>
+                                <span>Staff Members</span>
+                            </a>
+                        </div>
+                    </div>
                 }
 
                 <a id="btnLogout" class="nav-item" href="javascript:void(0);">
@@ -306,6 +349,34 @@
             $("#sidebarToggle").on("click", () => {
                 $(".sidebar").toggleClass("collapsed")
             })
+
+            // Collapsible nav groups
+            $(".nav-group-toggle").on("click", function () {
+                var targetId = $(this).data("target");
+                var $items = $("#" + targetId);
+                var $arrow = $(this).find(".nav-group-arrow");
+                var isOpen = $items.hasClass("open");
+
+                // Close all groups
+                $(".nav-group-items").removeClass("open");
+                $(".nav-group-arrow").removeClass("rotated");
+                $(".nav-group-toggle").removeClass("active");
+
+                // Open clicked group if it was closed
+                if (!isOpen) {
+                    $items.addClass("open");
+                    $arrow.addClass("rotated");
+                    $(this).addClass("active");
+                }
+            });
+
+            // Auto-open group containing the active nav-child
+            $(".nav-group-items").each(function () {
+                if ($(this).find(".nav-item.active").length > 0) {
+                    $(this).addClass("open");
+                    $(this).prev(".nav-group-toggle").addClass("active").find(".nav-group-arrow").addClass("rotated");
+                }
+            });
         });
     </script>
 

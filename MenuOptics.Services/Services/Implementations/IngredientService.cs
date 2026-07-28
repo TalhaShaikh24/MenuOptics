@@ -504,7 +504,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> GetAllIngredientsByUserIdAsync(IQueryCollection query, int currentUserId)
+        public async Task<(int StatusCode, object Body)> GetAllActiveIngredientsByUserIdAsync(IQueryCollection query, int currentUserId)
         {
             using var connection = _context.CreateConnection();
             connection.Open();
@@ -646,7 +646,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> GetAllIngredientsByVendorIdAsync(IQueryCollection query, int vendorId)
+        public async Task<(int StatusCode, object Body)> GetAllIngredientsByVendorIdAsync(IQueryCollection query, int vendorId, int currentUserId)
         {
             using var connection = _context.CreateConnection();
             connection.Open();
@@ -672,6 +672,7 @@ namespace MenuOptics.Services
 
                     var parameters = new DynamicParameters();
                     parameters.Add("@VendorId", vendorId);
+                    parameters.Add("@UserId", currentUserId);
                     parameters.Add("@Action", "SELECT_BY_VENDORID"); // Use the correct SP action
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
@@ -697,6 +698,7 @@ namespace MenuOptics.Services
                 {
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
+                    parameters.Add("@UserId", currentUserId);
                     parameters.Add("@VendorId", vendorId);
                     parameters.Add("@Action", "SELECT_BY_VENDORID");
                     parameters.Add("@PageSize", -1); // Return all rows

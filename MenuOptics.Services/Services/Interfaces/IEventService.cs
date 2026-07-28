@@ -12,5 +12,6 @@ namespace MenuOptics.Services
         Task<ResponseDto> GetEventNoteAsync(int eventId);
         Task<ResponseDto> SaveEventNoteAsync(EventNoteDto model);
         Task<ResponseDto> DeleteEventNoteAsync(int eventId);
+        Task<ResponseDto> ToggleEventActiveAsync(int id, int restaurantId);
     }
 }

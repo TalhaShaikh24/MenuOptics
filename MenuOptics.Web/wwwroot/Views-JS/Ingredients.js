@@ -9,192 +9,6 @@
  * Functions stay global: they are referenced by inline onclick handlers.
  * ==========================================================================*/
 
-/* ── 2. State ─────────────────────────────────────────────────────────── */
-
-let table;
-
-/* ── 6. Helpers — server-side DataTable ───────────────────────────────── */
-
-// Pack Item  -> Size & Pack Size both enabled and required
-// Catch Weight -> Pack Size disabled (not required); Size forced to 1 and disabled
-function toggleSizePackSizeByType(typeValue, sizeSelector, packSizeSelector) {
-    const $size = $(sizeSelector);
-    const $packSize = $(packSizeSelector);
-    const $packSizeRequired = $(packSizeSelector + 'Required'); 
-
-    if (typeValue === 'packItem') {
-        $size.prop('disabled', false).prop('required', true);
-        $packSize.prop('disabled', false).prop('required', true);
-        $packSizeRequired.show();
-    } else if (typeValue === 'catchWeight') {
-        $packSize.prop('disabled', true).prop('required', false).val('');
-        $size.prop('disabled', true).prop('required', false).val(1);
-        $packSizeRequired.hide();
-    } else {
-        $size.prop('disabled', false).prop('required', true);
-        $packSize.prop('disabled', false).prop('required', false);
-        $packSizeRequired.hide();
-    }
-}
-
-
-function initIngredientsTable() {
-    if ($.fn.DataTable.isDataTable('.ingredients-table')) {
-        $('.ingredients-table').DataTable().destroy();
-    }
-
-    table = $('.ingredients-table').DataTable({
-        serverSide: true,
-        processing: true,
-        ordering: false, 
-        ajax: function (dtParams, callback, settings) {
-            // Map DataTables params → our API query params
-            const searchValue = dtParams.search ? dtParams.search.value : '';
-
-            $.ajax({
-                url: '/api/IngredientApi/GetAllActiveInactiveIngredients',
-                method: 'GET',
-                data: {
-                    draw: dtParams.draw,
-                    start: dtParams.start,
-                    length: dtParams.length,
-                    searchValue: searchValue
-                },
-                success: function (response) {
-                    // Rebuild supplier dropdown from current page data
-                    const supplierFilter = $('#supplierFilter');
-                    const existing = supplierFilter.val();
-                    supplierFilter.find('option:not(:first)').remove();
-                    const suppliers = new Set();
-                    (response.data || []).forEach(i => {
-                        if (i.fullName) suppliers.add(i.fullName);
-                    });
-                    suppliers.forEach(s => supplierFilter.append(`<option value="${s}">${s}</option>`));
-                    if (existing) supplierFilter.val(existing);
-
-                    callback({
-                        draw: response.draw,
-                        recordsTotal: response.recordsTotal,
-                        recordsFiltered: response.recordsFiltered,
-                        data: response.data || []
-                    });
-                },
-                error: function (xhr) {
-                    showNotification('Failed to load ingredients.', 'error');
-                    callback({ draw: dtParams.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
-                }
-            });
-        },
-        columns: [
-
-            {
-                data: 'name',
-                render: function (name, type, row) {
-                    const date = DateFormatter.formatWithComma(row.createdOn);
-
-                    return `<div class="ingredient-info">
-                                <p class="ingredient-name">${name.trim().includes(' ') ? name.split(' ').slice(1).join(' ') : name}</p>
-                                <p class="ingredient-meta">Brand: ${name.split(' ')[0]}</p>
-                               ${row.packSize == null ? `<p class="ingredient-meta text-highlight danger">Catch Weight Item</p>` : `<p class="ingredient-meta text-highlight">Pack size: ${row.packSize}</p>`} 
-                            </div>`;
-                }
-            },
-            {
-                data: 'vendorProductId',
-                render: val => `<span class="${val != null ? 'category-badge' : ''}">${val || ''}</span>`
-            },
-            {
-                data: 'size',
-                render: (val, type, row) => `<span class="${val != null ? 'category-badge-size' : ''}">${val ? `${val} ${row.unit || ''}` : ''}</span>`
-            },
-            {
-                data: 'price',
-                render: val => `$${val}`
-            },
-            {
-                // Supplier
-                data: 'fullName',
-                render: val => val || 'N/A'
-            },
-            {
-                data: 'isActive',
-                render: function (active) {
-                    const cls = active ? 'good' : 'critical';
-                    const lbl = active ? 'Active' : 'In Active';
-                    return `<span class="status-badge ${cls}">${lbl}</span>`;
-                }
-            },
-
-
-            {
-
-                data: null,
-                render: function (data, type, row) {
-                    const addStock = (!row.vendorId || row.vendorId <= 0)
-                        ? `<a href="#" onclick="addStock(${row.ingredientId})">
-                               <i class="fas fa-box"></i> Add Stock
-                           </a>`
-                        : '';
-
-                    const toggleLink = (!row.vendorId || row.vendorId <= 0)
-                        ? `<a href="#" onclick="toggleIngredientActive(${row.ingredientId})">
-                               <i class="fas fa-ban"></i>
-                               ${row.isActive ? 'Deactivate' : 'Activate'}
-                           </a>`
-                        : '';
-
-                    return `${row.vendorId && row.vendorId > 0 ? '' : `
-                            <div class="dropdown">
-                                <button class="dropdown-toggle">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    ${addStock}
-                                    <a href="#" onclick="editIngredient(${row.ingredientId})">
-                                        <i class="fas fa-edit"></i> Edit Details
-                                    </a>
-                                    ${toggleLink}
-                                </div>
-                            </div>
-                        `}`;
-                }
-            }
-        ],
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search ingredients...',
-            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...'
-        },
-        drawCallback: function () {
-            // Re-bind select-all checkbox after each draw
-            $('#selectAllIngredients').prop('checked', false);
-            $('#selectAllIngredients').off('change').on('change', function () {
-                $('.ingredient-checkbox').prop('checked', this.checked);
-            });
-        }
-    });
-
-    // Custom search input → server
-    $('#ingredientSearch').off('keyup').on('keyup', function () {
-        table.search(this.value).draw();
-    });
-
-    // Supplier filter → search on supplier column (index 4)
-    $('#supplierFilter').off('change').on('change', function () {
-        table.column(4).search(this.value).draw();
-    });
-}
-
-// Convenience alias used after add/edit/delete operations
-function refreshIngredientsTable() {
-    if (table) {
-        table.ajax.reload(null, false); // false = keep current page
-    } else {
-        initIngredientsTable();
-    }
-}
 
 // ─── Page ready ────────────────────────────────────────────────────────────────
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
@@ -329,9 +143,194 @@ $(document).ready(function () {
     });
 
     // ── Initialise ────────────────────────────────────────────────────────────
-    initIngredientsTable();
     refreshVendors();
+    initIngredientsTable();
+    
 });
+
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let table;
+let activeSupplierVendorId = ''; // vendorId of the selected supplier, or '' for all
+
+/* ── 6. Helpers — server-side DataTable ───────────────────────────────── */
+
+// Pack Item  -> Size & Pack Size both enabled and required
+// Catch Weight -> Pack Size disabled (not required); Size forced to 1 and disabled
+function toggleSizePackSizeByType(typeValue, sizeSelector, packSizeSelector) {
+    const $size = $(sizeSelector);
+    const $packSize = $(packSizeSelector);
+    const $packSizeRequired = $(packSizeSelector + 'Required'); 
+
+    if (typeValue === 'packItem') {
+        $size.prop('disabled', false).prop('required', true);
+        $packSize.prop('disabled', false).prop('required', true);
+        $packSizeRequired.show();
+    } else if (typeValue === 'catchWeight') {
+        $packSize.prop('disabled', true).prop('required', false).val('');
+        $size.prop('disabled', true).prop('required', false).val(1);
+        $packSizeRequired.hide();
+    } else {
+        $size.prop('disabled', false).prop('required', true);
+        $packSize.prop('disabled', false).prop('required', false);
+        $packSizeRequired.hide();
+    }
+}
+
+
+function initIngredientsTable() {
+    if ($.fn.DataTable.isDataTable('.ingredients-table')) {
+        $('.ingredients-table').DataTable().destroy();
+    }
+
+    table = $('.ingredients-table').DataTable({
+        serverSide: true,
+        processing: true,
+        ordering: false, 
+        ajax: function (dtParams, callback, settings) {
+            // Map DataTables params → our API query params
+            const searchValue = dtParams.search ? dtParams.search.value : '';
+
+            // Switch endpoint: vendor-specific when a supplier is selected
+            const url = activeSupplierVendorId
+                ? `/api/IngredientApi/GetAllIngredientsByVendorId/${activeSupplierVendorId}`
+                : '/api/IngredientApi/GetAllActiveInactiveIngredients';
+
+            $.ajax({
+                url: url,
+                method: 'GET',
+                data: {
+                    draw: dtParams.draw,
+                    start: dtParams.start,
+                    length: dtParams.length,
+                    searchValue: searchValue
+                },
+                success: function (response) {
+                    callback({
+                        draw: response.draw,
+                        recordsTotal: response.recordsTotal,
+                        recordsFiltered: response.recordsFiltered,
+                        data: response.data || []
+                    });
+                },
+                error: function (xhr) {
+                    showNotification('Failed to load ingredients.', 'error');
+                    callback({ draw: dtParams.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
+                }
+            });
+        },
+        columns: [
+
+            {
+                data: 'name',
+                render: function (name, type, row) {
+                    const date = DateFormatter.formatWithComma(row.createdOn);
+
+                    return `<div class="ingredient-info">
+                                <p class="ingredient-name">${name.trim().includes(' ') ? name.split(' ').slice(1).join(' ') : name}</p>
+                                <p class="ingredient-meta">Brand: ${name.split(' ')[0]}</p>
+                               ${row.packSize == null ? `<p class="ingredient-meta text-highlight danger">Catch Weight Item</p>` : `<p class="ingredient-meta text-highlight">Pack size: ${row.packSize}</p>`} 
+                            </div>`;
+                }
+            },
+            {
+                data: 'vendorProductId',
+                render: val => `<span class="${val != null ? 'category-badge' : ''}">${val || ''}</span>`
+            },
+            {
+                data: 'size',
+                render: (val, type, row) => `<span class="${val != null ? 'category-badge-size' : ''}">${val ? `${val} ${row.unit || ''}` : ''}</span>`
+            },
+            {
+                data: 'price',
+                render: val => `$${val}`
+            },
+            {
+                // Supplier
+                data: 'fullName',
+                render: val => val || 'N/A'
+            },
+            {
+                data: 'isActive',
+                render: function (active) {
+                    const cls = active ? 'good' : 'critical';
+                    const lbl = active ? 'Active' : 'In Active';
+                    return `<span class="status-badge ${cls}">${lbl}</span>`;
+                }
+            },
+
+
+            {
+
+                data: null,
+                render: function (data, type, row) {
+                    const addStock = (!row.vendorId || row.vendorId <= 0)
+                        ? `<a href="#" onclick="addStock(${row.ingredientId})">
+                               <i class="fas fa-box"></i> Add Stock
+                           </a>`
+                        : '';
+
+                    const toggleLink = (!row.vendorId || row.vendorId <= 0)
+                        ? `<a href="#" onclick="toggleIngredientActive(${row.ingredientId})">
+                               <i class="fas fa-ban"></i>
+                               ${row.isActive ? 'Deactivate' : 'Activate'}
+                           </a>`
+                        : '';
+
+                    return `${row.vendorId && row.vendorId > 0 ? '' : `
+                            <div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    ${addStock}
+                                    <a href="#" onclick="editIngredient(${row.ingredientId})">
+                                        <i class="fas fa-edit"></i> Edit Details
+                                    </a>
+                                    ${toggleLink}
+                                </div>
+                            </div>
+                        `}`;
+                }
+            }
+        ],
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        language: {
+            search: '',
+            searchPlaceholder: 'Search ingredients...',
+            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...'
+        },
+        drawCallback: function () {
+            // Re-bind select-all checkbox after each draw
+            $('#selectAllIngredients').prop('checked', false);
+            $('#selectAllIngredients').off('change').on('change', function () {
+                $('.ingredient-checkbox').prop('checked', this.checked);
+            });
+        }
+    });
+
+    // Custom search input → server
+    $('#ingredientSearch').off('keyup').on('keyup', function () {
+        table.search(this.value).draw();
+    });
+
+    // Supplier filter → switch endpoint to GetAllIngredientsByVendorId when a vendor is chosen
+    $('#supplierFilter').off('change').on('change', function () {
+        activeSupplierVendorId = this.value; // vendorId or '' for all
+        table.ajax.reload();
+    });
+}
+
+// Convenience alias used after add/edit/delete operations
+function refreshIngredientsTable() {
+    if (table) {
+        table.ajax.reload(null, false); // false = keep current page
+    } else {
+        initIngredientsTable();
+    }
+}
 
 // ─── CRUD Functions ────────────────────────────────────────────────────────────
 
@@ -613,6 +612,22 @@ function refreshVendors() {
 
             if (!hasUnlinked) addVendorEmpty.show();
             if (!hasLinked) linkedVendorEmpty.show();
+
+            // ── Populate supplier filter dropdown with linked vendors ──────────
+            const $supplierFilter = $('#supplierFilter');
+            const currentVal = $supplierFilter.val();
+            $supplierFilter.find('option:not(:first)').remove();
+            debugger
+            vendors.forEach(vendor => {
+                    const name = vendor.restaurantName || vendor.firstName + ' ' + vendor.lastName;
+                    $supplierFilter.append(`<option value="${vendor.userId}">${name}</option>`);
+            });
+            // Restore selection if still valid, otherwise reset
+            if (currentVal && $supplierFilter.find(`option[value="${currentVal}"]`).length) {
+                $supplierFilter.val(currentVal);
+            } else {
+                $supplierFilter.val('');
+            }
         },
         onError: function () {
             showNotification('Failed to fetch vendors.', 'error');

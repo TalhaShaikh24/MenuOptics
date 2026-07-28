@@ -330,6 +330,44 @@ namespace MenuOptics.Services
             }
         }
 
+        public async Task<ResponseDto> ToggleEventActiveAsync(int id, int restaurantId)
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@EventId", id);
+                parameters.Add("@ModifiedBy", restaurantId);
+                parameters.Add("@Action", "TOGGLE_ACTIVE");
+
+                var evt = await connection.QueryFirstOrDefaultAsync<Event>("sp_EventCRUD",parameters,commandType: CommandType.StoredProcedure);
+
+                if (evt == null)
+                {
+                    return new ResponseDto
+                    {
+                        Status = 404,
+                        ResponseMsg = "Event not found."
+                    };
+                }
+
+
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = $"Event {(evt.IsActive ? "deactivated" : "activated")} successfully.";
+                ResponseDto.Data = new { EventId = id, IsActive = !evt.IsActive };
+                return ResponseDto;
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = ex.Message;
+                return ResponseDto;
+            }
+        }
+
         /// <summary>
         /// Inserts a single event item, mapping either MenuItemId or EventOnlyItemId based on the item source.
         /// </summary>

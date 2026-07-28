@@ -75,5 +75,12 @@ namespace MenuOptics.Controllers.Api
             var responseData = await _eventService.DeleteEventNoteAsync(eventId);
             return StatusCode(responseData.Status, responseData);
         }
+
+        [HttpPut("ToggleEventActive/{id}")]
+        public async Task<IActionResult> ToggleEventActive(int id)
+        {
+            var responseData = await _eventService.ToggleEventActiveAsync(id, CurrentRestaurantId);
+            return StatusCode(responseData.Status, responseData);
+        }
     }
 }

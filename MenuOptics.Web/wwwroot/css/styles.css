@@ -1,4 +1,4 @@
-﻿/* Reset and Base Styles */
+/* Reset and Base Styles */
 * {
     margin: 0;
     padding: 0;
@@ -209,6 +209,122 @@ body {
 
     .nav-item span:first-of-type {
         flex: 1;
+    }
+
+/* Collapsible Nav Groups */
+.nav-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #374151;
+    font-weight: 500;
+    font-size: 14px;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+    .nav-group-toggle:hover {
+        background: #f3f4f6;
+        color: #f08d11;
+    }
+
+    .nav-group-toggle.active {
+        color: #f08d11;
+    }
+
+.nav-group-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+    .nav-group-left i {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+    }
+
+.nav-group-arrow {
+    font-size: 11px;
+    transition: transform 0.25s ease;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+    .nav-group-arrow.rotated {
+        transform: rotate(180deg);
+    }
+
+.nav-group-items {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 8px;
+}
+
+    .nav-group-items.open {
+        max-height: 500px;
+    }
+
+.nav-item.nav-child {
+    font-size: 13.5px;
+    padding: 9px 14px;
+    border-left: 2px solid #e5e7eb;
+    border-radius: 0 8px 8px 0;
+    margin-left: 4px;
+}
+
+    .nav-item.nav-child:hover {
+        border-left-color: #f08d11;
+    }
+
+    .nav-item.nav-child.active {
+        border-left-color: #e07c0a;
+    }
+
+/* Collapsed sidebar — hide group labels, show only icons */
+.sidebar.collapsed .nav-group-toggle span,
+.sidebar.collapsed .nav-group-arrow {
+    display: none;
+}
+
+.sidebar.collapsed .nav-group-toggle {
+    justify-content: center;
+    padding: 11px;
+}
+
+.sidebar.collapsed .nav-group-left {
+    justify-content: center;
+}
+
+.sidebar.collapsed .nav-group-items {
+    padding-left: 0;
+}
+
+.sidebar.collapsed .nav-item.nav-child {
+    border-left: none;
+    margin-left: 0;
+    justify-content: center;
+    padding: 11px;
+}
+
+    .sidebar.collapsed .nav-item.nav-child span {
+        display: none;
     }
 
 .badge {

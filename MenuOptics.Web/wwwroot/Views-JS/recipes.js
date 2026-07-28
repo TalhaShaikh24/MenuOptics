@@ -100,7 +100,7 @@ function initRecipeTable() {
 // Initialize Select2 for ingredients
 function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId) {
     ajaxRequest({
-        url: '/api/IngredientApi/GetAllIngredientsByUserId',
+        url: '/api/IngredientApi/GetAllActiveIngredientsByUserId',
         method: 'GET',
         showMessage: false,
         isQuery: false,

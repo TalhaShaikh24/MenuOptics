@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * events.js — Event management page (Views/Event/Index.cshtml)
  * Event table, item cost calculations, notes and customer/staff PDF export.
  *
@@ -155,38 +155,61 @@ function loadEvents() {
     });
 }
 
+// Function to toggle event active status
+function toggleEventActive(id) {
+    if (confirm('Are you sure you want to toggle the active status of this event?')) {
+        ajaxRequest({
+            url: `/api/EventApi/ToggleEventActive/${id}`,
+            method: 'PUT',
+            showMessage: false,
+            onSuccess: function (response) {
+                loadEvents();
+            },
+            onError: function (xhr, status, error) {
+                console.error('Failed to toggle event status:', error);
+                showNotification('Failed to toggle event status.', 'error');
+            }
+        });
+    }
+}
+
 function rebuildEventsTable(events) {
     if ($.fn.DataTable.isDataTable('.events-table')) {
         $('.events-table').DataTable().destroy();
     }
     const tbody = $('.events-table tbody').empty();
-    events.forEach(e => {
-        const hasNote = e.hasNote || false;
+
+    events.forEach(event => {
+        const hasNote = event.hasNote || false;
+        const actionText = event.isActive ? 'Deactivate' : 'Activate';
+        const actionIcon = event.isActive ? 'fas fa-ban' : 'fas fa-check';
         const row = `
-            <tr data-event-id="${e.eventId}">
+            <tr data-event-id="${event.eventId}">
                 <td>
                     <div class="ingredient-info">
-                        <p class="ingredient-name">${e.eventName}</p>
-                        <p class="ingredient-meta"><i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(e.eventDate)}</p>
+                        <p class="ingredient-name">${event.eventName}</p>
+                        <p class="ingredient-meta"><i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(event.eventDate)}</p>
                     </div>
                 </td>
-                <td><span class="category-badge">${e.numberOfGuests} Guests</span></td>
-                <td>$${e.pricePerGuest.toFixed(2)}</td>
-                <td>$${e.totalFoodCost.toFixed(2)}</td>
-                <td>$${e.totalRevenue.toFixed(2)}</td>
-                <td>$${(e.totalRevenue - e.totalFoodCost).toFixed(2)}</td>
+                <td><span class="category-badge">${event.numberOfGuests} Guests</span></td>
+                <td>$${event.pricePerGuest.toFixed(2)}</td>
+                <td>$${event.totalFoodCost.toFixed(2)}</td>
+                <td>$${event.totalRevenue.toFixed(2)}</td>
+                <td>$${(event.totalRevenue - event.totalFoodCost).toFixed(2)}</td>
+                <td><span class="status-badge ${event.isActive ? 'good' : 'critical'}">${event.isActive ? 'Active' : 'Inactive'}</span></td>
                 <td>
                     <div class="dropdown">
                         <button class="dropdown-toggle"><i class="fas fa-ellipsis-h"></i></button>
                         <div class="dropdown-menu">
-                            <a href="#" onclick="editEvent(${e.eventId})"><i class="fas fa-edit"></i> Edit Details</a>
-                            <a href="#" onclick="duplicateEvent(${e.eventId})"><i class="fas fa-copy"></i> Duplicate</a>
-                            <a href="#" onclick="exportSingleEventPDF(${e.eventId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
+                            <a href="#" onclick="editEvent(${event.eventId})"><i class="fas fa-edit"></i> Edit Details</a>
+                            <a href="#" onclick="toggleEventActive(${event.eventId})"><i class="${actionIcon}"></i> ${actionText}</a>
+                            <a href="#" onclick="duplicateEvent(${event.eventId})"><i class="fas fa-copy"></i> Duplicate</a>
+                            <a href="#" onclick="exportSingleEventPDF(${event.eventId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
                             ${hasNote ? `
-                                <a href="#" onclick="viewNote(${e.eventId})"><i class="fas fa-eye"></i> View Note</a>
-                                <a href="#" onclick="editNote(${e.eventId})"><i class="fas fa-edit"></i> Edit Note</a>
+                                <a href="#" onclick="viewNote(${event.eventId})"><i class="fas fa-eye"></i> View Note</a>
+                                <a href="#" onclick="editNote(${event.eventId})"><i class="fas fa-edit"></i> Edit Note</a>
                             ` : `
-                                <a href="#" onclick="addNote(${e.eventId})"><i class="fas fa-plus"></i> Add Note</a>
+                                <a href="#" onclick="addNote(${event.eventId})"><i class="fas fa-plus"></i> Add Note</a>
                             `}
                         </div>
                     </div>
@@ -195,7 +218,7 @@ function rebuildEventsTable(events) {
         tbody.append(row);
     });
     eventTable = $('.events-table').DataTable({
-        paging: true, searching: true, ordering: true, pageLength: 10,
+        paging: true, searching: true, ordering: false, pageLength: 10,
         lengthMenu: [10, 25, 50, 100], language: { search: '', searchPlaceholder: 'Search events...' },
         dom: 'Brtip', buttons: [{
             extend: 'csv', text: 'Export CSV', className: 'buttons-csv',

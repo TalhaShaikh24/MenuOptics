@@ -102,7 +102,7 @@ async function getImageAsPngBase64(url) {
 
 function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) {
     ajaxRequest({
-        url: '/api/IngredientApi/GetAllIngredientsByUserId',
+        url: '/api/IngredientApi/GetAllActiveIngredientsByUserId',
         method: 'GET',
         showMessage: false,
         isQuery: false,
