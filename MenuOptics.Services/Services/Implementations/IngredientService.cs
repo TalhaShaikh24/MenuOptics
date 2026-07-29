@@ -309,6 +309,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Unit", model.Unit.ToLower());
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
+                parameters.Add("@PrivateVendorId", model.PrivateVendorId);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Action", "INSERT");
 
@@ -436,74 +437,6 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> GetAllIngredientsAsync(IQueryCollection query)
-        {
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                if (query.ContainsKey("draw"))
-                {
-                    var dt = ParseDataTablesQuery(query);
-
-                    string orderBy = dt.OrderColumnIndex switch
-                    {
-                        1 => "Name",
-                        2 => "Unit",
-                        3 => "IsActive",
-                        4 => "CreatedOn",
-                        5 => "Price",
-                        _ => "Name"
-                    };
-
-                    int pageNumber = (dt.Start / dt.Length) + 1;
-
-                    var parameters = new DynamicParameters();
-                    parameters.Add("@Action", "SELECT_ALL");
-                    parameters.Add("@PageNumber", pageNumber);
-                    parameters.Add("@PageSize", dt.Length);
-                    parameters.Add("@SearchValue", dt.SearchValue);
-                    parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-                    var ingredients = await connection.QueryAsync<Ingredient>(
-                        "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                    int totalCount = parameters.Get<int>("@TotalCount");
-
-                    var dtResponse = new DataTablesResponseDto<Ingredient>
-                    {
-                        Draw = dt.Draw,
-                        RecordsTotal = totalCount,
-                        RecordsFiltered = totalCount,
-                        Data = ingredients
-                    };
-
-                    return (200, dtResponse);
-                }
-                else
-                {
-                    var ResponseDto = new ResponseDto();
-                    var parameters = new DynamicParameters();
-                    parameters.Add("@Action", "SELECT_ALL");
-                    parameters.Add("@PageSize", -1); // Return all rows
-
-                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-                    ResponseDto.Status = 200;
-                    ResponseDto.ResponseMsg = "Ingredients retrieved successfully.";
-                    ResponseDto.Data = ingredients;
-                    return (200, ResponseDto);
-                }
-            }
-            catch (Exception ex)
-            {
-                return HandleListError(query, ex);
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
         public async Task<(int StatusCode, object Body)> GetAllActiveIngredientsByUserIdAsync(IQueryCollection query, int currentUserId)
         {
             using var connection = _context.CreateConnection();
@@ -513,22 +446,12 @@ namespace MenuOptics.Services
                 if (query.ContainsKey("draw"))
                 {
                     var dt = ParseDataTablesQuery(query);
-
-                    string orderBy = dt.OrderColumnIndex switch
-                    {
-                        1 => "Name",
-                        2 => "Unit",
-                        3 => "IsActive",
-                        4 => "CreatedOn",
-                        5 => "Price",
-                        _ => "Name"
-                    };
-
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
                     parameters.Add("@UserId", currentUserId);
-                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@IsActive", 1);
+                    parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
@@ -554,7 +477,8 @@ namespace MenuOptics.Services
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
                     parameters.Add("@UserId", currentUserId);
-                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@IsActive", 1);
+                    parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
                     var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -584,23 +508,11 @@ namespace MenuOptics.Services
                 {
                     var dt = ParseDataTablesQuery(query);
 
-                    string orderBy = dt.OrderColumnIndex switch
-                    {
-                        1 => "Name",
-                        2 => "VendorProductId",
-                        3 => "Unit",
-                        4 => "IsActive",
-                        5 => "FullName",
-                        6 => "CreatedOn",
-                        7 => "Price",
-                        _ => "Name"
-                    };
-
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
                     parameters.Add("@UserId", currentUserId);
-                    parameters.Add("@Action", "SELECT_ALL_INGREDIENTS_BY_USERID");
+                    parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
@@ -626,7 +538,7 @@ namespace MenuOptics.Services
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
                     parameters.Add("@UserId", currentUserId);
-                    parameters.Add("@Action", "SELECT_ALL_INGREDIENTS_BY_USERID");
+                    parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
                     var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -646,7 +558,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> GetAllIngredientsByVendorIdAsync(IQueryCollection query, int vendorId, int currentUserId)
+        public async Task<(int StatusCode, object Body)> GetAllIngredientsByVendorIdAsync(IQueryCollection query, int vendorId, int currentUserId, bool isPrivate)
         {
             using var connection = _context.CreateConnection();
             connection.Open();
@@ -655,25 +567,15 @@ namespace MenuOptics.Services
                 if (query.ContainsKey("draw"))
                 {
                     var dt = ParseDataTablesQuery(query);
-
-                    // Column indices match VendorIngredients table:
-                    // 0=checkbox, 1=Name, 2=Unit, 3=Status, 4=CreatedDate, 5=Price
-                    string orderBy = dt.OrderColumnIndex switch
-                    {
-                        1 => "Name",
-                        2 => "Unit",
-                        3 => "IsActive",
-                        4 => "CreatedOn",
-                        5 => "Price",
-                        _ => "Name"
-                    };
-
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
-                    parameters.Add("@VendorId", vendorId);
                     parameters.Add("@UserId", currentUserId);
-                    parameters.Add("@Action", "SELECT_BY_VENDORID"); // Use the correct SP action
+                    if (isPrivate)
+                        parameters.Add("@PrivateVendorId", vendorId);
+                    else
+                        parameters.Add("@VendorId", vendorId);
+                    parameters.Add("@Action", "SELECT_ALL"); // Use the correct SP action
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
@@ -700,7 +602,7 @@ namespace MenuOptics.Services
                     var parameters = new DynamicParameters();
                     parameters.Add("@UserId", currentUserId);
                     parameters.Add("@VendorId", vendorId);
-                    parameters.Add("@Action", "SELECT_BY_VENDORID");
+                    parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
                     var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -730,19 +632,11 @@ namespace MenuOptics.Services
                 if (query.ContainsKey("draw"))
                 {
                     var dt = ParseDataTablesQuery(query);
-
-                    string orderBy = dt.OrderColumnIndex switch
-                    {
-                        1 => "Name",
-                        2 => "Unit",
-                        _ => "Name"
-                    };
-
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
                     parameters.Add("@UserId", userId);
-                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
                     parameters.Add("@SearchValue", dt.SearchValue);
@@ -768,7 +662,7 @@ namespace MenuOptics.Services
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
                     parameters.Add("@UserId", userId);
-                    parameters.Add("@Action", "SELECT_ALL_BY_USERID");
+                    parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
                     var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);

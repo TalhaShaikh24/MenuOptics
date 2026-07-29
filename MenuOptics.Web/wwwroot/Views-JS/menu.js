@@ -11,7 +11,7 @@
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
-    
+
     // Initialize Select2 for ingredients, recipes and categories
     initializeIngredientsSelect('#ingredientsSelect', '#addMenuItemModal', '#ingredientsDetails', '#menuCost');
     initializeIngredientsSelect('#editIngredientsSelect', '#editMenuItemModal', '#editIngredientsDetails', '#editMenuCost');
@@ -118,79 +118,10 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
             }));
 
             $(selectId).select2({
-                tags: true,
                 data: ingredientsWithPrices,
-                placeholder: 'Select or add ingredients',
+                placeholder: 'Select ingredients',
                 width: '100%',
-                dropdownParent: $(modalId),
-                createTag: function (params) {
-                    return {
-                        id: params.term,
-                        text: params.term,
-                        newTag: true
-                    };
-                }
-            });
-
-            $(selectId).on('select2:select', function (e) {
-                const data = e.params.data;
-                if (data.newTag) {
-                    const ingredientName = data.text;
-                    const modalHtml = `
-                        <div class="modal" id="ingredientPriceModal" style="display:flex;">
-                            <div class="modal-content" style="max-width:400px;">
-                                <div class="modal-header">
-                                    <h3>Add New Ingredient</h3>
-                                    <button class="modal-close" onclick="closePriceModal('${selectId}')">&times;</button>
-                                </div>
-                                <div class="modal-body">
-                                    <p>Do you want to add "${ingredientName}" as a new ingredient?</p>
-                                    <div class="form-group">
-                                        <label>Price ($)</label>
-                                        <input type="number" step="0.01" id="newIngredientPrice" placeholder="Enter price" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Unit</label>
-                                        <select id="newIngredientUnit" required>
-                                            <option value="">Select Unit</option>
-                                            <option value="BA">BA - Bag</option>
-                                            <option value="BG">BG - Bag (alt)</option>
-                                            <option value="BX">BX - Box</option>
-                                            <option value="CA">CA - Case</option>
-                                            <option value="CM">CM - Centimeter</option>
-                                            <option value="CT">CT - Carton</option>
-                                            <option value="DZ">DZ - Dozen</option>
-                                            <option value="EA">EA - Each</option>
-                                            <option value="FL">FL - Fluid Ounce</option>
-                                            <option value="FT">FT - Foot</option>
-                                            <option value="GA">GA - Gallon</option>
-                                            <option value="GM">GM - Gram</option>
-                                            <option value="HR">HR - Hour</option>
-                                            <option value="IN">IN - Inch</option>
-                                            <option value="KG">KG - Kilogram</option>
-                                            <option value="LB">LB - Pound</option>
-                                            <option value="LT">LT - Liter</option>
-                                            <option value="ML">ML - Milliliter</option>
-                                            <option value="MR">MR - Meter</option>
-                                            <option value="OZ">OZ - Ounce</option>
-                                            <option value="PA">PA - Pail</option>
-                                            <option value="PC">PC - Piece</option>
-                                            <option value="PR">PR - Pair</option>
-                                            <option value="PT">PT - Pint</option>
-                                            <option value="RL">RL - Roll</option>
-                                            <option value="TB">TB - Tube</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button class="btn btn-outline" onclick="closePriceModal('${selectId}')">Cancel</button>
-                                    <button class="btn btn-primary" onclick="addNewIngredient('${ingredientName}', '${selectId}', '${detailsId}', '${costInputId}')">Add Ingredient</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    $('body').append(modalHtml);
-                }
+                dropdownParent: $(modalId)
             });
 
             $(selectId).on('change', function () {
@@ -530,15 +461,6 @@ function updateTotalCost(detailsId, costInputId) {
     $(costInputId).val(totalCost.toFixed(2));
 }
 
-// Close price modal
-window.closePriceModal = function (selectId) {
-    const $select = $(selectId);
-    const selected = $select.val() || [];
-    const newSelected = selected.filter(item => ingredientsWithPrices.some(ing => ing.id == item));
-    $select.val(newSelected).trigger('change');
-    $('#ingredientPriceModal').remove();
-};
-
 // Close category modal
 window.closeCategoryModal = function (selectId) {
     selectId = selectId.replace('#', '');
@@ -549,72 +471,6 @@ window.closeCategoryModal = function (selectId) {
     const newSelected = selected.filter(item => categories.some(cat => cat.id == item));
     $select.val(newSelected).trigger('change');
     $('#categoryModal').remove();
-};
-
-// Add new ingredient
-window.addNewIngredient = function (ingredientName, selectId, detailsId, costInputId) {
-    const price = parseFloat($('#newIngredientPrice').val());
-    const unit = $('#newIngredientUnit').val();
-    if (isNaN(price) || price < 0) {
-        showNotification('Please enter a valid price.', 'error');
-        return;
-    }
-    if (!unit) {
-        showNotification('Please select a unit.', 'error');
-        return;
-    }
-
-    const $select = $(selectId);
-    const selected = $select.val() || [];
-    const filteredSelected = selected.filter(item => item !== ingredientName);
-
-    ajaxRequest({
-        url: '/api/IngredientApi/CreateIngredient',
-        method: 'POST',
-        data: {
-            name: ingredientName,
-            price: price,
-            unit: unit,
-            stock: 0,
-            createdBy: 1
-        },
-        onSuccess: function (response) {
-            const newIngredient = {
-                id: response.data.ingredientId,
-                text: ingredientName,
-                price: price,
-                unit: unit,
-                unitOfMeasure: unit
-            };
-            ingredientsWithPrices.push(newIngredient);
-
-            $select.select2({
-                tags: true,
-                data: ingredientsWithPrices,
-                placeholder: 'Select or add ingredients',
-                width: '100%',
-                dropdownParent: $(selectId === '#ingredientsSelect' ? '#addMenuItemModal' : '#editMenuItemModal'),
-                createTag: function (params) {
-                    return {
-                        id: params.term,
-                        text: params.term,
-                        newTag: true
-                    };
-                }
-            });
-
-            filteredSelected.push(newIngredient.id);
-            $select.val(filteredSelected).trigger('change');
-
-            $('#ingredientPriceModal').remove();
-            showNotification('Ingredient added successfully!', 'success');
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to add ingredient:', error);
-            showNotification('Failed to add ingredient.', 'error');
-            closePriceModal(selectId);
-        }
-    });
 };
 
 // Add new category
@@ -972,7 +828,7 @@ function refreshMenuGrid() {
                                         <span class="prep-time">
                                         <strong>Food Cost Percentage: </strong>
                                         ${item.cost == item.currentCost
-                        ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>`
+                            ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>`
                             : `
                                                 <span class="text-highlight danger">${costPercentage}%<span class="tooltip-icon danger" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>
                                                 <span class="text-highlight">${currentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Food Cost % according to the current prices.">i</span></span>
@@ -997,7 +853,7 @@ function refreshMenuGrid() {
                                 <div class="pricing">
                                     <span class="price">$${item.sellingPrice.toFixed(2)}</span>
                                     ${item.cost == item.currentCost ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
-                        : `Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}<span class="tooltip-icon danger" data-tooltip="Cost at the time this item was created/updated.">i</span></span> <span class="cost text-highlight">$${item.currentCost.toFixed(2)}<span class="tooltip-icon success" data-tooltip="Cost according to the current prices.">i</span></span>`
+                            : `Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}<span class="tooltip-icon danger" data-tooltip="Cost at the time this item was created/updated.">i</span></span> <span class="cost text-highlight">$${item.currentCost.toFixed(2)}<span class="tooltip-icon success" data-tooltip="Cost according to the current prices.">i</span></span>`
                         }
                                 </div>
                             </div>

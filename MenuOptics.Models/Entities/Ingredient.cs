@@ -7,6 +7,7 @@ namespace MenuOptics.Models
         public int IngredientId { get; set; }
         public int UserId { get; set; }
         public int VendorId { get; set; }
+        public int? PrivateVendorId { get; set; }
         public string? VendorProductId { get; set; }
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
@@ -19,6 +20,7 @@ namespace MenuOptics.Models
         public int? ModifiedBy { get; set; }
         public bool IsActive { get; set; } = true;
         public string? FullName { get; set; }
+        public string? PrivateVendorName { get; set; }
         public decimal? Stock { get; set; }
         public int TotalCount { get; set; }
 

@@ -289,7 +289,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", currentUserId);
                 parameters.Add("@Action", "SELECT_ALL_VENDORS");
 
-                var vendors = await connection.QueryAsync<User>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var vendors = await connection.QueryAsync<MixedVendor>("sp_Common", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Vendors retrieved successfully.";

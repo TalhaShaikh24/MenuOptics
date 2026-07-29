@@ -99,13 +99,6 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(statusCode, body);
         }
 
-        [HttpGet("GetAllIngredients")]
-        public async Task<IActionResult> GetAllIngredients()
-        {
-            var (statusCode, body) = await _ingredientService.GetAllIngredientsAsync(Request.Query);
-            return StatusCode(statusCode, body);
-        }
-
         [HttpGet("GetAllActiveIngredientsByUserId")]
         public async Task<IActionResult> GetAllActiveIngredientsByUserId()
         {
@@ -120,11 +113,11 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(statusCode, body);
         }
 
-        [HttpGet("GetAllIngredientsByVendorId/{vendorId}")]
-        public async Task<IActionResult> GetAllIngredientsByVendorId(int vendorId)
+        [HttpGet("GetAllIngredientsByVendorId/{vendorId}/{isPrivate}")]
+        public async Task<IActionResult> GetAllIngredientsByVendorId(int vendorId, bool isPrivate)
         {
             int effectiveVendorId = vendorId;
-            var (statusCode, body) = await _ingredientService.GetAllIngredientsByVendorIdAsync(Request.Query, effectiveVendorId, CurrentUserId);
+            var (statusCode, body) = await _ingredientService.GetAllIngredientsByVendorIdAsync(Request.Query, effectiveVendorId, CurrentUserId, isPrivate);
             return StatusCode(statusCode, body);
         }
 

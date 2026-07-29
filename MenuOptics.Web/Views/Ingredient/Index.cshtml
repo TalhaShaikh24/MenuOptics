@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Ingredients";
 }
 
@@ -37,7 +37,7 @@
     <div class="filter-supplier form-group" style="margin-bottom:0px!important">
         <div class="input-wrapper">
             <select id="supplierFilter" required="">
-                <option value="">All Suppliers</option>
+                <option value="">All</option>
             </select>
         </div>
     </div>
@@ -158,6 +158,14 @@
                         <input id="ingredientStock" type="number" name="stock" placeholder="Enter Stock" required>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label>Supplier <span style="color:red">*</span></label>
+                    <div class="input-wrapper">
+                        <select id="ingredientPrivateVendorId" name="privateVendorId" required>
+                            <option value="" disabled selected>Select Supplier</option>
+                        </select>
+                    </div>
+                </div>
             </form>
         </div>
         <div class="modal-footer">
@@ -247,8 +255,6 @@
                         <input id="editIngredientStock" type="number" name="stock" placeholder="Enter Stock">
                     </div>
                 </div>
-
-
             </form>
         </div>
         <div class="modal-footer">

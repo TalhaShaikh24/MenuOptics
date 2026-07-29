@@ -32,7 +32,8 @@ $(document).ready(function () {
             stock: $('#ingredientStock').val() || 0,
             ingredientType: $('#ingredientType').val(),
             size: $('#ingredientSize').val(),
-            packSize: $('#ingredientPackSize').prop('disabled') ? null : Number($('#ingredientPackSize').val())
+            packSize: $('#ingredientPackSize').prop('disabled') ? null : Number($('#ingredientPackSize').val()),
+            privateVendorId: parseInt($('#ingredientPrivateVendorId').val()) || null
         };
         if (isFormValid('#addIngredientForm')) {
 
@@ -56,7 +57,8 @@ $(document).ready(function () {
             price: parseFloat($('#editIngredientPrice').val()) || 0,
             ingredientType: $('#editIngredientType').val(),
             size: parseFloat($('#editIngredientSize').val()),
-            packSize: $('#editIngredientPackSize').prop('disabled') ? null : Number($('#editIngredientPackSize').val())
+            packSize: $('#editIngredientPackSize').prop('disabled') ? null : Number($('#editIngredientPackSize').val()),
+            privateVendorId: parseInt($('#editIngredientPrivateVendorId').val()) || null
         };
         if (isFormValid('#editIngredientForm')) {
 
@@ -143,6 +145,7 @@ $(document).ready(function () {
     });
 
     // ── Initialise ────────────────────────────────────────────────────────────
+    loadPrivateVendors();
     refreshVendors();
     initIngredientsTable();
     
@@ -153,6 +156,7 @@ $(document).ready(function () {
 
 let table;
 let activeSupplierVendorId = ''; // vendorId of the selected supplier, or '' for all
+let isPrivateVendor = 0;
 
 /* ── 6. Helpers — server-side DataTable ───────────────────────────────── */
 
@@ -194,7 +198,7 @@ function initIngredientsTable() {
 
             // Switch endpoint: vendor-specific when a supplier is selected
             const url = activeSupplierVendorId
-                ? `/api/IngredientApi/GetAllIngredientsByVendorId/${activeSupplierVendorId}`
+                ? `/api/IngredientApi/GetAllIngredientsByVendorId/${activeSupplierVendorId}/${isPrivateVendor ? 'true': 'false'}`
                 : '/api/IngredientApi/GetAllActiveInactiveIngredients';
 
             $.ajax({
@@ -319,6 +323,7 @@ function initIngredientsTable() {
     // Supplier filter → switch endpoint to GetAllIngredientsByVendorId when a vendor is chosen
     $('#supplierFilter').off('change').on('change', function () {
         activeSupplierVendorId = this.value; // vendorId or '' for all
+        isPrivateVendor = Number($(this).find(":selected").data("private"));
         table.ajax.reload();
     });
 }
@@ -346,7 +351,8 @@ function addIngredientByUserId(ingredientData) {
             Unit: ingredientData.unit,
             Size: ingredientData.size,
             PackSize: ingredientData.packSize,
-            Stock: ingredientData.stock
+            Stock: ingredientData.stock,
+            PrivateVendorId: ingredientData.privateVendorId
         },
         onSuccess: function () {
             refreshIngredientsTable();
@@ -379,6 +385,13 @@ function getIngredientById(id) {
             $('#editIngredientType').val(ingredientType).prop("disabled",true);
             toggleSizePackSizeByType(ingredientType, '#editIngredientSize', '#editIngredientPackSize');
 
+            // Pre-select saved private vendor
+            if (ingredient.privateVendorId) {
+                $('#editIngredientPrivateVendorId').val(ingredient.privateVendorId);
+            } else {
+                $('#editIngredientPrivateVendorId').val('');
+            }
+
             if (ingredient.vendorId > 0) {
                 $('#editIngredientName').prop('disabled', true);
                 $('#editIngredientUnit').prop('disabled', true);
@@ -407,7 +420,8 @@ function updateIngredient(ingredientData) {
             Price: ingredientData.price,
             Unit: ingredientData.unit,
             Size: ingredientData.size,
-            PackSize: ingredientData.packSize
+            PackSize: ingredientData.packSize,
+            PrivateVendorId: ingredientData.privateVendorId
         },
         onSuccess: function () {
             refreshIngredientsTable();
@@ -543,6 +557,42 @@ function bulkToggleIngredients() {
     }
 }
 
+// ─── Private Vendor (Supplier) dropdown ───────────────────────────────────────
+
+/**
+ * Fetches the restaurant's own private vendors (Suppliers) and populates
+ * the Supplier <select> in both the Add and Edit ingredient modals.
+ * Only active vendors are shown.
+ */
+function loadPrivateVendors() {
+    ajaxRequest({
+        url: '/api/PrivateVendorApi/GetAllPrivateVendors',
+        method: 'GET',
+        showMessage: false,
+        onSuccess: function (response) {
+            const vendors = (response.data || []).filter(v => v.isActive);
+            const $addSelect  = $('#ingredientPrivateVendorId');
+
+            // Clear existing options (except placeholder)
+            $addSelect.find('option:not(:first)').remove();
+
+            if (vendors.length === 0) {
+                const noOpt = '<option value="" disabled>No suppliers found</option>';
+                $addSelect.append(noOpt);
+                return;
+            }
+
+            vendors.forEach(function (v) {
+                const opt = `<option value="${v.privateVendorId}">${v.name}</option>`;
+                $addSelect.append(opt);
+            });
+        },
+        onError: function () {
+            console.error('Failed to load private vendors (suppliers).');
+        }
+    });
+}
+
 // ─── Vendor management ─────────────────────────────────────────────────────────
 
 function refreshVendors() {
@@ -617,10 +667,11 @@ function refreshVendors() {
             const $supplierFilter = $('#supplierFilter');
             const currentVal = $supplierFilter.val();
             $supplierFilter.find('option:not(:first)').remove();
-            debugger
             vendors.forEach(vendor => {
-                    const name = vendor.restaurantName || vendor.firstName + ' ' + vendor.lastName;
-                    $supplierFilter.append(`<option value="${vendor.userId}">${name}</option>`);
+
+                $supplierFilter.append(
+                    `<option value="${vendor.id}" data-private="${vendor.isPrivate}">${vendor.name}</option>`
+                );
             });
             // Restore selection if still valid, otherwise reset
             if (currentVal && $supplierFilter.find(`option[value="${currentVal}"]`).length) {

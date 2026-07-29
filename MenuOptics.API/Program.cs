@@ -55,6 +55,7 @@ builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddScoped<IStripeWebhookService, StripeWebhookService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IVendorService, VendorService>();
+builder.Services.AddScoped<IPrivateVendorService, PrivateVendorService>();
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 
 
