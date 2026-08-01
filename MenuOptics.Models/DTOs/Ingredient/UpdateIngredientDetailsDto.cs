@@ -6,6 +6,8 @@ namespace MenuOptics.Models
         public string? Name { get; set; }
         public string? Unit { get; set; }
         public decimal? Size { get; set; }
+        public int ClassificationId { get; set; }
+        public string? ClassificationDescriptor { get; set; }
         public bool? IsActive { get; set; }
     }
 }

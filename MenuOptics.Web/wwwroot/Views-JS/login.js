@@ -11,6 +11,14 @@
 
 $(document).ready(function () {
 
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get('email');
+
+    if (email) {
+        $('#loginIdentifier').val(decodeURIComponent(email)).focus();
+    }
+
     updateCompleteSetupState();
 
     // ──────────────────────────────────────────────────────────────

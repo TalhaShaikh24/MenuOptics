@@ -872,7 +872,7 @@ function refreshMenuGrid() {
                 `;
                     grid.append(row);
                 });
-
+                debugger
                 // Compute the average once, after all items have been summed
                 const avgCostPercentage = activeItemCount > 0 ? (totalCostPercentage / activeItemCount).toFixed(2) : "0.00";
                 const avgCurrentCostPercentage = activeItemCount > 0 ? (totalCurrentCostPercentage / activeItemCount).toFixed(2) : "0.00";
@@ -888,7 +888,6 @@ function refreshMenuGrid() {
             }
             else {
                 grid.append(`<h2>No Menu Items Added</h2>`);
-                $('#avgFoodCost').html('0.00%');
             }
         },
         onError: function (xhr, status, error) {

@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
+using MenuOptics.Services.EmailTemplates;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
 
 namespace MenuOptics.Controllers.Api
 {
@@ -16,11 +18,15 @@ namespace MenuOptics.Controllers.Api
     {
         private readonly IRestaurantService _restaurantService;
         private readonly IActivityLogService _activityLog;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public RestaurantApiController(IRestaurantService restaurantService, IActivityLogService activityLog)
+        public RestaurantApiController(IRestaurantService restaurantService, IActivityLogService activityLog, IEmailService emailService, IConfiguration configuration)
         {
             _restaurantService = restaurantService;
             _activityLog = activityLog;
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
         private string? NameIdentifierClaim => User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -75,6 +81,17 @@ namespace MenuOptics.Controllers.Api
             }
 
             var result = await _restaurantService.SignupRestaurantAsync(model, NameIdentifierClaim, requestId);
+
+            if (result.Status is 200 or 201)
+            {
+                var webUrl = _configuration["WebUrl"] ?? "https://menuoptics.ca";
+                var htmlBody = WelcomeEmailTemplate.Build(model.FirstName, model.RestaurantName, webUrl, model.Email);
+                await _emailService.SendEmailAsync(
+                    model.Email,
+                    "Welcome to Menu Optics!",
+                    htmlBody);
+            }
+
             return StatusCode(result.Status, result);
         }
 

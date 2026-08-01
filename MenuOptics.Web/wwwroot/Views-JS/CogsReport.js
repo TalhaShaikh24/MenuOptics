@@ -186,7 +186,7 @@ function initDataTable() {
     table = $('.cogs-report-table').DataTable({
         paging: true,
         searching: true,
-        ordering: true,
+        ordering: false,
         order: [[1, 'asc']],
         columnDefs: [
             { targets: [3, 4, 5, 6, 7, 8, 9], className: 'dt-body-left' }

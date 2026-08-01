@@ -30,15 +30,15 @@ namespace MenuOptics.Services
                 parameters.Add("@RequestId", requestId, DbType.String);
                 parameters.Add("@RequestType", requestType, DbType.String);
                 parameters.Add("@Payload", payload, DbType.String);
-                parameters.Add("@ResponseDto", ResponseDto, DbType.String);
+                parameters.Add("@Response", ResponseDto, DbType.String);
                 parameters.Add("@LogLevel", logLevel, DbType.String);
                 parameters.Add("@TimeStamp", DateTime.UtcNow, DbType.DateTime);
 
                 await connection.ExecuteAsync(
                     @"INSERT INTO ActivityLogs 
-                        (VendorId, RequestId, RequestType, Payload, ResponseDto, LogLevel, TimeStamp)
+                        (VendorId, RequestId, RequestType, Payload, Response, LogLevel, TimeStamp)
                       VALUES 
-                        (@VendorId, @RequestId, @RequestType, @Payload, @ResponseDto, @LogLevel, @TimeStamp)",
+                        (@VendorId, @RequestId, @RequestType, @Payload, @Response, @LogLevel, @TimeStamp)",
                     parameters);
             }
             catch

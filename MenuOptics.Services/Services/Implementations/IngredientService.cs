@@ -31,6 +31,7 @@ namespace MenuOptics.Services
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
 
+
             if (model.Size <= 0)
             {
                 ResponseDto.Status = 400;
@@ -86,6 +87,8 @@ namespace MenuOptics.Services
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Size", size);
                 parameters.Add("@PackSize", model.PackSize);
+                parameters.Add("@ClassificationId", model.ClassificationId);
+                parameters.Add("@ClassificationDescriptor", model.ClassificationDescriptor);
                 parameters.Add("@VendorProductId", model.VendorProductId);
                 parameters.Add("@CreatedBy", currentUserId);
 
@@ -857,6 +860,8 @@ namespace MenuOptics.Services
                 parameters.Add("@IsActive", model.IsActive ?? ingredient.IsActive);
                 parameters.Add("@Price", price);
                 parameters.Add("@Size", model.Size);
+                parameters.Add("@ClassificationId", model.ClassificationId);
+                parameters.Add("@ClassificationDescriptor", model.ClassificationDescriptor);
                 parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "UPDATE");
 

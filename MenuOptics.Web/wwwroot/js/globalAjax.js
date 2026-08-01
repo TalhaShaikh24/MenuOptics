@@ -149,8 +149,8 @@ function executeAjaxRequest({
                     message: `
                     <p>Something went wrong on the server.</p>
                     <p>Please try again later or contact support at 
-                        <a href="mailto:support@miseenplace.com" class="support-link">
-                            support@miseenplace.com
+                        <a href="mailto:support@menuoptics.com " class="support-link">
+                            support@menuoptics.com
                         </a>
                     </p>`
                 });
