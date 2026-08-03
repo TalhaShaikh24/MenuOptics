@@ -107,21 +107,38 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-
+            
             ingredientsWithPrices = response.data.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
                 price: ing.price,
                 unit: ing.unit,
                 size: ing.size,
-                unitOfMeasure: ing.unitOfMeasure || ing.unit
+                unitOfMeasure: ing.unitOfMeasure || ing.unit,
+                vendorProductId: ing.vendorProductId
             }));
 
             $(selectId).select2({
                 data: ingredientsWithPrices,
                 placeholder: 'Select ingredients',
                 width: '100%',
-                dropdownParent: $(modalId)
+                dropdownParent: $(modalId),
+                matcher: function (param, data) {
+                    var searchText = ($.trim(param.term) || '').toLowerCase();
+
+                    // No search term typed yet -> show everything
+                    if (searchText === '') {
+                        return data;
+                    }
+
+                    var text = (data.text || '').toLowerCase();
+                    var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
+
+                    if (text.includes(searchText) || vendorProductId.includes(searchText)) {
+                        return data;
+                    }
+                    return null;
+                }
             });
 
             $(selectId).on('change', function () {

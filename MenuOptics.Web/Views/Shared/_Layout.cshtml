@@ -59,9 +59,24 @@
             font-size: 14px;
             color: #898989;
             text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
         .policies .policies-link:hover {
             color: #f08d11;
+        }
+        .policies .welcome-video-sidebar-link {
+            color: #f08d11;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .policies .welcome-video-sidebar-link:hover {
+            color: #e07c0a;
+        }
+        .policies .welcome-video-sidebar-link i {
+            font-size: 15px;
         }
     </style>
     <div class="dashboard-container">
@@ -254,6 +269,7 @@
                 </a>
 
                 <div class="policies">
+                   
                     <a class="policies-link" href="@Url.Action("TermsAndConditions", "Home")" target="_blank">Terms & Conditions</a>
                 </div>
             </nav>
@@ -299,6 +315,47 @@
     </div>
 
 
+
+    @if (User.IsInRole("Restaurant"))
+    {
+        <!-- ═══════════════════════════════════════════════
+             Welcome Video Modal — shown only on first login
+        ════════════════════════════════════════════════ -->
+        <div id="welcomeVideoModal" class="welcome-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="welcomeModalTitle">
+            <div class="welcome-modal-card">
+                <div class="welcome-modal-header">
+                    <div class="welcome-modal-title-group">
+                        <div class="welcome-modal-icon">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div>
+                            <h2 id="welcomeModalTitle" class="welcome-modal-title">Welcome to Menu Optics!</h2>
+                            <p class="welcome-modal-subtitle">Get started with a quick tour of your dashboard</p>
+                        </div>
+                    </div>
+                    <button class="welcome-modal-close" id="welcomeModalCloseBtn" aria-label="Close welcome video">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="welcome-modal-body">
+                    <div class="welcome-video-wrapper">
+                        <video id="welcomeVideo" controls playsinline preload="metadata">
+                            <source src="/videos/Welcome.mp4" type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+                <div class="welcome-modal-footer">
+                    <button class="btn-welcome-skip hidden" id="welcomeModalSkipBtn">
+                        <i class="fas fa-forward"></i> Skip for now
+                    </button>
+                    <button class="btn-welcome-primary" id="welcomeModalDoneBtn">
+                        <i class="fas fa-check"></i> Got it, let's go!
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -390,6 +447,7 @@
     <script src="~/js/globalajax.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/unitconversions.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/error-popup.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/module-tutorials.js?v=@DateTime.Now.Ticks"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
@@ -413,6 +471,63 @@
         });
         })
     </script>
+
+    @if (User.IsInRole("Restaurant"))
+    {
+        <script>
+            $(document).ready(function () {
+                // Check if this is the restaurant's first-ever login
+                if (sessionStorage.getItem('showWelcomeVideo') == 'true') {
+                    sessionStorage.removeItem('showWelcomeVideo'); // consume the flag immediately
+                    showWelcomeModal();
+                }
+
+                function showWelcomeModal() {
+                    var $modal = $('#welcomeVideoModal');
+                    $modal.css('display', 'flex');
+                    // Force reflow then animate in
+                    requestAnimationFrame(function () {
+                        $modal.addClass('welcome-modal-visible');
+                    });
+                    // Auto-play the video
+                    var video = document.getElementById('welcomeVideo');
+                    if (video) {
+                        video.play().catch(function () {
+                            // Autoplay blocked by browser — the user can still press play manually
+                        });
+                    }
+                }
+
+                function closeWelcomeModal() {
+                    var $modal = $('#welcomeVideoModal');
+                    var video = document.getElementById('welcomeVideo');
+                    if (video) {
+                        video.pause();
+                    }
+                    $modal.removeClass('welcome-modal-visible');
+                    setTimeout(function () {
+                        $modal.css('display', 'none');
+                    }, 350);
+                }
+
+                $('#welcomeModalCloseBtn, #welcomeModalSkipBtn, #welcomeModalDoneBtn').on('click', closeWelcomeModal);
+
+                // Open welcome video modal from sidebar link
+                $(document).on('click', '#btnSidebarWelcomeVideo', function (e) {
+                    e.preventDefault();
+                    showWelcomeModal();
+                });
+
+
+                // Close on Escape key
+                $(document).on('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        closeWelcomeModal();
+                    }
+                });
+            });
+        </script>
+    }
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

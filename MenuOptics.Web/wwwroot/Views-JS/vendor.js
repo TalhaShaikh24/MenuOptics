@@ -319,10 +319,3 @@ window.filterUsers = function (type, value) {
 
 /* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
-function openModal(modalId) {
-    $(`#${modalId}`).addClass('active');
-}
-
-function closeModal(modalId) {
-    $(`#${modalId}`).removeClass('active');
-}

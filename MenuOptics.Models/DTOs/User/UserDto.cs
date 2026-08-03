@@ -32,6 +32,6 @@ namespace MenuOptics.Models
         public string? SubscriptionStatus { get; set; }
         public bool? IsParent { get; set; }
         public int? ParentId { get; set; }
-        public bool? IsRegistrationCompleted { get; set; }
+        public bool? IntroVideoViewedOn { get; set; }
     }
 }

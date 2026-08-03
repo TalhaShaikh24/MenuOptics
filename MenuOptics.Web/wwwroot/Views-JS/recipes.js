@@ -114,7 +114,8 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
                 price: ing.price,
                 unit: ing.unit, // Storage unit
                 size: ing.size, // Size
-                unitOfMeasure: ing.unitOfMeasure || ing.unit // Display unit
+                unitOfMeasure: ing.unitOfMeasure || ing.unit, // Display unit
+                vendorProductId: ing.vendorProductId
             }));
 
             if ($(selectId).hasClass('select2-hidden-accessible')) {
@@ -129,6 +130,22 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
                 placeholder: 'Select or add ingredients',
                 width: '100%',
                 dropdownParent: $(modalId),
+                matcher: function (param, data) {
+                    var searchText = ($.trim(param.term) || '').toLowerCase();
+
+                    // No search term typed yet -> show everything
+                    if (searchText === '') {
+                        return data;
+                    }
+
+                    var text = (data.text || '').toLowerCase();
+                    var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
+
+                    if (text.includes(searchText) || vendorProductId.includes(searchText)) {
+                        return data;
+                    }
+                    return null;
+                }
 
             });
 
@@ -443,7 +460,8 @@ function refreshRecipesTable() {
         isQuery: false,
         onSuccess: function (response) {
             const recipes = response.data;
-            $('#totalRecipes').text(recipes.filter(r => r.isActive).length);
+            debugger
+            $('#totalRecipes').text(recipes.length);
 
             recipeTable.clear();
 

@@ -13,7 +13,6 @@ namespace MenuOptics.Services
         Task<ResponseDto> GetAllVendorsAsync(int currentUserId);
         Task<ResponseDto> UpdateUserAsync(User model, int modifiedBy, string requestBaseUrl);
         Task<ResponseDto> ToggleUserActiveAsync(int id, int currentUserId);
-        Task<ResponseDto> DeleteUserAsync(int id);
         Task<ResponseDto> LoginAsync(LoginDto model, string requestId);
         Task<ResponseDto> LogoutAsync();
         Task<ResponseDto> AddRestaurantMemberAsync(AddRestaurantMemberDto model, int currentUserId, string callerRole, string isParentClaim);
@@ -21,9 +20,6 @@ namespace MenuOptics.Services
         Task<ResponseDto> GetMemberStatsAsync(int currentUserId);
         Task<ResponseDto> UpdateRestaurantMemberAsync(UpdateRestaurantMemberDto model, int currentUserId, string requestBaseUrl);
         Task<ResponseDto> ToggleMemberActiveAsync(int id, int currentUserId);
-        Task<ResponseDto> LinkVendorAsync(LinkVendorDto model, int currentUserId);
-        Task<ResponseDto> UnlinkVendorAsync(int vendorId, int currentUserId);
-        Task<ResponseDto> DeleteMemberAsync(int id, int currentUserId);
         string CreateCheckoutSession(string? plan, int userId);
         Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model);
         Task<ResponseDto> RevokeTokenAsync(RefreshTokenRequestDto model);

@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * script.js — Shared layout/site script loaded on every page (_Layout.cshtml).
  * Sidebar, modals, notifications, search, keyboard shortcuts and misc UI.
  *
@@ -45,14 +45,7 @@ $(document).ready(() => {
         closeModal(modalId)
     })
 
-    // Close modal when clicking outside
-    $(".modal").on("click", function (e) {
-        if (e.target === this) {
-            const modalId = $(this).attr("id")
-            closeModal(modalId)
-        }
-    })
-
+   
     // Settings save button
     $("#saveSettingsBtn").on("click", () => {
         saveSettings()
@@ -210,15 +203,9 @@ $(document).ready(function () {
         openModal('addIngredientModal');
     });
 
-    // Close modal when clicking the close button or outside modal content
+    // Close modal when clicking the close button
     $('.modal-close').on('click', function () {
         $(this).closest('.modal').fadeOut(200);
-    });
-
-    $('.modal').on('click', function (e) {
-        if ($(e.target).is('.modal')) {
-            $(this).fadeOut(200);
-        }
     });
 });
 
@@ -227,19 +214,7 @@ $('#addUserForm, #addRestaurantForm, #addIngredientForm').on('submit', function 
     e.preventDefault();
 });
 
-// Example save functions (replace with your logic)
-function saveUser() {
-    // ...save user logic...
-    closeModal('addUserModal');
-}
-function saveRestaurant() {
-    // ...save restaurant logic...
-    closeModal('addRestaurantModal');
-}
-function saveIngredient() {
-    // ...save ingredient logic...
-    closeModal('addIngredientModal');
-}
+
 
 function animateStats() {
     $(".stat-value").each(function () {

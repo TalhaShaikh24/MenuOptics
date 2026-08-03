@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * script.js — Shared layout/site script loaded on every page (_Layout.cshtml).
  * Sidebar, modals, notifications, search, keyboard shortcuts and misc UI.
  *
@@ -202,15 +202,9 @@ $(document).ready(function () {
         openModal('addIngredientModal');
     });
 
-    // Close modal when clicking the close button or outside modal content
+    // Close modal when clicking the close button
     $('.modal-close').on('click', function () {
         $(this).closest('.modal').fadeOut(200);
-    });
-
-    $('.modal').on('click', function (e) {
-        if ($(e.target).is('.modal')) {
-            $(this).fadeOut(200);
-        }
     });
 });
 

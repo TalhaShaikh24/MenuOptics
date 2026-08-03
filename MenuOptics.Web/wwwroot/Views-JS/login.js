@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * login.js — Multi-step login page (Views/User/Login.cshtml)
  * Steps: email check → password (existing) / OTP + account setup (first-time)
  *
@@ -141,6 +141,13 @@ $(document).ready(function () {
                 localStorage.setItem('phone', response.data.phone);
                 localStorage.setItem('address', response.data.address);
 
+                // Store welcome video flag so the Dashboard can show the video popup
+                if (response.data.introVideoViewedOn == true) {
+                    sessionStorage.setItem('showWelcomeVideo', 'true');
+                }
+
+
+
                 var redirectUrl = response.data.roles.includes('Admin')
                     ? '/User/Index'
                     : '/Menu/Index';
@@ -265,6 +272,11 @@ $(document).ready(function () {
             success: function (response) {
                 Cookies.set('JwtToken', response.data.token);
                 localStorage.setItem('profilePic', response.data.profilePic);
+
+                // Store welcome video flag so the Dashboard can show the video popup
+                if (response.data.introVideoViewedOn == true) {
+                    sessionStorage.setItem('showWelcomeVideo', 'true');
+                }
 
                 var redirectUrl = (response.data.roles && response.data.roles.includes('Admin'))
                     ? '/User/Index'

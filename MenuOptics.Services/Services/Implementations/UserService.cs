@@ -151,6 +151,7 @@ namespace MenuOptics.Services
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", model.Role);
                 parameters.Add("@IsActive", model.IsActive);
+                parameters.Add("@IsRegistrationCompleted", 1);
                 parameters.Add("@SubscriptionStatus", model.Role == "Vendor" ? null : "Pending");
                 parameters.Add("@CreatedBy", model.CreatedBy ?? fallbackCreatedBy);
                 parameters.Add("@Action", "INSERT");
@@ -420,108 +421,6 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-        public async Task<ResponseDto> LinkVendorAsync(LinkVendorDto model, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-
-            try
-            {
-                using var connection = _context.CreateConnection();
-
-                // Check if already linked
-                var existingLink = await connection.QueryFirstOrDefaultAsync<int>(
-                    "SELECT 1 FROM UserVendorIngredientsLinks WHERE UserId = @UserId AND LinkedVendorId = @VendorId",
-                    new { UserId = currentUserId, VendorId = model.VendorId });
-
-                if (existingLink == 1)
-                {
-                    ResponseDto.Status = 400;
-                    ResponseDto.ResponseMsg = "Vendor is already linked.";
-                    return ResponseDto;
-                }
-
-                // Insert link
-                await connection.ExecuteAsync(
-                    @"INSERT INTO UserVendorIngredientsLinks (UserId, LinkedVendorId, CreatedBy, CreatedOn)
-              VALUES (@UserId, @VendorId, @CreatedBy, GETDATE())",
-                    new { UserId = currentUserId, VendorId = model.VendorId, CreatedBy = currentUserId });
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Vendor linked successfully.";
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-        }
-        public async Task<ResponseDto> UnlinkVendorAsync(int vendorId, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-
-            try
-            {
-                using var connection = _context.CreateConnection();
-
-                var affectedRows = await connection.ExecuteAsync(
-                    "DELETE FROM UserVendorIngredientsLinks WHERE UserId = @UserId AND LinkedVendorId = @VendorId",
-                    new { UserId = currentUserId, VendorId = vendorId });
-
-                if (affectedRows == 0)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Vendor link not found.";
-                    return ResponseDto;
-                }
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Vendor unlinked successfully.";
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-        }
-        public async Task<ResponseDto> DeleteUserAsync(int id)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@UserId", id);
-                parameters.Add("@Action", "DELETE");
-
-                var affectedRows = await connection.ExecuteAsync("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
-                if (affectedRows == 0)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "User not found.";
-                    return ResponseDto;
-                }
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "User deleted successfully.";
-                ResponseDto.Data = new { UserId = id };
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
         public async Task<ResponseDto> LoginAsync(LoginDto model, string requestId)
         {
             var ResponseDto = new ResponseDto();
@@ -562,6 +461,9 @@ namespace MenuOptics.Services
                 var refreshTokenString = _tokenService.GenerateRefreshToken();
                 await _tokenService.SaveRefreshTokenAsync(user.UserId, refreshTokenString);
 
+
+                
+
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Login successful.";
                 ResponseDto.Data = new
@@ -575,8 +477,18 @@ namespace MenuOptics.Services
                     Roles = user.Roles,
                     ProfilePic = user.ProfilePic,
                     Token = tokenString,
-                    RefreshToken = refreshTokenString
+                    RefreshToken = refreshTokenString,
+                    IntroVideoViewedOn = user.IntroVideoViewedOn,
                 };
+
+                if (user.Roles?.Contains("Restaurant") == true && user.IntroVideoViewedOn == true)
+                {
+                    var updateParams = new DynamicParameters();
+                    updateParams.Add("@UserId", user.UserId);
+                    updateParams.Add("@IntroVideoViewedOn", 0);
+                    updateParams.Add("@Action", "TOGGLE_INTRO_VIDEO_VIEWED");
+                    await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
+                }
 
                 if (user.Roles?.Contains("Vendor") == true)
                 {
@@ -860,45 +772,6 @@ namespace MenuOptics.Services
             }
             finally { connection.Close(); }
         }
-        public async Task<ResponseDto> DeleteMemberAsync(int id, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                // Validate ownership
-                var checkParams = new DynamicParameters();
-                checkParams.Add("@UserId", id);
-                checkParams.Add("@Action", "SELECT");
-                var member = await connection.QueryFirstOrDefaultAsync<UserDto>(
-                    "sp_UserCRUD", checkParams, commandType: CommandType.StoredProcedure);
-
-                if (member == null || member.ParentId != currentUserId)
-                {
-                    ResponseDto.Status = 403;
-                    ResponseDto.ResponseMsg = "Access denied: You can only delete your own members.";
-                    return ResponseDto;
-                }
-
-                var parameters = new DynamicParameters();
-                parameters.Add("@UserId", id);
-                parameters.Add("@Action", "DELETE");
-                await connection.ExecuteAsync("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Member deleted successfully.";
-                ResponseDto.Data = new { MemberId = id };
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-            finally { connection.Close(); }
-        }
         public string CreateCheckoutSession(string? plan, int userId)
         {
             StripeConfiguration.ApiKey = "sk_test_51M9O4qKR3yBF1l8fZJ5Ll6Q7x0V0ec9i8rgqi8FMKtHTqSx3WYMvdCeOpuOdpImJ6OmhTiq6DDUhB83zumFikT2700QEmhSeSP";
@@ -1123,6 +996,9 @@ namespace MenuOptics.Services
                 await connection.ExecuteScalarAsync<int>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
+
+
+
                 // 3. Load full user so we can issue tokens
                 var selectParams = new DynamicParameters();
                 selectParams.Add("@UserId", model.UserId);
@@ -1131,11 +1007,22 @@ namespace MenuOptics.Services
                 var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
                     "sp_UserCRUD", selectParams, commandType: CommandType.StoredProcedure);
 
+
                 if (user == null)
                 {
                     ResponseDto.Status = 500;
                     ResponseDto.ResponseMsg = "Registration completed but user could not be loaded.";
                     return ResponseDto;
+                }
+
+
+                if (user.Roles?.Contains("Restaurant") == true && user.IntroVideoViewedOn == true)
+                {
+                    var updateParams = new DynamicParameters();
+                    updateParams.Add("@UserId", user.UserId);
+                    updateParams.Add("@IntroVideoViewedOn", 0);
+                    updateParams.Add("@Action", "TOGGLE_INTRO_VIDEO_VIEWED");
+                    await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
                 }
 
                 // 4. Sign in with cookie + issue JWT (same as Login)
@@ -1155,11 +1042,23 @@ namespace MenuOptics.Services
                     UserId = effectiveUserId,
                     ActualUserId = user.UserId,
                     IsParent = isParent,
+                    IsFirstTimeLoggedIn = user.IntroVideoViewedOn,
                     Roles = user.Roles,
                     ProfilePic = user.ProfilePic,
                     Token = tokenString,
-                    RefreshToken = refreshTokenString
+                    RefreshToken = refreshTokenString,
+                    IntroVideoViewedOn = user.IntroVideoViewedOn,
                 };
+
+                if (user.Roles?.Contains("Restaurant") == true && user.IntroVideoViewedOn == true)
+                {
+                    var updateParams = new DynamicParameters();
+                    updateParams.Add("@UserId", user.UserId);
+                    updateParams.Add("@IntroVideoViewedOn", 0);
+                    updateParams.Add("@Action", "TOGGLE_INTRO_VIDEO_VIEWED");
+                    await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
+                }
+
                 return ResponseDto;
             }
             catch (SqlException sqlEx)

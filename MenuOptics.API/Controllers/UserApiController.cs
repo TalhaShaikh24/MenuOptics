@@ -113,13 +113,7 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("DeleteUser/{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var responseData = await _userService.DeleteUserAsync(id);
-            return StatusCode(responseData.Status, responseData);
-        }
+       
 
         [AllowAnonymous]
         [HttpPost("Login")]
@@ -185,27 +179,7 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-        [HttpPost("LinkVendor")]
-        public async Task<IActionResult> LinkVendor([FromBody] LinkVendorDto model)
-        {
-            var responseData = await _userService.LinkVendorAsync(model, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
 
-        [HttpDelete("UnlinkVendor/{vendorId}")]
-        public async Task<IActionResult> UnlinkVendor(int vendorId)
-        {
-            var responseData = await _userService.UnlinkVendorAsync(vendorId, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
-        [HttpDelete("DeleteMember/{id}")]
-        [Authorize(Roles = "Restaurant,Admin")]
-        public async Task<IActionResult> DeleteMember(int id)
-        {
-            var responseData = await _userService.DeleteMemberAsync(id, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
 
         [AllowAnonymous]
         [HttpPost("CreateCheckoutSession")]

@@ -481,43 +481,6 @@ $('#saveStockBtn').on('click', function () {
     });
 });
 
-// ── Bulk delete ───────────────────────────────────────────────────────────────
-function bulkDeleteIngredients() {
-    const selectedIds = $('.ingredient-checkbox:checked').map(function () {
-        return $(this).data('id');
-    }).get();
-
-    if (selectedIds.length === 0) {
-        showNotification('Please select at least one ingredient to delete.', 'error');
-        return;
-    }
-    if (confirm(`Are you sure you want to delete ${selectedIds.length} selected ingredient(s)?`)) {
-        let completed = 0;
-        let hasError = false;
-        selectedIds.forEach(id => {
-            ajaxRequest({
-                url: `/api/IngredientApi/DeleteIngredientById/${id}`,
-                method: 'DELETE',
-                showMessage: false,
-                onSuccess: function () {
-                    completed++;
-                    if (completed === selectedIds.length) {
-                        refreshIngredientsTable();
-                        showNotification(`${selectedIds.length} ingredient(s) deleted successfully.`, 'success');
-                    }
-                },
-                onError: function () {
-                    completed++;
-                    hasError = true;
-                    if (completed === selectedIds.length) {
-                        refreshIngredientsTable();
-                        showNotification(hasError ? 'Some ingredients could not be deleted.' : `${selectedIds.length} ingredient(s) deleted successfully.`, hasError ? 'error' : 'success');
-                    }
-                }
-            });
-        });
-    }
-}
 
 // ── Bulk toggle ───────────────────────────────────────────────────────────────
 function bulkToggleIngredients() {
