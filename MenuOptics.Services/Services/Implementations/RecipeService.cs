@@ -39,7 +39,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Unit", model.Unit);
-                parameters.Add("@Price", 0);
+                parameters.Add("@Cost", 0);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Action", "INSERT");
@@ -84,7 +84,7 @@ namespace MenuOptics.Services
                 var updateParams = new DynamicParameters();
                 updateParams.Add("@RecipeId", recipeId);
                 updateParams.Add("@UserId", currentUserId);
-                updateParams.Add("@Price", model.Price);
+                updateParams.Add("@Cost", model.Cost);
                 updateParams.Add("@Action", "UPDATE");
                 await connection.ExecuteAsync("sp_RecipeCRUD", updateParams, commandType: CommandType.StoredProcedure);
 
@@ -137,7 +137,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Unit", model.Unit);
-                parameters.Add("@Price", model.Price);
+                parameters.Add("@Cost", model.Cost);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "UPDATE");
@@ -193,7 +193,7 @@ namespace MenuOptics.Services
                 var updateParams = new DynamicParameters();
                 updateParams.Add("@RecipeId", model.RecipeId);
                 updateParams.Add("@UserId", currentUserId);
-                updateParams.Add("@Price", model.Price);
+                updateParams.Add("@Cost", model.Cost);
                 parameters.Add("@Description", model.Description);
                 updateParams.Add("@Action", "UPDATE");
                 await connection.ExecuteAsync("sp_RecipeCRUD", updateParams, commandType: CommandType.StoredProcedure);

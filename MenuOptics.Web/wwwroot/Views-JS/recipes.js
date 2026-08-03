@@ -19,8 +19,8 @@ let recipeDescriptions = {}
 
 $(document).ready(function () {
     // Initialize Select2 for ingredients
-    initializeIngredientsSelect('#ingredientsSelect', '#addRecipeModal', '#ingredientsDetails', '#recipePrice');
-    initializeIngredientsSelect('#editIngredientsSelect', '#editRecipeModal', '#editIngredientsDetails', '#editRecipePrice');
+    initializeIngredientsSelect('#ingredientsSelect', '#addRecipeModal', '#ingredientsDetails', '#recipeCost');
+    initializeIngredientsSelect('#editIngredientsSelect', '#editRecipeModal', '#editIngredientsDetails', '#editRecipeCost');
 
     // Initialize DataTable
     initRecipeTable();
@@ -114,6 +114,7 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
                 price: ing.price,
                 unit: ing.unit, // Storage unit
                 size: ing.size, // Size
+                packSize: ing.packSize,
                 unitOfMeasure: ing.unitOfMeasure || ing.unit, // Display unit
                 vendorProductId: ing.vendorProductId
             }));
@@ -199,7 +200,7 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
                     <select name="ingredient_uom_${id}" required>
                         ${uomOptions}
                     </select>
-                    <input type="number" step="0.01" name="ingredient_quantity_${id}" value="${savedQuantity}" placeholder="Enter Wt / Qty" style="width:150px;" min="0">
+                    <input type="number" step="1" name="ingredient_quantity_${id}" value="${savedQuantity}" placeholder="Enter Wt / Qty" style="width:150px;" min="0">
                     
                     <span class="ingredient-price" style="min-width:100px;">Price: $0.00</span>
                 </div>
@@ -238,7 +239,7 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
         // Convert the quantity entered in the user-selected UOM back to the
         // ingredient's stored unit (pricing is per stored unit).
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-        const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
+        const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
         const price = (pricePerUnit * convertedQuantity).toFixed(2);
         row.find('.ingredient-price').text(`Price: $${price}`);
@@ -359,7 +360,7 @@ function getRecipeById(id) {
             $('#editRecipeId').val(recipe.recipeId);
             $('#editRecipeName').val(recipe.name);
             $('#editRecipeUnit').val(recipe.unit);
-            $('#editRecipePrice').val(recipe.price);
+            $('#editRecipeCost').val(recipe.cost);
             $('#editRecipeDescription').val(recipe.description);
 
             $('#editIngredientsSelect').val(recipe.ingredients.map(ing => ing.ingredientId)).trigger('change');
@@ -404,7 +405,7 @@ function getRecipeById(id) {
                     }
                     quantityInput.trigger('input');
                 });
-                updateTotalPrice('#editIngredientsDetails', '#editRecipePrice');
+                updateTotalPrice('#editIngredientsDetails', '#editRecipeCost');
             }, 300);
 
             openModal('editRecipeModal');
@@ -475,7 +476,7 @@ function refreshRecipesTable() {
 
                 const cls = item.isActive ? 'good' : 'critical';
                 const lbl = item.isActive ? 'Active' : 'In Active';
-                const price = item.price;
+                const cost = item.cost;
                 const currentPrice = item.currentPrice;
 
                 const row = `
@@ -491,22 +492,22 @@ function refreshRecipesTable() {
                         <td>${item.unit}</td>
                         <td>
                          ${
-                                currentPrice == null || price === currentPrice
+                                currentPrice == null || cost === currentPrice
                                     ? `
                                   <span>
-                                    ${price}
-                                    <span class="tooltip-icon" data-tooltip="Price at the time this recipe was created/updated">i</span>
+                                    ${cost}
+                                    <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
                                   </span>
                                 `
                                                     : `
                                   <span class="text-highlight danger">
-                                    ${price}
-                                    <span class="tooltip-icon danger" data-tooltip="Price at the time this recipe was created/updated">i</span>
+                                    ${cost}
+                                    <span class="tooltip-icon danger" data-tooltip="Cost at the time this recipe was created/updated">i</span>
                                   </span>
                                     <br>
                                   <span class="text-highlight success">
-                                    ${currentPrice}
-                                    <span class="tooltip-icon success" data-tooltip="Current price">i</span>
+                                    ${cost}
+                                    <span class="tooltip-icon success" data-tooltip="Current cost">i</span>
                                   </span>
                                 `
                             }
@@ -604,7 +605,7 @@ async function generateRecipePDF(recipeData, filename) {
                     body: [
                         [
                             { text: 'Unit', style: 'tableHeader' },
-                            { text: 'Price', style: 'tableHeader' }
+                            { text: 'Cost', style: 'tableHeader' }
                         ],
                         [
                             recipe.unit || 'N/A',
@@ -639,7 +640,7 @@ async function generateRecipePDF(recipeData, filename) {
             ];
 
             if (!isEmployeeFacing) {
-                headerRow.push({ text: 'Price', bold: true, fillColor: '#eeeeee' });
+                headerRow.push({ text: 'Cost', bold: true, fillColor: '#eeeeee' });
             }
 
             content.push({
@@ -723,7 +724,7 @@ function getRecipeIngredientExportPrice(ingredient) {
         return 0;
     }
 
-    const pricePerStoredUnit = (parseFloat(ingredientData.price) || 0) / (parseFloat(ingredientData.size) || 1);
+    const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
 
     // Quantity from the recipe API is normally already stored in ingredientData.unit.
     // If the API provides only the employee/display UOM, convert it before pricing.
@@ -733,7 +734,7 @@ function getRecipeIngredientExportPrice(ingredient) {
         ? convertUnit(quantity, apiUnit, storedUnit)
         : quantity;
 
-    return pricePerStoredUnit * quantityInStoredUnit;
+    return pricePerUnit * quantityInStoredUnit;
 }
 
 function formatQuantity(value) {

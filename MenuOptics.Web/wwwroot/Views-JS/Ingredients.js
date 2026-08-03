@@ -81,7 +81,7 @@ $(document).ready(function () {
     // ── Export CSV ────────────────────────────────────────────────────────────
     $('#exportCSVBtn').on('click', function () {
         ajaxRequest({
-            url: '/api/IngredientApi/GetAllIngredientsByUserId',
+            url: '/api/IngredientApi/GetAllActiveInactiveIngredients',
             method: 'GET',
             showMessage: false,
             onSuccess: function (response) {
@@ -112,7 +112,7 @@ $(document).ready(function () {
     // ── Export PDF ────────────────────────────────────────────────────────────
     $('#exportPdfBtn').on('click', function () {
         ajaxRequest({
-            url: '/api/IngredientApi/GetAllIngredientsByUserId',
+            url: '/api/IngredientApi/GetAllActiveInactiveIngredients',
             method: 'GET',
             showMessage: false,
             onSuccess: function (response) {

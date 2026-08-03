@@ -379,9 +379,16 @@
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 
 
-    
-    
-    
+
+    <script src="~/js/dateformatter.js"></script>
+    <script src="~/js/script.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/image-preview.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/globalajax.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/unitconversions.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/error-popup.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/module-tutorials.js?v=@DateTime.Now.Ticks"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
     <script>
         let imageBaseUrl;
@@ -441,37 +448,6 @@
         });
     </script>
 
-    <script src="~/js/dateformatter.js"></script>
-    <script src="~/js/script.js?v=@DateTime.Now.Ticks"></script>
-    <script src="~/js/image-preview.js?v=@DateTime.Now.Ticks"></script>
-    <script src="~/js/globalajax.js?v=@DateTime.Now.Ticks"></script>
-    <script src="~/js/unitconversions.js?v=@DateTime.Now.Ticks"></script>
-    <script src="~/js/error-popup.js?v=@DateTime.Now.Ticks"></script>
-    <script src="~/js/module-tutorials.js?v=@DateTime.Now.Ticks"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-    <script>
-        $(document).on('click','#btnLogout',function(){
-           ajaxRequest({
-            url: '/api/UserApi/Logout',
-            method: 'POST',
-            data: null,
-            contentType: false,
-            processData: false,
-            onSuccess: function (response) {
-                localStorage.removeItem("profilePic");
-                showNotification('Logout successfully!', 'success');
-                window.location.href = '/User/login';
-
-            },
-            onError: function (xhr, status, error) {
-                console.error('Failed to logout:', error);
-                showNotification('Failed to Logout.', 'error');
-            }
-        });
-        })
-    </script>
-
     @if (User.IsInRole("Restaurant"))
     {
         <script>
@@ -528,6 +504,30 @@
             });
         </script>
     }
+
+    <script>
+        $(document).on('click','#btnLogout',function(){
+           ajaxRequest({
+            url: '/api/UserApi/Logout',
+            method: 'POST',
+            data: null,
+            contentType: false,
+            processData: false,
+            onSuccess: function (response) {
+                localStorage.removeItem("profilePic");
+                showNotification('Logout successfully!', 'success');
+                window.location.href = '/User/login';
+
+            },
+            onError: function (xhr, status, error) {
+                console.error('Failed to logout:', error);
+                showNotification('Failed to Logout.', 'error');
+            }
+        });
+        })
+    </script>
+
+    
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

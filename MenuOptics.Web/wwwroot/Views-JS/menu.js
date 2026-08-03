@@ -62,8 +62,7 @@ $(document).ready(function () {
 let ingredientsWithPrices = [];
 let recipesWithPrices = [];
 let categories = [];
-const value = localStorage.getItem("profilePic");
-const profilePic = value && value !== "null" ? value : '/images/menu optics_logo.png';
+
 
 let isStaffFacing = false;
 
@@ -107,13 +106,14 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-            
+
             ingredientsWithPrices = response.data.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
                 price: ing.price,
                 unit: ing.unit,
                 size: ing.size,
+                packSize: ing.packSize,
                 unitOfMeasure: ing.unitOfMeasure || ing.unit,
                 vendorProductId: ing.vendorProductId
             }));
@@ -171,7 +171,7 @@ function initializeRecipesSelect(selectId, modalId, detailsId, costInputId) {
             recipesWithPrices = response.data.map(recipe => ({
                 id: recipe.recipeId,
                 text: recipe.name,
-                price: recipe.price,
+                cost: recipe.cost,
                 unit: recipe.unit
             }));
 
@@ -239,7 +239,7 @@ function updateIngredientPrice(row, detailsId, costInputId) {
 
     if (ingredientData && quantity > 0) {
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-        const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
+        const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
 
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
         const price = (pricePerUnit * convertedQuantity).toFixed(2);
@@ -260,8 +260,8 @@ function updateRecipePrice($quantityInput, detailsId, costInputId) {
     const recipeData = recipesWithPrices.find(rec => rec.id == recipeId);
 
     if (recipeData && quantity > 0) {
-        const price = (recipeData.price * quantity).toFixed(2);
-        row.find('.recipe-price').text(`Price: $${price}`);
+        const cost = (recipeData.cost * quantity).toFixed(2);
+        row.find('.recipe-price').text(`Price: $${cost}`);
     } else {
         row.find('.recipe-price').text(`Price: $0.00`);
     }
@@ -356,7 +356,7 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
                     <select name="ingredient_uom_${ingredientId}" required>
                         ${buildUomOptionsHtml(null, existing ? existing.uom : '')}
                     </select>
-                    <input type="number" name="ingredient_quantity_${ingredientId}" placeholder="Enter Wt / Qty" style="width:150px;" min="0" step="0.01">
+                    <input type="number" name="ingredient_quantity_${ingredientId}" placeholder="Enter Wt / Qty" style="width:150px;" min="0" step="1">
                     <span class="ingredient-price" style="min-width:100px;">Price: $0.00</span>
                 </div>
             `;
@@ -369,7 +369,7 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
         let displayPrice = '0.00';
         if (savedQuantity) {
             const convertedQuantity = convertUnit(parseFloat(savedQuantity), savedUom, ingredientData.unit);
-            const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
+            const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
             displayPrice = (pricePerUnit * convertedQuantity).toFixed(2);
         }
 
@@ -380,7 +380,7 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
                 <select name="ingredient_uom_${ingredientId}" required>
                     ${buildUomOptionsHtml(ingredientData.unit, savedUom)}
                 </select>
-                <input type="number" name="ingredient_quantity_${ingredientId}" placeholder="Enter Wt / Qty" style="width:150px;" min="0" step="0.01" value="${savedQuantity}">
+                <input type="number" name="ingredient_quantity_${ingredientId}" placeholder="Enter Wt / Qty" style="width:150px;" min="0" step="1" value="${savedQuantity}">
                 <span class="ingredient-price" style="min-width:100px;">Price: $${displayPrice}</span>
             </div>
         `;
@@ -410,7 +410,7 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
                 <div class="recipe-detail-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                     <span class="recipe_name" style="min-width:120px;">${recipeId}</span>
                     <span class="recipe_unit" style="min-width:80px;">N/A</span>
-                    <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="0.01">
+                    <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="1">
                     <span class="recipe-price" style="min-width:100px;">Price: $0.00</span>
                 </div>
             `;
@@ -421,14 +421,14 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
 
         let displayPrice = '0.00';
         if (savedQuantity) {
-            displayPrice = (recipeData.price * parseFloat(savedQuantity)).toFixed(2);
+            displayPrice = (recipeData.cost * parseFloat(savedQuantity)).toFixed(2);
         }
 
         html += `
             <div class="recipe-detail-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                 <span class="recipe_name" style="min-width:120px;" title="${recipeData.text}">${recipeData.text}</span>
                 <span class="recipe_unit" style="min-width:80px;">${recipeData.unit}</span>
-                <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="0.01" value="${savedQuantity}">
+                <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="1" value="${savedQuantity}">
                 <span class="recipe-price" style="min-width:100px;">Price: $${displayPrice}</span>
             </div>
         `;
@@ -459,7 +459,7 @@ function updateTotalCost(detailsId, costInputId) {
         if (ingredientData && quantity > 0) {
             const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
             const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
-            const pricePerUnit = ingredientData.price / (ingredientData.size || 1);
+            const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
             totalCost += pricePerUnit * convertedQuantity;
         }
     });
@@ -471,7 +471,7 @@ function updateTotalCost(detailsId, costInputId) {
         const recipeData = recipesWithPrices.find(rec => rec.id == recipeId);
 
         if (recipeData && quantity > 0) {
-            totalCost += recipeData.price * quantity;
+            totalCost += recipeData.cost * quantity;
         }
     });
 
@@ -970,6 +970,9 @@ $('#exportMenuPdfBtn').on('click', function () {
 
 
 async function generateMenuPDF(menuData, filename) {
+    const value = localStorage.getItem("profilePic");
+    const profilePic = value && value !== null ? $('#imageBaseUrl').val() + value : '/images/menu optics_logo.png';
+    debugger
     isStaffFacing = document.getElementById('staffFacing').checked;
     let logoBase64 = null;
     try {

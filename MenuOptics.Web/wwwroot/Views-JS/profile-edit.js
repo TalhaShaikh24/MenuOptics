@@ -34,7 +34,7 @@ $(document).ready(function () {
             contentType: false,
             processData: false,
             onSuccess: function (response) {
-                localStorage.setItem("profilePic", imageBaseUrl+response.data.profilePic);
+                localStorage.setItem("profilePic", response.data.profilePic);
                 showNotification('Profile updated successfully!', 'success');
             }
         });
