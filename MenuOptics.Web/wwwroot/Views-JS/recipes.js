@@ -671,7 +671,7 @@ async function generateRecipePDF(recipeData, filename) {
 
 function getRecipeExportLogoPath() {
     const value = localStorage.getItem('profilePic');
-    return value && value !== 'null' ? value : '/images/menu optics_logo.png';
+    return value && value !== 'null' ? $('#imageBaseUrl').val() + value : '/images/menu optics_logo.png';
 }
 
 async function getImageAsPngBase64(url) {

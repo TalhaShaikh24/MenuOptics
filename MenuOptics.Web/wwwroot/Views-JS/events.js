@@ -20,7 +20,7 @@ let eventTable;
 
 const profilePic = (() => {
     const value = localStorage.getItem("profilePic");
-    return value && value !== "null" ? value : '/images/menu optics_logo.png';
+    return value && value !== "null" ? $('#imageBaseUrl').val() + value : '/images/menu optics_logo.png';
 })();
 
 const restaurantAddress = localStorage.getItem("address");
