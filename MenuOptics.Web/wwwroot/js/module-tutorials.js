@@ -30,6 +30,18 @@ const MODULE_TUTORIALS = {
             title: "1. Creating a Menu Item",
             description: "Learn how to create a new menu item and add it to your menu.",
             url: "/videos/Creating a menu item.mp4"
+        },
+        {
+            title: "2. Export Menu Items",
+            description: "Learn how to export your menu items for use outside the application.",
+            url: "/videos/Export Menu Items.mp4"
+        }
+    ],
+    "Menu Engineering Insights": [
+        {
+            title: "1. Intro to Menu Engineering",
+            description: "Learn the fundamentals of menu engineering and how it helps optimize your menu.",
+            url: "/videos/Intro to Menu Engineering.mp4"
         }
     ]
 };
