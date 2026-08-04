@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * recipes.js — Recipe management page (Views/Recipe/Index.cshtml)
  * Recipe table with ingredient Select2 pickers and unit-converted pricing.
  * Requires shared unitConversions.js to be loaded BEFORE this file.
@@ -111,7 +111,7 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
             ingredientsWithPrices = activeIngredients.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
-                price: ing.price,
+                Cost: ing.price,
                 unit: ing.unit, // Storage unit
                 size: ing.size, // Size
                 packSize: ing.packSize,
@@ -202,7 +202,7 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
                     </select>
                     <input type="number" step="1" name="ingredient_quantity_${id}" value="${savedQuantity}" placeholder="Enter Wt / Qty" style="width:150px;" min="0">
                     
-                    <span class="ingredient-price" style="min-width:100px;">Price: $0.00</span>
+                    <span class="ingredient-price" style="min-width:100px;">Cost: $0.00</span>
                 </div>
             `;
         }
@@ -240,11 +240,11 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
         // ingredient's stored unit (pricing is per stored unit).
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
         const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
-        const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
+        const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
         const price = (pricePerUnit * convertedQuantity).toFixed(2);
-        row.find('.ingredient-price').text(`Price: $${price}`);
+        row.find('.ingredient-price').text(`Cost: $${price}`);
     } else {
-        row.find('.ingredient-price').text(`Price: $0.00`);
+        row.find('.ingredient-price').text(`Cost: $0.00`);
     }
 
     updateTotalPrice(detailsId, priceInputId);
@@ -254,7 +254,7 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
 function updateTotalPrice(detailsId, priceInputId) {
     let total = 0;
     $(`${detailsId} .ingredient-detail-row`).each(function () {
-        const priceText = $(this).find('.ingredient-price').text().replace('Price: $', '');
+        const priceText = $(this).find('.ingredient-price').text().replace('Cost: $', '');
         total += parseFloat(priceText) || 0;
     });
     $(priceInputId).val(total.toFixed(2));
@@ -283,7 +283,7 @@ function getRecipeFormData(formId, detailsId) {
         const ingredientData = ingredientsWithPrices.find(ing => ing.id == ingredientId);
 
         if (ingredientData && displayQuantity > 0) {
-            const storageQuantity = convertUnit(displayQuantity, displayUnit, ingredientData.unit);
+            const storageQuantity = convertUnit(displayQuantity, displayUnit, ingredientData.unit, ingredientData.size);
 
             ingredients.push({
                 IngredientId: parseInt(ingredientId),
@@ -398,7 +398,7 @@ function getRecipeById(id) {
 
                             uomSelect.val(matchedValue).trigger('change');
                         }
-                        const displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit);
+                        const displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit, ingredientData.size);
                         quantityInput.val(displayQuantity.toFixed(2));
                     } else {
                         quantityInput.val(ing.quantity);
@@ -732,7 +732,7 @@ function getRecipeIngredientExportPrice(ingredient) {
     const apiUnit = ingredient.uom || ingredient.Uom || ingredient.unitOfMeasure || ingredient.unit;
     const storedUnit = ingredientData.unit;
     const quantityInStoredUnit = apiUnit && storedUnit && typeof convertUnit === 'function'
-        ? convertUnit(quantity, apiUnit, storedUnit)
+        ? convertUnit(quantity, apiUnit, storedUnit, ingredientData ? ingredientData.size : 1)
         : quantity;
 
     return pricePerUnit * quantityInStoredUnit;

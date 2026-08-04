@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * unitConversions.js — Shared unit codes and conversion helpers.
  * Exposes: NEW_UNIT_LABELS, ALLOWED_UNIT_OF_MEASURE_LABELS, convertUnit,
  *          getAllowedUomForUnit, buildUomOptionsHtml, normalizeUnit.
@@ -143,7 +143,7 @@ function getUnitCategory(unit) {
 }
 
 // Convert quantity from one unit to another
-function convertUnit(quantity, fromUnit, toUnit) {
+function convertUnit(quantity, fromUnit, toUnit, size) {
     // Normalize so lowercase/label inputs still convert correctly.
     fromUnit = normalizeUnit(fromUnit);
     toUnit = normalizeUnit(toUnit);
@@ -155,6 +155,27 @@ function convertUnit(quantity, fromUnit, toUnit) {
 
     const fromCategory = getUnitCategory(fromUnit);
     const toCategory = getUnitCategory(toUnit);
+
+    const itemSize = (size !== undefined && size !== null && !isNaN(parseFloat(size)) && parseFloat(size) > 0)
+        ? parseFloat(size)
+        : 1;
+
+    // Cross-category conversion between count (EA/PC/etc.) and mass_volume
+    if (fromCategory === 'count' && toCategory === 'mass_volume') {
+        // e.g., 2 EA where 1 EA = 10 GM -> quantity (2) * size (10) = 20 GM
+        const qtyInBaseMassVolume = quantity * itemSize;
+        const toRate = (CONVERSION_RATES.mass_volume && CONVERSION_RATES.mass_volume[toUnit]) || 1;
+        return qtyInBaseMassVolume / toRate;
+    }
+
+    if (fromCategory === 'mass_volume' && toCategory === 'count') {
+        // e.g., 20 GM to EA where 1 EA = 10 GM -> quantity (20) / size (10) = 2 EA
+        const fromRate = (CONVERSION_RATES.mass_volume && CONVERSION_RATES.mass_volume[fromUnit]) || 1;
+        const qtyInBaseMassVolume = quantity * fromRate;
+        const qtyInEa = qtyInBaseMassVolume / itemSize;
+        const toRate = (CONVERSION_RATES.count && CONVERSION_RATES.count[toUnit]) || 1;
+        return qtyInEa / toRate;
+    }
 
     // Can't convert between different categories (e.g., mass/volume to length,
     // or between two different packaging units like BX -> CA)
@@ -197,6 +218,14 @@ function getAllowedUomForUnit(baseUnit) {
     const allowedCodes = Object.keys(ALLOWED_UNIT_OF_MEASURE_LABELS);
     const compatible = getCompatibleUnits(base);
     const allowedCompatible = compatible.filter(u => allowedCodes.includes(u));
+
+    const category = getUnitCategory(base);
+    if (category === 'mass_volume') {
+        if (allowedCodes.includes('EA') && !allowedCompatible.includes('EA')) {
+            allowedCompatible.push('EA');
+        }
+    }
+
     return allowedCompatible.length > 0 ? allowedCompatible : [base];
 }
 
@@ -238,9 +267,9 @@ function formatUnitDisplay(unit, unitOfMeasure) {
 }
 
 // Calculate ingredient cost with unit conversion
-function calculateIngredientCost(ingredientPrice, ingredientUnit, recipeQuantity, recipeUnit) {
+function calculateIngredientCost(ingredientPrice, ingredientUnit, recipeQuantity, recipeUnit, size) {
     // Convert recipe quantity to ingredient unit
-    const convertedQuantity = convertUnit(recipeQuantity, recipeUnit, ingredientUnit);
+    const convertedQuantity = convertUnit(recipeQuantity, recipeUnit, ingredientUnit, size);
     return ingredientPrice * convertedQuantity;
 }
 

@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * menu.js — Menu management page (Views/Menu/Index.cshtml)
  * Menu grid with ingredient/recipe cost building, categories and PDF export.
  *
@@ -241,11 +241,11 @@ function updateIngredientPrice(row, detailsId, costInputId) {
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
         const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
 
-        const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
+        const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
         const price = (pricePerUnit * convertedQuantity).toFixed(2);
-        row.find('.ingredient-price').text(`Price: $${price}`);
+        row.find('.ingredient-price').text(`Cost: $${price}`);
     } else {
-        row.find('.ingredient-price').text(`Price: $0.00`);
+        row.find('.ingredient-price').text(`Cost: $0.00`);
     }
 
     updateTotalCost(detailsId, costInputId);
@@ -261,9 +261,9 @@ function updateRecipePrice($quantityInput, detailsId, costInputId) {
 
     if (recipeData && quantity > 0) {
         const cost = (recipeData.cost * quantity).toFixed(2);
-        row.find('.recipe-price').text(`Price: $${cost}`);
+        row.find('.recipe-price').text(`Cost: $${cost}`);
     } else {
-        row.find('.recipe-price').text(`Price: $0.00`);
+        row.find('.recipe-price').text(`Cost: $0.00`);
     }
 
     updateTotalCost(detailsId, costInputId);
@@ -357,7 +357,7 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
                         ${buildUomOptionsHtml(null, existing ? existing.uom : '')}
                     </select>
                     <input type="number" name="ingredient_quantity_${ingredientId}" placeholder="Enter Wt / Qty" style="width:150px;" min="0" step="1">
-                    <span class="ingredient-price" style="min-width:100px;">Price: $0.00</span>
+                    <span class="ingredient-price" style="min-width:100px;">Cost: $0.00</span>
                 </div>
             `;
             return;
@@ -368,7 +368,7 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
 
         let displayPrice = '0.00';
         if (savedQuantity) {
-            const convertedQuantity = convertUnit(parseFloat(savedQuantity), savedUom, ingredientData.unit);
+            const convertedQuantity = convertUnit(parseFloat(savedQuantity), savedUom, ingredientData.unit, ingredientData.size);
             const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
             displayPrice = (pricePerUnit * convertedQuantity).toFixed(2);
         }
@@ -381,7 +381,7 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
                     ${buildUomOptionsHtml(ingredientData.unit, savedUom)}
                 </select>
                 <input type="number" name="ingredient_quantity_${ingredientId}" placeholder="Enter Wt / Qty" style="width:150px;" min="0" step="1" value="${savedQuantity}">
-                <span class="ingredient-price" style="min-width:100px;">Price: $${displayPrice}</span>
+                <span class="ingredient-price" style="min-width:100px;">Cost: $${displayPrice}</span>
             </div>
         `;
     });
@@ -411,7 +411,7 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
                     <span class="recipe_name" style="min-width:120px;">${recipeId}</span>
                     <span class="recipe_unit" style="min-width:80px;">N/A</span>
                     <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="1">
-                    <span class="recipe-price" style="min-width:100px;">Price: $0.00</span>
+                    <span class="recipe-price" style="min-width:100px;">Cost: $0.00</span>
                 </div>
             `;
             return;
@@ -429,7 +429,7 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
                 <span class="recipe_name" style="min-width:120px;" title="${recipeData.text}">${recipeData.text}</span>
                 <span class="recipe_unit" style="min-width:80px;">${recipeData.unit}</span>
                 <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="1" value="${savedQuantity}">
-                <span class="recipe-price" style="min-width:100px;">Price: $${displayPrice}</span>
+                <span class="recipe-price" style="min-width:100px;">Cost: $${displayPrice}</span>
             </div>
         `;
     });
@@ -458,7 +458,7 @@ function updateTotalCost(detailsId, costInputId) {
 
         if (ingredientData && quantity > 0) {
             const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-            const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
+            const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
             const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
             totalCost += pricePerUnit * convertedQuantity;
         }
@@ -551,7 +551,7 @@ function getMenuFormData(formId, ingredientsDetailsId, recipesDetailsId) {
 
         if (quantity > 0 && ingredientData) {
             const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-            const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit);
+            const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
 
             ingredients.push({
                 ingredientId: parseInt(ingredientId),
@@ -686,7 +686,7 @@ function getMenuItemById(id) {
 
                             uomSelect.val(matchedValue).trigger('change');
                         }
-                        const displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit);
+                        const displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit, ingredientData.size);
                         quantityInput.val(displayQuantity.toFixed(2));
                     } else {
                         quantityInput.val(ing.quantity);
