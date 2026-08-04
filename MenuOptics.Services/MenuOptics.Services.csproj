@@ -13,7 +13,6 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="EPPlus" Version="7.7.3" />
     <PackageReference Include="Stripe.net" Version="45.10.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />

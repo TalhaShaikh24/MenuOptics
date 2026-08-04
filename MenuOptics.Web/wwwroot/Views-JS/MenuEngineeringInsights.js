@@ -14,6 +14,7 @@
 let table;
 let startDate;
 let endDate;
+let currentEndDate = null;
 
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
@@ -38,7 +39,17 @@ $(document).ready(function () {
         return;
     }
 
-    refreshMenuEngineeringInsightsTable();
+    const today = new Date();
+    const last30Days = new Date();
+
+    last30Days.setDate(today.getDate() - 29);
+
+    startDate = DateFormatter.formatDashUS(last30Days);
+    endDate = DateFormatter.formatDashUS(today);
+    currentEndDate = endDate;
+
+    refreshMenuEngineeringInsightsTable(startDate, endDate);
+
 });
 
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */

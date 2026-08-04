@@ -7,14 +7,14 @@ namespace MenuOptics.Models
     {
         public int SaleId { get; set; }
         public int? UserId { get; set; }
-        public DateTime SaleDate { get; set; }
-        public DateTime EndSaleDate { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
         public decimal Subtotal { get; set; }
         public decimal Tax { get; set; }
         public decimal Total { get; set; }
         public List<SaleItem>? Items { get; set; }
         public string? ItemsJson { get; set; } // For JSON serialization in query
-       
+
         public DateTime? ModifiedOn { get; set; }
         public int? ModifiedBy { get; set; }
 

@@ -37,9 +37,9 @@ namespace MenuOptics.Controllers.Api
 
         [HttpPost("ImportSales")]
         [Authorize]
-        public async Task<IActionResult> ImportSales(IFormFile file)
+        public async Task<IActionResult> ImportSales(IFormFile file, [FromForm] DateTime startDate, [FromForm] DateTime endDate)
         {
-            var responseData = await _salesService.ImportSalesAsync(file, CurrentUserId);
+            var responseData = await _salesService.ImportSalesAsync(file, startDate, endDate, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

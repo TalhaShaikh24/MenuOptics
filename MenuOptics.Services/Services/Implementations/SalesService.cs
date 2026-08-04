@@ -1,22 +1,21 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
-using OfficeOpenXml;
 using System.Data;
+using System.IO;
 using System.Text.Json;
-using LicenseContext = OfficeOpenXml.LicenseContext;
 
 namespace MenuOptics.Services
 {
     public class SalesService : ISalesService
     {
         private readonly DapperContext _context;
-        private const decimal TAX_RATE = 0.085m; // 8.5% tax rate
+        private IMenuService _menuService;
 
-        public SalesService(DapperContext context)
+        public SalesService(DapperContext context, IMenuService menuService)
         {
             _context = context;
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial; // Required for EPPlus
+            _menuService = menuService;
         }
 
         public async Task<ResponseDto> CreateSaleAsync(Sale model, int currentUserId)
@@ -29,8 +28,8 @@ namespace MenuOptics.Services
                 // Insert Sale
                 var saleParameters = new DynamicParameters();
                 saleParameters.Add("@UserId", currentUserId);
-                saleParameters.Add("@SaleDate", model.SaleDate);
-                saleParameters.Add("@EndSaleDate", model.EndSaleDate);
+                saleParameters.Add("@StartDate", model.StartDate);
+                saleParameters.Add("@EndDate", model.EndDate);
                 saleParameters.Add("@Subtotal", model.Subtotal);
                 saleParameters.Add("@Tax", model.Tax);
                 saleParameters.Add("@Total", model.Total);
@@ -52,7 +51,6 @@ namespace MenuOptics.Services
                     itemParameters.Add("@UserId", currentUserId); // Added for sp_SaleCRUD
                     itemParameters.Add("@Action", "INSERT_ITEM");
                     await connection.ExecuteAsync("sp_SaleCRUD", itemParameters, commandType: CommandType.StoredProcedure);
-
                 }
 
                 // Fetch sale details for ResponseDto
@@ -83,7 +81,8 @@ namespace MenuOptics.Services
                 ResponseDto.Data = new
                 {
                     sale.SaleId,
-                    sale.SaleDate,
+                    sale.StartDate,
+                    sale.EndDate,
                     sale.Subtotal,
                     sale.Tax,
                     sale.Total,
@@ -136,7 +135,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> ImportSalesAsync(IFormFile file, int currentUserId)
+        public async Task<ResponseDto> ImportSalesAsync(IFormFile file, DateTime startDate, DateTime endDate, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -150,129 +149,96 @@ namespace MenuOptics.Services
                     return ResponseDto;
                 }
 
-                if (!file.FileName.EndsWith(".xlsx") && !file.FileName.EndsWith(".xls"))
+                if (!file.FileName.EndsWith(".csv"))
                 {
                     ResponseDto.Status = 400;
-                    ResponseDto.ResponseMsg = "Invalid file format. Please upload an Excel file (.xlsx or .xls).";
+                    ResponseDto.ResponseMsg = "Invalid file format. Please upload an CSV file (.csv).";
                     return ResponseDto;
                 }
 
-                var sales = new List<Sale>();
-                var currentSale = new Sale();
-                int currentRow = 2;
-
-                using (var stream = new MemoryStream())
+                var sale = new Sale
                 {
-                    await file.CopyToAsync(stream);
-                    using (var package = new ExcelPackage(stream))
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Subtotal = 0,
+                    Tax = 0,
+                    Total = 0,
+                    Items = new List<SaleItem>()
+                };
+
+                using var reader = new StreamReader(file.OpenReadStream());
+
+                string? line;
+                int row = 0;
+                
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    row++;
+
+                    if (row == 1) continue;//Skip header
+
+                    string[] columns = line.Split(',');
+                    int menuItemId = Convert.ToInt32(columns[1]);
+                    int quantity = Convert.ToInt32(columns[2]);
+                    
+                    if (quantity <= 0)
                     {
-                        var worksheet = package.Workbook.Worksheets[0];
-                        int rowCount = worksheet.Dimension.Rows;
-
-                        for (int row = 2; row <= rowCount; row++)
-                        {
-                            var saleDate = worksheet.Cells[row, 1].GetValue<DateTime?>();
-                            var subtotal = worksheet.Cells[row, 2].GetValue<decimal?>();
-                            var total = worksheet.Cells[row, 3].GetValue<decimal?>();
-                            var menuItemId = worksheet.Cells[row, 4].GetValue<int?>();
-                            var menuItemName = worksheet.Cells[row, 5].GetValue<string?>();
-                            var quantity = worksheet.Cells[row, 6].GetValue<int?>();
-
-                            if (!saleDate.HasValue || !subtotal.HasValue || !total.HasValue || !menuItemId.HasValue || !quantity.HasValue)
-                            {
-                                continue; // Skip incomplete rows
-                            }
-
-                            // Fetch MenuItem details
-                            var menuItemParams = new DynamicParameters();
-                            menuItemParams.Add("@MenuItemId", menuItemId);
-                            menuItemParams.Add("@MenuItemName", menuItemId);
-                            menuItemParams.Add("@Action", "SELECT");
-                            var menuItem = await connection.QueryFirstOrDefaultAsync(
-                                "sp_MenuCRUD",
-                                menuItemParams,
-                                commandType: CommandType.StoredProcedure
-                            );
-
-                            if (menuItem == null)
-                            {
-                                ResponseDto.Status = 400;
-                                ResponseDto.ResponseMsg = $"Invalid MenuItemId {menuItemId} at row {row}.";
-                                return ResponseDto;
-                            }
-
-                            var price = (decimal)menuItem.SellingPrice;
-                            var itemTotal = price * quantity.Value;
-
-                            if (currentSale.SaleDate != saleDate || row == 2)
-                            {
-                                if (row > 2 && currentSale.Items.Any())
-                                {
-                                    sales.Add(currentSale);
-                                }
-                                currentSale = new Sale
-                                {
-                                    SaleDate = saleDate.Value,
-                                    Subtotal = 0,
-                                    Tax = 0,
-                                    Total = total.Value,
-                                    Items = new List<SaleItem>()
-                                };
-                                currentRow = row;
-                            }
-
-                            currentSale.Subtotal += itemTotal;
-                            currentSale.Items.Add(new SaleItem
-                            {
-                                MenuItemId = menuItemId.Value,
-                                Name = menuItem.Name,
-                                Quantity = quantity.Value,
-                                Price = price
-                            });
-                        }
-
-                        if (currentSale.Items.Any())
-                        {
-                            sales.Add(currentSale);
-                        }
+                        ResponseDto.Status = 400;
+                        ResponseDto.ResponseMsg = $"Quantity Sold must be greater than 0 at row {row}.";
+                        return ResponseDto;
                     }
+
+                    var menuItem = (Menu?)(await _menuService.GetMenuItemAsync(menuItemId)).Data;
+                    if (menuItem == null)
+                    {
+                        ResponseDto.Status = 400;
+                        ResponseDto.ResponseMsg = $"Invalid MenuItemId {menuItemId} at row {row}.";
+                        return ResponseDto;
+                    }
+
+                    sale.Items.Add(new SaleItem
+                    {
+                        MenuItemId = menuItemId,
+                        Quantity = quantity,
+                        Price = menuItem.SellingPrice * quantity,
+                        Cost = menuItem.Cost * quantity
+                    });
                 }
 
-                foreach (var sale in sales)
+                sale.Subtotal = sale.Items.Sum(si => si.Price);
+                sale.Tax = 0;
+                sale.Total = sale.Subtotal + sale.Tax;
+
+                // Insert Sale
+                var saleParameters = new DynamicParameters();
+                saleParameters.Add("@UserId", currentUserId);
+                saleParameters.Add("@StartDate", sale.StartDate);
+                saleParameters.Add("@EndDate", sale.EndDate);
+                saleParameters.Add("@Subtotal", sale.Subtotal);
+                saleParameters.Add("@Tax", sale.Tax);
+                saleParameters.Add("@Total", sale.Total);
+                saleParameters.Add("@CreatedBy", currentUserId);
+                saleParameters.Add("@Action", "INSERT");
+
+                int saleId = await connection.ExecuteScalarAsync<int>("sp_SaleCRUD", saleParameters, commandType: CommandType.StoredProcedure);
+
+                // Insert Sale Items
+                foreach (var item in sale.Items)
                 {
-                    sale.Tax = sale.Subtotal * TAX_RATE;
-                    sale.Total = sale.Subtotal + sale.Tax;
-
-                    // Insert Sale
-                    var saleParameters = new DynamicParameters();
-                    saleParameters.Add("@UserId", currentUserId);
-                    saleParameters.Add("@SaleDate", sale.SaleDate);
-                    saleParameters.Add("@Subtotal", sale.Subtotal);
-                    saleParameters.Add("@Tax", sale.Tax);
-                    saleParameters.Add("@Total", sale.Total);
-                    saleParameters.Add("@CreatedBy", currentUserId);
-                    saleParameters.Add("@Action", "INSERT");
-
-                    int saleId = await connection.ExecuteScalarAsync<int>("sp_SaleCRUD", saleParameters, commandType: CommandType.StoredProcedure);
-
-                    // Insert Sale Items
-                    foreach (var item in sale.Items)
-                    {
-                        var itemParameters = new DynamicParameters();
-                        itemParameters.Add("@SaleId", saleId);
-                        itemParameters.Add("@MenuItemId", item.MenuItemId);
-                        itemParameters.Add("@MenuItemName", item.MenuItemName);
-                        itemParameters.Add("@Quantity", item.Quantity);
-                        itemParameters.Add("@Price", item.Price);
-                        itemParameters.Add("@UserId", currentUserId); // Added for sp_SaleCRUD
-                        itemParameters.Add("@CreatedBy", currentUserId);
-                        itemParameters.Add("@Action", "INSERT_ITEM");
-                        await connection.ExecuteAsync("sp_SaleCRUD", itemParameters, commandType: CommandType.StoredProcedure);
-                    }
+                    var itemParameters = new DynamicParameters();
+                    itemParameters.Add("@SaleId", saleId);
+                    itemParameters.Add("@MenuItemId", item.MenuItemId);
+                    itemParameters.Add("@Quantity", item.Quantity);
+                    itemParameters.Add("@Price", item.Price);
+                    itemParameters.Add("@Cost", item.Cost);
+                    itemParameters.Add("@CreatedBy", currentUserId);
+                    itemParameters.Add("@UserId", currentUserId); // Added for sp_SaleCRUD
+                    itemParameters.Add("@Action", "INSERT_ITEM");
+                    await connection.ExecuteAsync("sp_SaleCRUD", itemParameters, commandType: CommandType.StoredProcedure);
                 }
 
                 ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = $"Successfully imported {sales.Count} sales.";
+                ResponseDto.ResponseMsg = $"Successfully imported {sale.Items.Count} sale menu items.";
                 return ResponseDto;
             }
             catch (Exception ex)

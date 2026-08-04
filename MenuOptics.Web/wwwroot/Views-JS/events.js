@@ -120,7 +120,7 @@ function loadEventOnlyItems() {
         method: 'GET',
         showMessage: false,
         onSuccess: res => {
-            eventOnlyItemsGlobal = res.data.map(item => ({
+            eventOnlyItemsGlobal = res.data.data.map(item => ({
                 id: item.eventOnlyItemId,
                 text: item.name,
                 cost: item.defaultCost
@@ -133,6 +133,7 @@ function loadEventOnlyItems() {
 function populateSelect2(selector, data) {
     $(selector)
         .off('change')
+        .empty()
         .select2({
             data,
             placeholder: 'Select items',
@@ -843,16 +844,28 @@ function saveNewCustomItem() {
         data: { Name: name, DefaultCost: cost },
         onSuccess: res => {
             closeModal('customItemModal');
+            const itemData = res.data || {};
+            const itemId = itemData.eventOnlyItemId || itemData.EventOnlyItemId;
+            const itemName = itemData.name || itemData.Name;
+            const itemCost = itemData.defaultCost ?? itemData.DefaultCost;
+
+            if (!itemId) return;
+
             const item = {
-                id: res.data.eventOnlyItemId,
-                text: res.data.name,
-                cost: res.data.defaultCost
+                id: itemId,
+                text: itemName,
+                cost: itemCost
             };
+
             eventOnlyItemsGlobal.push(item);
+
             populateSelect2('#eventOnlyItemSelect', eventOnlyItemsGlobal);
 
-            const vals = $('#eventOnlyItemSelect').val() || [];
-            vals.push(item.id);
+            const vals = ($('#eventOnlyItemSelect').val() || []).map(v => v.toString());
+            const newIdStr = itemId.toString();
+            if (!vals.includes(newIdStr)) {
+                vals.push(newIdStr);
+            }
             $('#eventOnlyItemSelect').val(vals).trigger('change');
         }
     });

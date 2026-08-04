@@ -31,12 +31,8 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] EventOnlyItemDto model)
         {
-            var newId = await _eventOnlyItemService.CreateAsync(model, CurrentUserId);
-
             var responseData = await _eventOnlyItemService.CreateAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
-
-            return Ok(new { status = 200, data = new { EventOnlyItemId = newId, Name = model.Name, DefaultCost = model.DefaultCost } });
         }
     }
 }

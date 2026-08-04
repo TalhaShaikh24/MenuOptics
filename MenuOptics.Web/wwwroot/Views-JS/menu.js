@@ -106,7 +106,7 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-
+            debugger;
             ingredientsWithPrices = response.data.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,

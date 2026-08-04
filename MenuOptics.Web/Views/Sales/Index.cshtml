@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Sales";
 }
 
@@ -440,11 +440,11 @@
             </div>
 
             <div class="sales-date-section">
-                <label for="salesDate">Start Date</label>
+                <label for="startDate">Start Date</label>
                 <input type="date" id="salesDate" class="sales-date-input" required>
             </div>
             <div class="sales-date-section">
-                <label for="endSalesDate">End Date</label>
+                <label for="endDate">End Date</label>
                 <input type="date" id="endSalesDate" class="sales-date-input" required>
             </div>
 
@@ -499,11 +499,19 @@
         </div>
         <div class="modal-body">
             <form id="importSalesForm">
-                <div class="form-group">
-                    <label for="salesFile">Upload Sales Excel File</label>
-                    <input type="file" id="salesFile" name="salesFile" accept=".xlsx,.xls" required>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label for="salesFile" style="display: block; font-weight: 500; margin-bottom: 6px;">Upload Sales File <span style="color:red">*</span></label>
+                    <input type="file" id="salesFile" name="salesFile" accept=".xlsx,.xls,.csv" required>
                 </div>
-                <p><a href="/files/Sales_Import_Sample_Simplified.xlsx" download>Download Sample Excel File</a></p>
+                <div class="form-group sales-date-section">
+                    <label for="importStartDate">Start Date <span style="color:red">*</span></label>
+                    <input type="date" id="importStartDate" name="importStartDate" class="sales-date-input" required>
+                </div>
+                <div class="form-group sales-date-section">
+                    <label for="importEndDate">End Date <span style="color:red">*</span></label>
+                    <input type="date" id="importEndDate" name="importEndDate" class="sales-date-input" required>
+                </div>
+                <p><a href="javascript:void(0)" id="downloadSampleBtn">Download Sample File</a></p>
             </form>
         </div>
         <div class="modal-footer">

@@ -65,9 +65,11 @@ namespace MenuOptics.Services
                     parameters,
                     commandType: CommandType.StoredProcedure);
 
+                model.EventOnlyItemId = id;
+
                 ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Event items created successfully.";
-                ResponseDto.Data = id;
+                ResponseDto.ResponseMsg = "Event item created successfully.";
+                ResponseDto.Data = model;
 
                 return ResponseDto;
             }

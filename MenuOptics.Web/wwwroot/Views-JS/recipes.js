@@ -477,7 +477,8 @@ function refreshRecipesTable() {
                 const cls = item.isActive ? 'good' : 'critical';
                 const lbl = item.isActive ? 'Active' : 'In Active';
                 const cost = item.cost;
-                const currentPrice = item.currentPrice;
+                debugger
+                const currentCost = item.currentCost;
 
                 const row = `
                     <tr>
@@ -492,10 +493,10 @@ function refreshRecipesTable() {
                         <td>${item.unit}</td>
                         <td>
                          ${
-                                currentPrice == null || cost === currentPrice
+                                cost == currentCost
                                     ? `
                                   <span>
-                                    ${cost}
+                                    ${currentCost}
                                     <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
                                   </span>
                                 `
@@ -506,7 +507,7 @@ function refreshRecipesTable() {
                                   </span>
                                     <br>
                                   <span class="text-highlight success">
-                                    ${cost}
+                                    ${currentCost}
                                     <span class="tooltip-icon success" data-tooltip="Current cost">i</span>
                                   </span>
                                 `

@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * sales.js — Point-of-sale page (Views/Sales/Index.cshtml)
  * Menu grid, order cart, sale completion, sales history and Excel import.
  *
@@ -19,6 +19,8 @@ $(document).ready(function () {
     const today = new Date().toISOString().split('T')[0];
     $('#salesDate').val(today);
     $('#endSalesDate').val(today); // Set default for end date as well
+    $('#importStartDate').val(today);
+    $('#importEndDate').val(today);
 
     // Category filter
     $('.menu-categories').on('click', '.category-btn', function () {
@@ -49,16 +51,29 @@ $(document).ready(function () {
         openModal('importSalesModal');
     });
 
+    // Download sample sales file button
+    $(document).on('click', '#downloadSampleBtn, #importSalesModal a[download], a[href*="Sales_Import_Sample"]', function (e) {
+        e.preventDefault();
+        downloadSampleSalesFile();
+    });
+
     // Import sales form submission
     $('#importSalesSubmitBtn').on('click', function () {
-        const fileInput = $('#salesFile')[0];
-        if (!fileInput.files.length) {
-            showNotification('Please select an Excel file to import.', 'error');
+        if (!isFormValid('#importSalesForm')) {
+            showNotification('Please fill in all required fields.', 'error');
             return;
         }
 
+        const fileInput = $('#salesFile')[0];
+        const startDate = $('#importStartDate').val();
+        const endDate = $('#importEndDate').val();
+
+        debugger;
+
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
+        formData.append('startDate', startDate);
+        formData.append('endDate', endDate);
 
         const importBtn = $('#importSalesSubmitBtn');
         const originalText = importBtn.html();
@@ -73,6 +88,9 @@ $(document).ready(function () {
             onSuccess: function (response) {
                 importBtn.prop('disabled', false).html(originalText);
                 $('#importSalesForm')[0].reset();
+                const today = new Date().toISOString().split('T')[0];
+                $('#importStartDate').val(today);
+                $('#importEndDate').val(today);
                 closeModal('importSalesModal');
                 loadSalesHistory(); // Refresh sales history
             },
@@ -97,7 +115,7 @@ function initializeSalesPage() {
 
 function loadMenuItems() {
     ajaxRequest({
-        url: '/api/MenuApi/GetAllMenuItems',
+        url: `/api/MenuApi/GetAllMenuItems?isActive=${true}`,
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
@@ -227,6 +245,7 @@ function addToOrder(itemId) {
             name: menuItem.name,
             description: menuItem.description,
             sellingPrice: menuItem.sellingPrice,
+            cost: menuItem.cost,
             categoryId: menuItem.categoryId,
             quantity: 1
         });
@@ -334,7 +353,7 @@ function completeSale() {
         return;
     }
 
-    const salesDate = $('#salesDate').val();
+    const startSalesDate = $('#salesDate').val();
     if (!salesDate) {
         showNotification('Please select a start date', 'error');
         return;
@@ -347,10 +366,10 @@ function completeSale() {
 
     const subTotal = currentOrder.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
     const tax = 0;
-
+    debugger
     const saleData = {
-        saleDate: salesDate,
-        endSaleDate: endSalesDate,
+        startDate: startSalesDate,
+        endDate: endSalesDate,
         subTotal: subTotal,
         tax: tax,
         total: subTotal + tax,
@@ -358,7 +377,7 @@ function completeSale() {
             menuItemId: item.menuItemId,
             quantity: item.quantity,
             price: item.sellingPrice * item.quantity,
-            cost: item.cost
+            cost: item.cost * item.quantity
         }))
     };
 
@@ -407,7 +426,7 @@ function loadSalesHistory() {
                     ).join(' ');
                     const row = `
                         <tr>
-                            <td>${DateFormatter.formatUSWithTime(sale.saleDate)}</td>
+                            <td>${DateFormatter.formatWithComma(sale.endDate)}</td>
                             <td>$${sale.total.toFixed(2)}</td>
                             <td>${itemList || 'N/A'}</td>
                         </tr>
@@ -460,4 +479,48 @@ function openModal(modalId) {
 
 function closeModal(modalId) {
     $(`#${modalId}`).removeClass('active');
+}
+
+function downloadSampleSalesFile() {
+    function generateCsv(items) {
+        let csvContent = "Menu Item Name,Menu Item ID,Quantity Sold\n";
+        (items || []).forEach(item => {
+            const name = item.name ? `"${item.name.toString().replace(/"/g, '""')}"` : '""';
+            const itemId = item.menuItemId !== undefined ? item.menuItemId : (item.id || '');
+            csvContent += `${name},${itemId},0\n`;
+        });
+
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Sales_Import_Sample_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    if (menuItems && menuItems.length > 0) {
+        generateCsv(menuItems);
+    } else {
+        ajaxRequest({
+            url: '/api/MenuApi/GetAllMenuItems',
+            method: 'GET',
+            showMessage: false,
+            onSuccess: function (response) {
+                if (response && response.data && response.data.length > 0) {
+                    menuItems = response.data;
+                    generateCsv(menuItems);
+                } else {
+                    showNotification('No menu items available for sample export.', 'error');
+                }
+            },
+            onError: function (xhr, status, error) {
+                console.error('Failed to fetch menu items for sample download:', error);
+                showNotification('Failed to download sample file.', 'error');
+            }
+        });
+    }
 }

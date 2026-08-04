@@ -10,7 +10,7 @@ namespace MenuOptics.Models
         public string Name { get; set; } = string.Empty;
         public string Unit { get; set; } = string.Empty;
         public double Cost { get; set; }
-        public double CurrentPrice { get; set; }
+        public double CurrentCost { get; set; }
         public string? Description { get; set; }
         public List<RecipeIngredient> Ingredients { get; set; } = new();
         public DateTime CreatedOn { get; set; }

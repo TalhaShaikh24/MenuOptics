@@ -197,7 +197,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> GetAllMenuItemsAsync(int currentUserId)
+        public async Task<ResponseDto> GetAllMenuItemsAsync(bool? isActive, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -206,6 +206,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", currentUserId);
+                parameters.Add("@IsActive", isActive);
                 parameters.Add("@Action", "SELECT_ALL");
 
                 var menuItems = await connection.QueryAsync<Menu, string, string, Menu>(

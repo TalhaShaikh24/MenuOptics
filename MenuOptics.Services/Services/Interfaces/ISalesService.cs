@@ -6,6 +6,6 @@ namespace MenuOptics.Services
     {
         Task<ResponseDto> CreateSaleAsync(Sale model, int currentUserId);
         Task<ResponseDto> GetAllSalesAsync();
-        Task<ResponseDto> ImportSalesAsync(IFormFile file, int currentUserId);
+        Task<ResponseDto> ImportSalesAsync(IFormFile file, DateTime startDate, DateTime endDate, int currentUserId);
     }
 }
