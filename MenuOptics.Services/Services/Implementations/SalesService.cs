@@ -3,6 +3,7 @@ using MenuOptics.Data;
 using MenuOptics.Models;
 using System.Data;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 
 namespace MenuOptics.Services
@@ -25,6 +26,22 @@ namespace MenuOptics.Services
             connection.Open();
             try
             {
+                var saleItemsTable = new DataTable();
+                saleItemsTable.Columns.Add("MenuItemId", typeof(int));
+                saleItemsTable.Columns.Add("Quantity", typeof(decimal));
+                saleItemsTable.Columns.Add("Price", typeof(decimal));
+                saleItemsTable.Columns.Add("Cost", typeof(decimal));
+
+                foreach (var item in model.Items)
+                {
+                    saleItemsTable.Rows.Add(
+                        item.MenuItemId,
+                        item.Quantity,
+                        item.Price,
+                        item.Cost
+                    );
+                }
+
                 // Insert Sale
                 var saleParameters = new DynamicParameters();
                 saleParameters.Add("@UserId", currentUserId);
@@ -34,59 +51,22 @@ namespace MenuOptics.Services
                 saleParameters.Add("@Tax", model.Tax);
                 saleParameters.Add("@Total", model.Total);
                 saleParameters.Add("@CreatedBy", currentUserId);
+                saleParameters.Add("@SaleItems", saleItemsTable.AsTableValuedParameter("SaleItemsType"));
                 saleParameters.Add("@Action", "INSERT");
 
                 int saleId = await connection.ExecuteScalarAsync<int>("sp_SaleCRUD", saleParameters, commandType: CommandType.StoredProcedure);
-
-                // Insert Sale Items
-                foreach (var item in model.Items)
-                {
-                    var itemParameters = new DynamicParameters();
-                    itemParameters.Add("@SaleId", saleId);
-                    itemParameters.Add("@MenuItemId", item.MenuItemId);
-                    itemParameters.Add("@Quantity", item.Quantity);
-                    itemParameters.Add("@Price", item.Price);
-                    itemParameters.Add("@Cost", item.Cost);
-                    itemParameters.Add("@CreatedBy", currentUserId);
-                    itemParameters.Add("@UserId", currentUserId); // Added for sp_SaleCRUD
-                    itemParameters.Add("@Action", "INSERT_ITEM");
-                    await connection.ExecuteAsync("sp_SaleCRUD", itemParameters, commandType: CommandType.StoredProcedure);
-                }
-
-                // Fetch sale details for ResponseDto
-                var selectParameters = new DynamicParameters();
-                selectParameters.Add("@SaleId", saleId);
-                selectParameters.Add("@Action", "SELECT");
-
-                var sale = await connection.QueryFirstOrDefaultAsync<Sale>(
-                    "sp_SaleCRUD",
-                    selectParameters,
-                    commandType: CommandType.StoredProcedure
-                );
-
-                if (sale == null)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Sale not found after creation.";
-                    return ResponseDto;
-                }
-
-                // Deserialize ItemsJson to List<SaleItemDTO>
-                var saleItems = string.IsNullOrEmpty(sale.ItemsJson)
-                    ? new List<SaleItem>()
-                    : JsonSerializer.Deserialize<List<SaleItem>>(sale.ItemsJson);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Sale created successfully.";
                 ResponseDto.Data = new
                 {
-                    sale.SaleId,
-                    sale.StartDate,
-                    sale.EndDate,
-                    sale.Subtotal,
-                    sale.Tax,
-                    sale.Total,
-                    Items = saleItems
+                    saleId,
+                    model.StartDate,
+                    model.EndDate,
+                    model.Subtotal,
+                    model.Tax,
+                    model.Total,
+                    Items = model.Items
                 };
                 return ResponseDto;
             }
@@ -205,6 +185,22 @@ namespace MenuOptics.Services
                     });
                 }
 
+                var saleItemsTable = new DataTable();
+                saleItemsTable.Columns.Add("MenuItemId", typeof(int));
+                saleItemsTable.Columns.Add("Quantity", typeof(decimal));
+                saleItemsTable.Columns.Add("Price", typeof(decimal));
+                saleItemsTable.Columns.Add("Cost", typeof(decimal));
+
+                foreach (var item in sale.Items)
+                {
+                    saleItemsTable.Rows.Add(
+                        item.MenuItemId,
+                        item.Quantity,
+                        item.Price,
+                        item.Cost
+                    );
+                }
+
                 sale.Subtotal = sale.Items.Sum(si => si.Price);
                 sale.Tax = 0;
                 sale.Total = sale.Subtotal + sale.Tax;
@@ -218,24 +214,10 @@ namespace MenuOptics.Services
                 saleParameters.Add("@Tax", sale.Tax);
                 saleParameters.Add("@Total", sale.Total);
                 saleParameters.Add("@CreatedBy", currentUserId);
+                saleParameters.Add("@SaleItems", saleItemsTable.AsTableValuedParameter("SaleItemsType"));
                 saleParameters.Add("@Action", "INSERT");
 
                 int saleId = await connection.ExecuteScalarAsync<int>("sp_SaleCRUD", saleParameters, commandType: CommandType.StoredProcedure);
-
-                // Insert Sale Items
-                foreach (var item in sale.Items)
-                {
-                    var itemParameters = new DynamicParameters();
-                    itemParameters.Add("@SaleId", saleId);
-                    itemParameters.Add("@MenuItemId", item.MenuItemId);
-                    itemParameters.Add("@Quantity", item.Quantity);
-                    itemParameters.Add("@Price", item.Price);
-                    itemParameters.Add("@Cost", item.Cost);
-                    itemParameters.Add("@CreatedBy", currentUserId);
-                    itemParameters.Add("@UserId", currentUserId); // Added for sp_SaleCRUD
-                    itemParameters.Add("@Action", "INSERT_ITEM");
-                    await connection.ExecuteAsync("sp_SaleCRUD", itemParameters, commandType: CommandType.StoredProcedure);
-                }
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = $"Successfully imported {sale.Items.Count} sale menu items.";
