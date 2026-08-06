@@ -6,7 +6,7 @@
     <div class="page-header">
         <div class="header-text">
             <h1>User Management</h1>
-            <p>Manage Admin and Vendor users for the restaurant system.</p>
+            <p>Manage Admin and Vendor users for system.</p>
         </div>
         <div class="header-actions">
             <button class="btn btn-primary" onclick="openModal('addUserModal')">
@@ -20,9 +20,9 @@
         <div class="stat-card">
             <div class="stat-content">
                 <div class="stat-info">
-                    <p class="stat-label">Total Restaurants</p>
+                    <p class="stat-label">Total Users</p>
                     <p class="stat-value" id="totalUsers"></p>
-                    <p class="stat-change-text">All registered restaurants</p>
+                    <p class="stat-change-text">All registered users</p>
                 </div>
                 <div class="stat-icon users">
                     <i class="fas fa-users"></i>
@@ -32,7 +32,7 @@
         <div class="stat-card">
             <div class="stat-content">
                 <div class="stat-info">
-                    <p class="stat-label">Active Restaurants</p>
+                    <p class="stat-label">Active Users</p>
                     <p class="stat-value" id="activeUsers"></p>
                     <p class="stat-change-text">Currently active</p>
                 </div>
@@ -44,7 +44,7 @@
         <div class="stat-card">
             <div class="stat-content">
                 <div class="stat-info">
-                    <p class="stat-label">Inactive Restaurants</p>
+                    <p class="stat-label">Inactive Users</p>
                     <p class="stat-value" id="inactiveUsers"></p>
                     <p class="stat-change-text">Currently inactive</p>
                 </div>
@@ -73,33 +73,11 @@
             <i class="fas fa-search"></i>
             <input type="text" placeholder="Search users..." class="filter-search" id="userSearch">
         </div>
-        <div class="dropdown filter-dropdown">
-            <button class="btn btn-outline">
-                <i class="fas fa-filter"></i>
-                Role: <span id="roleFilterLabel">All</span>
-            </button>
-            <div class="dropdown-menu">
-                <a href="#" data-role="all" onclick="filterUsers('role', 'all')">All</a>
-                <a href="#" data-role="Admin" onclick="filterUsers('role', 'Admin')">Admin</a>
-                <a href="#" data-role="Vendor" onclick="filterUsers('role', 'Vendor')">Vendor</a>
-            </div>
-        </div>
-        <div class="dropdown filter-dropdown">
-            <button class="btn btn-outline">
-                <i class="fas fa-chart-line"></i>
-                Status: <span id="statusFilterLabel">All</span>
-            </button>
-            <div class="dropdown-menu">
-                <a href="#" data-status="all" onclick="filterUsers('status', 'all')">All</a>
-                <a href="#" data-status="active" onclick="filterUsers('status', 'active')">Active</a>
-                <a href="#" data-status="inactive" onclick="filterUsers('status', 'inactive')">Inactive</a>
-            </div>
-        </div>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h3><i class="fas fa-users"></i> Staff Directory</h3>
+            <h3><i class="fas fa-users"></i> User Directory</h3>
         </div>
         <div class="card-content">
             <div class="table-container">
@@ -253,11 +231,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Username <span style="color:red">*</span></label>
-                            <input type="text" name="username" required>
+                            <input type="text" readonly disabled name="username" required>
                         </div>
                         <div class="form-group">
                             <label>Email <span style="color:red">*</span></label>
-                            <input type="email" name="email" required>
+                            <input type="email" readonly disabled name="email" required>
                         </div>
                     </div>
                     <div class="form-row">
@@ -266,7 +244,7 @@
                             <input type="text" name="phone" required>
                         </div>
                         <div class="form-group">
-                            <label>Password</label>
+                            <label>New Password <small style="color:#888">(leave blank to keep current)</small></label>
                             <input type="password" name="password">
                         </div>
                     </div>

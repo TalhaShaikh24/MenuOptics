@@ -151,7 +151,6 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantName", model.RestaurantName);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword("dbMF0sgx45FD0nVb"));
                 parameters.Add("@SubscriptionStatus", "Active");
-                parameters.Add("@IsRegistrationCompleted", false);
                 parameters.Add("@CreatedBy", callerVendorId);
                 parameters.Add("@Action", "INSERT");
 
@@ -249,9 +248,7 @@ namespace MenuOptics.Services
                 parameters.Add("@LastName", model.LastName);
                 parameters.Add("@Email", model.Email);
                 parameters.Add("@Phone", model.Phone);
-                parameters.Add("@ProfilePic", null);
                 parameters.Add("@RestaurantName", model.RestaurantName);
-                parameters.Add("@SubscriptionStatus", "Active");
                 parameters.Add("@ModifiedBy", callerVendorId);
                 parameters.Add("@Action", "UPDATE");
 

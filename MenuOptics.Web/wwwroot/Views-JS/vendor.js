@@ -11,7 +11,7 @@
 /* ── 2. State ─────────────────────────────────────────────────────────── */
 
 let allUsers = [];
-let currentFilters = { role: 'all', status: 'all', search: '' };
+let currentFilters = { search: '' };
 let table;
 
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
@@ -37,7 +37,7 @@ $(document).ready(function () {
     // Event handler for update user
     $('#updateUserBtn').on('click', function () {
         const formData = new FormData($('#editUserForm')[0]);
-        if (isFormValid("#addUserForm")) {
+        if (isFormValid("#updateUserForm")) {
             updateUser(formData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -189,7 +189,7 @@ function initDataTable() {
     table = $('#userTable').DataTable({
         paging: true,
         searching: true,
-        ordering: true,
+        ordering: false,
         order: [[0, 'asc']], // Sort by Name column by default
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
@@ -225,11 +225,8 @@ function filterAndRenderUsers() {
             user.lastName.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
             user.email.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
             user.username.toLowerCase().includes(currentFilters.search.toLowerCase());
-        const matchesRole = currentFilters.role === 'all' || user.roles.toLowerCase() === currentFilters.role.toLowerCase();
-        const matchesStatus = currentFilters.status === 'all' ||
-            (currentFilters.status === 'active' && user.isActive) ||
-            (currentFilters.status === 'inactive' && !user.isActive);
-        return matchesSearch && matchesRole && matchesStatus;
+        
+        return matchesSearch;
     });
 
     // Clear existing rows

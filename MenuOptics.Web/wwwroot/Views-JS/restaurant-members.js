@@ -11,7 +11,7 @@
 /* ── 2. State ─────────────────────────────────────────────────────────── */
 
 let allMembers = [];
-let currentFilters = { status: 'all', search: '' };
+let currentFilters = { search: '' };
 let table;
 
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
@@ -210,11 +210,10 @@ function refreshMemberStats() {
 
 // Initialize DataTable
 function initDataTable() {
-    table = $('.data-table').DataTable({
+    table = $('#membersTable').DataTable({
         paging: true,
         searching: false, // We handle search custom filter
-        ordering: true,
-        order: [[0, 'asc']], // Sort by Name column by default
+        ordering: false,
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
         language: {
@@ -250,11 +249,7 @@ function filterAndRenderMembers() {
             (member.username && member.username.toLowerCase().includes(currentFilters.search)) ||
             (member.phone && member.phone.toLowerCase().includes(currentFilters.search));
             
-        const matchesStatus = currentFilters.status === 'all' ||
-            (currentFilters.status === 'active' && member.isActive) ||
-            (currentFilters.status === 'inactive' && !member.isActive);
-            
-        return matchesSearch && matchesStatus;
+        return matchesSearch;
     });
 
     table.clear();
@@ -264,8 +259,7 @@ function filterAndRenderMembers() {
         const name = `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.username;
         const joinedDate = member.createdOn ? DateFormatter.formatWithComma(member.createdOn) : 'N/A';
         const modifiedDate = member.modifiedOn ? DateFormatter.formatWithComma(member.modifiedOn) : 'Never';
-        const statusClass = member.isActive ? 'active' : 'inactive';
-        const statusText = member.isActive ? 'Active' : 'Inactive';
+        const status = member.isActive ? 'active' : 'critical';
         const actionIcon = member.isActive ? 'fas fa-ban' : 'fas fa-check';
         const actionText = member.isActive ? 'Deactivate' : 'Activate';
 
@@ -282,7 +276,7 @@ function filterAndRenderMembers() {
                 </td>
                 <td>${member.email}</td>
                 <td>${member.phone || 'N/A'}</td>
-                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td><span class="status-badge ${status}">${member?.isActive ? 'Active' : 'Inactive'}</span></td>
                 <td><i class="fas fa-calendar"></i> ${joinedDate}</td>
                 <td><i class="fas fa-clock"></i> ${modifiedDate}</td>
                 <td>
@@ -306,9 +300,5 @@ function filterAndRenderMembers() {
 
 // Dropdown status filter
 window.filterMembers = function (type, value) {
-    if (type === 'status') {
-        currentFilters.status = value;
-        $('#memberStatusFilterLabel').text(value.charAt(0).toUpperCase() + value.slice(1));
-    }
     filterAndRenderMembers();
 };

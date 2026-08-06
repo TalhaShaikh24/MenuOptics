@@ -145,13 +145,12 @@ namespace MenuOptics.Services
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
-                parameters.Add("@RestaurantName", model.Role == "restaurant" || model.Role == "Restaurant" || model.Role == "admin" ? model.RestaurantName : null);
+                parameters.Add("@RestaurantName", model.Role == "Restaurant" ? model.RestaurantName : null);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", model.Role);
-                parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@IsRegistrationCompleted", 1);
                 parameters.Add("@SubscriptionStatus", model.Role == "Vendor" ? null : "Pending");
-                parameters.Add("@IsParent", model.Role == "Vendor" ? null : 1);
+                parameters.Add("@IsParent", model.Role == "Vendor" || model.Role == "Admin" ? null : 1);
                 parameters.Add("@CreatedBy", model.CreatedBy ?? fallbackCreatedBy);
                 parameters.Add("@Action", "INSERT");
 
@@ -331,8 +330,6 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", model.UserId);
                 parameters.Add("@FirstName", model.FirstName);
                 parameters.Add("@LastName", model.LastName);
-                parameters.Add("@Username", model.Username);
-                parameters.Add("@Email", model.Email);
                 parameters.Add("@Phone", model.Phone);
                 parameters.Add("@ProfilePic", filePathUrl);
                 parameters.Add("@Address", model.Address);
@@ -341,13 +338,13 @@ namespace MenuOptics.Services
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
-                parameters.Add("@RestaurantName", model.Role == "Restaurant" || model.Role == "Customer" ? model.RestaurantName : null);
-                parameters.Add("@RoleName", model.Role);
+                parameters.Add("@RestaurantName", model.Role == "Restaurant" ? model.RestaurantName : null);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@ModifiedBy", modifiedBy);
                 parameters.Add("@Action", "UPDATE");
 
                 int userId = await connection.ExecuteScalarAsync<int>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "User updated successfully.";
                 ResponseDto.Data = new { UserId = userId };
@@ -677,16 +674,8 @@ namespace MenuOptics.Services
                     return ResponseDto;
                 }
 
-                var filePathUrl = model.ProfilePic;
-                if (model.File != null)
-                {
-                    filePathUrl = await _fileService.UploadFileAsync(model.File, "uploads");
-                }
-
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", model.MemberId);
-                parameters.Add("@Username", model.Username);
-                parameters.Add("@Email", model.Email);
                 parameters.Add("@Phone", model.Phone);
                 parameters.Add("@FirstName", model.FirstName);
                 parameters.Add("@LastName", model.LastName);
@@ -696,7 +685,6 @@ namespace MenuOptics.Services
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
-                parameters.Add("@ProfilePic", filePathUrl);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@ModifiedBy", currentUserId);
                 if (!string.IsNullOrWhiteSpace(model.Password))
