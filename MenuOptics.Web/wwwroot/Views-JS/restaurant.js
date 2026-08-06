@@ -16,7 +16,6 @@ let currentFilters = { cuisine: 'all', status: 'all', search: '' };
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
-    
 
     // Load stats and restaurants
     refreshRestaurantStats();
@@ -25,7 +24,7 @@ $(document).ready(function () {
     // Event handler for add restaurant
     $('#saveRestaurantBtn').on('click', function () {
         const formData = new FormData($('#addRestaurantForm')[0]);
-        if (validateRestaurantData(formData)) {
+        if (isFormValid("#addRestaurantForm")) {
             addRestaurant(formData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -35,7 +34,7 @@ $(document).ready(function () {
     // Event handler for update restaurant
     $('#updateRestaurantBtn').on('click', function () {
         const formData = new FormData($('#editRestaurantForm')[0]);
-        if (validateRestaurantData(formData)) {
+        if (isFormValid("#editRestaurantForm")) {
             updateRestaurant(formData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -161,10 +160,9 @@ function getRestaurantById(id) {
             $('#editRestaurantForm [name="city"]').val(restaurant.city);
             $('#editRestaurantForm [name="zip"]').val(restaurant.zip);
             $('#editRestaurantForm [name="gender"]').val(restaurant.gender);
-            $('#editRestaurantForm [name="isActive"]').prop('checked', restaurant.isActive);
             $('#editRestaurantForm [name="profilePic"]').val(restaurant.profilePic);
             if (restaurant.profilePic) {
-                $('#editProfilePicPreview').attr('src', restaurant.profilePic).show();
+                $('#editProfilePicPreview').attr('src', imageBaseUrl+restaurant.profilePic).show();
                 $('#editProfilePicLabel').text('Replace profile picture');
             } else {
                 $('#editProfilePicPreview').hide();
@@ -218,21 +216,7 @@ function toggleRestaurantActive(id) {
     });
 }
 
-// Delete restaurant
-function deleteRestaurant(id) {
-    ajaxRequest({
-        url: `/api/UserApi/DeleteUser/${id}`,
-        method: 'DELETE',
-        showMessage: false,
-        onSuccess: function (response) {
-            refreshRestaurantStats();
-            refreshRestaurantTable();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to delete restaurant:', error);
-        }
-    });
-}
+
 
 // Refresh restaurant stats
 function refreshRestaurantStats() {
@@ -256,12 +240,14 @@ function refreshRestaurantStats() {
 
 // Refresh restaurant table
 function refreshRestaurantTable() {
+    
     ajaxRequest({
         url: '/api/UserApi/GetAllRestaurants',
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
             allRestaurants = response.data;
+            debugger
             filterAndRenderRestaurants();
         },
         onError: function (xhr, status, error) {
@@ -275,11 +261,13 @@ function refreshRestaurantTable() {
 // Filter and render restaurants
 function filterAndRenderRestaurants() {
     const filteredRestaurants = allRestaurants.filter(restaurant => {
-        const matchesSearch = currentFilters.search === '' ||
-            restaurant.restaurantName.toLowerCase().includes(currentFilters.search) ||
-            restaurant.email.toLowerCase().includes(currentFilters.search) ||
-            restaurant.username.toLowerCase().includes(currentFilters.search);
-        const matchesCuisine = currentFilters.cuisine === 'all' || restaurant.cuisineType.toLowerCase() === currentFilters.cuisine.toLowerCase();
+        const search = currentFilters.search;
+        const matchesSearch = search === '' ||
+            (restaurant.restaurantName || '').toLowerCase().includes(search) ||
+            (restaurant.email || '').toLowerCase().includes(search) ||
+            (restaurant.username || '').toLowerCase().includes(search);
+        const matchesCuisine = currentFilters.cuisine === 'all' ||
+            (restaurant.cuisineType || '').toLowerCase() === currentFilters.cuisine.toLowerCase();
         const matchesStatus = currentFilters.status === 'all' ||
             (currentFilters.status === 'active' && restaurant.isActive) ||
             (currentFilters.status === 'inactive' && !restaurant.isActive);
@@ -290,12 +278,12 @@ function filterAndRenderRestaurants() {
     tableBody.empty();
 
     filteredRestaurants.forEach(restaurant => {
-        const status = restaurant.isActive ? 'active' : 'inactive';
+        const status = restaurant.isActive ? 'active' : 'critical';
         const row = `
             <tr>
                 <td>
                     <div class="user-info">
-                        <div class="user-avatar">${restaurant.restaurantName[0]}</div>
+                        <div class="user-avatar">${restaurant?.restaurantName?.[0] ?? ""}</div>
                         <div class="user-details">
                             <p class="user-name">${restaurant.restaurantName}</p>
                             <div class="user-contact">
@@ -305,8 +293,6 @@ function filterAndRenderRestaurants() {
                         </div>
                     </div>
                 </td>
-                <td><span class="cuisine-badge">${restaurant.cuisineType}</span></td>
-                <td><span class="size-badge">${restaurant.restaurantSize}</span></td>
                 <td><span class="status-badge ${status}">${restaurant.isActive ? 'Active' : 'Inactive'}</span></td>
                 <td><i class="fas fa-calendar"></i> ${new Date(restaurant.createdOn).toLocaleDateString()}</td>
                 <td><i class="fas fa-clock"></i> ${restaurant.modifiedOn ? new Date(restaurant.modifiedOn).toLocaleDateString() : 'Never'}</td>
@@ -317,9 +303,8 @@ function filterAndRenderRestaurants() {
                         </button>
                         <div class="dropdown-menu">
                             <a href="#" onclick="getRestaurantById(${restaurant.userId})">Edit Restaurant</a>
-                            <a href="#" onclick="toggleRestaurantActive(${restaurant.userId})">${restaurant.isActive ? 'Deactivate' : 'Activate'} Restaurant</a>
-                            <a href="#" class="danger" onclick="deleteRestaurant(${restaurant.userId})">Delete Restaurant</a>
-                        </div>
+                            <a href="#" onclick="toggleRestaurantActive(${restaurant.userId})">${restaurant.isActive ? 'Deactivate' : 'Activate'}</a>
+                          </div>
                     </div>
                 </td>
             </tr>
@@ -336,12 +321,3 @@ window.filterRestaurants = function (type, value) {
     $('.dropdown-menu').removeClass('active');
 };
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
-function openModal(modalId) {
-    $(`#${modalId}`).addClass('active');
-}
-
-function closeModal(modalId) {
-    $(`#${modalId}`).removeClass('active');
-}

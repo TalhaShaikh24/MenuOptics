@@ -27,7 +27,7 @@ $(document).ready(function () {
     // Event handler for add user
     $('#saveUserBtn').on('click', function () {
         const formData = new FormData($('#addUserForm')[0]);
-        if (validateUserData(formData)) {
+        if (isFormValid("#addUserForm")) {
             addUser(formData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -37,7 +37,7 @@ $(document).ready(function () {
     // Event handler for update user
     $('#updateUserBtn').on('click', function () {
         const formData = new FormData($('#editUserForm')[0]);
-        if (validateUserData(formData)) {
+        if (isFormValid("#addUserForm")) {
             updateUser(formData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -54,19 +54,6 @@ $(document).ready(function () {
     setInterval(refreshUserTable, 30000);
 });
 
-/* ── Validation ───────────────────────────────────────────────────────── */
-
-// Validate user data
-function validateUserData(formData) {
-    const firstName = formData.get('firstName');
-    const lastName = formData.get('lastName');
-    const username = formData.get('username');
-    const email = formData.get('email');
-    const phone = formData.get('phone');
-    const role = formData.get('role');
-    const password = formData.get('password');
-    return firstName && lastName && username && email && phone && role && (formData.get('userId') || password);
-}
 
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
@@ -113,11 +100,9 @@ function getUserById(id) {
             $('#editUserForm [name="city"]').val(user.city);
             $('#editUserForm [name="zip"]').val(user.zip);
             $('#editUserForm [name="gender"]').val(user.gender);
-            $('#editUserForm [name="role"]').val(user.roles);
-            $('#editUserForm [name="isActive"]').prop('checked', user.isActive);
             $('#editUserForm [name="profilePic"]').val(user.profilePic);
             if (user.profilePic) {
-                $('#editProfilePicPreview').attr('src', user.profilePic).show();
+                $('#editProfilePicPreview').attr('src', imageBaseUrl +user.profilePic).show();
                 $('#editProfilePicLabel').text('Replace profile picture');
             } else {
                 $('#editProfilePicPreview').hide();
@@ -170,25 +155,6 @@ function toggleUserActive(id) {
     });
 }
 
-// Delete user
-function deleteUser(id) {
-    if (confirm('Are you sure you want to delete this user?')) {
-        ajaxRequest({
-            url: `/api/UserApi/DeleteUser/${id}`,
-            method: 'DELETE',
-            showMessage: false,
-            onSuccess: function (response) {
-                refreshUserStats();
-                refreshUserTable();
-                showNotification('User deleted successfully.', 'success');
-            },
-            onError: function (xhr, status, error) {
-                console.error('Failed to delete user:', error);
-                showNotification('Failed to delete user.', 'error');
-            }
-        });
-    }
-}
 
 // Refresh user stats
 function refreshUserStats() {
@@ -197,6 +163,7 @@ function refreshUserStats() {
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
+            debugger
             const stats = response.data || {};
             $('#totalUsers').text(stats.totalCount);
             $('#activeUsers').text(stats.activeCount);
@@ -270,7 +237,7 @@ function filterAndRenderUsers() {
 
     // Add new rows
     filteredUsers.forEach(user => {
-        const status = user.isActive ? 'active' : 'inactive';
+        const status = user.isActive ? 'active' : 'critical';
         const row = `
             <tr>
                 <td>
@@ -296,8 +263,7 @@ function filterAndRenderUsers() {
                         </button>
                         <div class="dropdown-menu">
                             <a href="#" onclick="getUserById(${user.userId})">Edit User</a>
-                            <a href="#" onclick="toggleUserActive(${user.userId})">${user.isActive ? 'Deactivate' : 'Activate'} User</a>
-                            <a href="#" class="danger" onclick="deleteUser(${user.userId})">Delete User</a>
+                            <a href="#" onclick="toggleUserActive(${user.userId})">${user.isActive ? 'Deactivate' : 'Activate'}</a>
                         </div>
                     </div>
                 </td>

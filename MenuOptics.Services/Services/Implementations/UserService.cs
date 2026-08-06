@@ -151,6 +151,7 @@ namespace MenuOptics.Services
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@IsRegistrationCompleted", 1);
                 parameters.Add("@SubscriptionStatus", model.Role == "Vendor" ? null : "Pending");
+                parameters.Add("@IsParent", model.Role == "Vendor" ? null : 1);
                 parameters.Add("@CreatedBy", model.CreatedBy ?? fallbackCreatedBy);
                 parameters.Add("@Action", "INSERT");
 

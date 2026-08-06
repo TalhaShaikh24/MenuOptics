@@ -150,7 +150,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Phone", model.Phone);
                 parameters.Add("@RestaurantName", model.RestaurantName);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword("dbMF0sgx45FD0nVb"));
-                parameters.Add("@SubscriptionStatus", "Pending");
+                parameters.Add("@SubscriptionStatus", "Active");
                 parameters.Add("@IsRegistrationCompleted", false);
                 parameters.Add("@CreatedBy", callerVendorId);
                 parameters.Add("@Action", "INSERT");
