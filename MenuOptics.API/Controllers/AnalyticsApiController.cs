@@ -1,12 +1,14 @@
+using MenuOptics.API.Middleware;
+using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MenuOptics.Services;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [SubscriptionRequired]
     [Authorize(Roles = "Admin,Restaurant")]
     public class AnalyticsApiController : ControllerBase
     {

@@ -55,8 +55,6 @@ namespace MenuOptics.Services
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
                 parameters.Add("@RestaurantName", model.RestaurantName);
-                parameters.Add("@CuisineType", model.CuisineType);
-                parameters.Add("@RestaurantSize", model.RestaurantSize);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", "Vendor");
                 parameters.Add("@CreatedBy", model.CreatedBy ?? 1);

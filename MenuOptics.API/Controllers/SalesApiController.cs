@@ -1,12 +1,14 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using MenuOptics.API.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
+    [SubscriptionRequired]
     [ApiController]
     public class SalesApiController : ControllerBase
     {

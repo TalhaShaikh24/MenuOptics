@@ -218,9 +218,14 @@ function initIngredientsTable() {
                         data: response.data || []
                     });
                 },
-                error: function (xhr) {
-                    showNotification('Failed to load ingredients.', 'error');
+                error: function (xhr, textStatus, errorThrown) {
+                   
                     callback({ draw: dtParams.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
+                    debugger
+                    if (xhr.status==402)
+                    var $stripe = $('#subscriptioStatus');
+                    $stripe.text(xhr.responseJSON.responseMsg).show();
+                    return; 
                 }
             });
         },
@@ -359,10 +364,8 @@ function addIngredientByUserId(ingredientData) {
             $('#addIngredientForm')[0].reset();
             toggleSizePackSizeByType('', '#ingredientSize', '#ingredientPackSize');
             closeModal('addIngredientModal');
-        },
-        onError: function () {
-            showNotification('Failed to add ingredient.', 'error');
         }
+       
     });
 }
 
@@ -403,9 +406,6 @@ function getIngredientById(id) {
                 $('#editIngredientPrice').closest('.form-group').show();
             }
             openModal('editIngredientModal');
-        },
-        onError: function () {
-            showNotification('Failed to fetch ingredient.', 'error');
         }
     });
 }

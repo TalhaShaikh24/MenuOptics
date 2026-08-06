@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using MenuOptics.Models;
 using MenuOptics.Services;
 using System.Security.Claims;
+using MenuOptics.API.Middleware;
 
 namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [SubscriptionRequired]
     [Authorize(Roles = "Restaurant")]
     public class PrivateVendorApiController : ControllerBase
     {

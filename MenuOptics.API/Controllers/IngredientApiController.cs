@@ -1,20 +1,21 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using MenuOptics.API.Middleware;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
+    [SubscriptionRequired]
     [ApiController]
     public class IngredientApiController : ControllerBase
     {
         private readonly IIngredientService _ingredientService;
         private readonly IActivityLogService _activityLog;
-
         public IngredientApiController(IIngredientService ingredientService, IActivityLogService activityLog)
         {
             _ingredientService = ingredientService;
@@ -29,6 +30,7 @@ namespace MenuOptics.Controllers.Api
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
+        [IgnoreSubscription]
         [HttpPost("CreateIngredientByVendor")]
         public async Task<IActionResult> CreateIngredientByVendor([FromBody] VendorIngredientDto model)
         {
@@ -50,6 +52,7 @@ namespace MenuOptics.Controllers.Api
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
+        [IgnoreSubscription]
         [HttpPut("UpdateIngredientPrices")]
         public async Task<IActionResult> UpdateIngredientPrices([FromBody] UpdateIngredientPriceDto model)
         {
@@ -139,13 +142,13 @@ namespace MenuOptics.Controllers.Api
         // Updates one or more of: Name, Unit, IsActive. Only provided (non-null) fields are applied.
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
+        [IgnoreSubscription]
         [HttpPatch("PatchIngredientDetails")]
         public async Task<IActionResult> PatchIngredientDetails([FromBody] UpdateIngredientDetailsDto model)
         {
             var (statusCode, body) = await _ingredientService.PatchIngredientDetailsAsync(model, CurrentUserId, RequestId);
             return StatusCode(statusCode, body);
         }
-
 
         [HttpPut("ToggleIngredientActive/{id}")]
         public async Task<IActionResult> ToggleIngredientActive(int id)

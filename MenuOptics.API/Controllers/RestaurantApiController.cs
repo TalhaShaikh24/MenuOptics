@@ -1,12 +1,13 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using MenuOptics.API.Middleware;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
 using MenuOptics.Services.EmailTemplates;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {

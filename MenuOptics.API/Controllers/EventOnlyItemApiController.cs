@@ -1,3 +1,4 @@
+using MenuOptics.API.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,7 @@ namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
+    [SubscriptionRequired]
     [Authorize(Roles = "Admin,Restaurant")]
     public class EventOnlyItemApiController : ControllerBase
     {

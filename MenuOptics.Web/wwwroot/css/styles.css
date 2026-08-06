@@ -12,6 +12,38 @@ body {
     line-height: 1.6;
 }
 
+/* ── Stripe Alert Bar ───────────────────────────────────────────── */
+.stripe-alert {
+    display: block;
+    width: 100%;
+    padding: 10px 20px;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 0.01em;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.stripe-alert.danger {
+    background: linear-gradient(90deg, #b91c1c 0%, #dc2626 50%, #b91c1c 100%);
+    color: #fff;
+    border-bottom: 2px solid #991b1b;
+    box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
+}
+
+.stripe-alert.warning {
+    background: linear-gradient(90deg, #b45309 0%, #d97706 50%, #b45309 100%);
+    color: #fff;
+    border-bottom: 2px solid #92400e;
+}
+
+.stripe-alert.info {
+    background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 50%, #1d4ed8 100%);
+    color: #fff;
+    border-bottom: 2px solid #1e40af;
+}
+
 /* Dashboard Container */
 .dashboard-container {
     display: flex;
@@ -3607,3 +3639,5 @@ a#btnSidebarWelcomeVideo {
 .btn-tut-next:hover {
     background: linear-gradient(135deg, #e07c0a 0%, #f08d11 100%);
 }
+
+

@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+using MenuOptics.API.Middleware;
 using MenuOptics.Services;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
+    [SubscriptionRequired]
     [ApiController]
     public class MenuEngineeringInsightsApiController : ControllerBase
     {

@@ -75,7 +75,6 @@ function addCategory(categoryData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add category:', error);
-            showNotification('Failed to add category.', 'error');
         }
     });
 }
@@ -94,7 +93,6 @@ function getCategoryById(id) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch category:', error);
-            showNotification('Failed to fetch category.', 'error');
         }
     });
 }
@@ -115,7 +113,6 @@ function updateCategory(categoryData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update category:', error);
-            showNotification('Failed to update category.', 'error');
         }
     });
 }
@@ -132,7 +129,6 @@ function toggleCategoryActive(id) {
             },
             onError: function (xhr, status, error) {
                 console.error('Failed to toggle category status:', error);
-                showNotification('Failed to toggle category status.', 'error');
             }
         });
     }
@@ -151,7 +147,6 @@ function deleteCategory(id) {
             },
             onError: function (xhr, status, error) {
                 console.error('Failed to delete category:', error);
-                showNotification('Failed to delete category.', 'error');
             }
         });
     }
@@ -174,10 +169,6 @@ function refreshCategoriesTable() {
             $('#totalCategories').text(categories.filter(c => c.isActive).length);
 
             renderCategoriesTable(categories);
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch categories:', error);
-            showNotification('Failed to fetch categories.', 'error');
         }
     });
 }
@@ -199,7 +190,6 @@ function toggleActiveFilter() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch categories:', error);
-            showNotification('Failed to fetch categories.', 'error');
         }
     });
 }
@@ -264,12 +254,3 @@ function buildCategoryRow(category) {
                 `;
 }
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
-function openModal(modalId) {
-    $(`#${modalId}`).addClass('active');
-}
-
-function closeModal(modalId) {
-    $(`#${modalId}`).removeClass('active');
-}

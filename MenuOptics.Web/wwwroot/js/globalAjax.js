@@ -1,4 +1,4 @@
-﻿/* ============================================================================
+/* ============================================================================
  * globalAjax.js — Shared AJAX wrapper used by every page.
  * Exposes: ajaxRequest(options), executeAjaxRequest(options),
  *          showConfirmDeleteModal(message, onConfirm)
@@ -140,6 +140,12 @@ function executeAjaxRequest({
             } catch {
                 errorMsg = "Error parsing error response";
             }
+            if (statusCode === 402) {
+                var $stripe = $('#subscriptioStatus');
+                $stripe.text(errorMsg).show();
+                onError(xhr, status, error);
+                return; // skip showNotification for 402
+            }
 
             // Trigger global popup if status is 500
             if (statusCode === 500) {
@@ -156,10 +162,9 @@ function executeAjaxRequest({
                 });
             }
             
-            if (statusCode != 500) { 
+            if (statusCode !== 500) { 
                 showNotification(errorMsg, "error", statusCode);
             }
-            showNotification(errorMsg, "error", statusCode);
             onError(xhr, status, error);
         },
         complete: function () {

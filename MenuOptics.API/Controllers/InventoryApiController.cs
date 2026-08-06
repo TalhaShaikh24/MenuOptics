@@ -1,15 +1,17 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using MenuOptics.API.Middleware;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Route("api/[controller]")]
+    [SubscriptionRequired]
     [ApiController]
     public class InventoryApiController : ControllerBase
     {
@@ -28,6 +30,7 @@ namespace MenuOptics.Controllers.Api
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
+        [IgnoreSubscription]
         [HttpPost("InvoiceInventory")]
         public async Task<IActionResult> InvoiceInventory([FromBody] InvoiceInventoryRequestDto model)
         {
