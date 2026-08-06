@@ -146,8 +146,6 @@ namespace MenuOptics.Services
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
                 parameters.Add("@RestaurantName", model.Role == "restaurant" || model.Role == "Restaurant" || model.Role == "admin" ? model.RestaurantName : null);
-                parameters.Add("@CuisineType", model.Role == "restaurant" || model.Role == "Restaurant" || model.Role == "admin" ? model.CuisineType : null);
-                parameters.Add("@RestaurantSize", model.Role == "restaurant" || model.Role == "Restaurant" || model.Role == "admin" ? model.RestaurantSize : null);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", model.Role);
                 parameters.Add("@IsActive", model.IsActive);
@@ -343,8 +341,6 @@ namespace MenuOptics.Services
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
                 parameters.Add("@RestaurantName", model.Role == "Restaurant" || model.Role == "Customer" ? model.RestaurantName : null);
-                parameters.Add("@CuisineType", model.Role == "Restaurant" || model.Role == "Customer" ? model.CuisineType : null);
-                parameters.Add("@RestaurantSize", model.Role == "Restaurant" || model.Role == "Customer" ? model.RestaurantSize : null);
                 parameters.Add("@RoleName", model.Role);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@ModifiedBy", modifiedBy);

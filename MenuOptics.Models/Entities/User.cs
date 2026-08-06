@@ -20,8 +20,6 @@ namespace MenuOptics.Models
         public string? Zip { get; set; }
         public string? Gender { get; set; }
         public string? RestaurantName { get; set; }
-        public string? CuisineType { get; set; }
-        public string? RestaurantSize { get; set; }
         public string? Password { get; set; }
         public string? Role { get; set; }
         public bool IsActive { get; set; }

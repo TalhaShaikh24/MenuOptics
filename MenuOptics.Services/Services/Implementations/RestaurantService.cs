@@ -251,6 +251,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Phone", model.Phone);
                 parameters.Add("@ProfilePic", null);
                 parameters.Add("@RestaurantName", model.RestaurantName);
+                parameters.Add("@SubscriptionStatus", "Active");
                 parameters.Add("@ModifiedBy", callerVendorId);
                 parameters.Add("@Action", "UPDATE");
 
@@ -337,7 +338,7 @@ namespace MenuOptics.Services
                 parameters.Add("@VendorId", callerVendorId);
                 parameters.Add("@IsActive", request.IsActive);
                 parameters.Add("@ModifiedBy", callerVendorId);
-                parameters.Add("@Action", "UPDATE_ACTIVE");
+                parameters.Add("@Action", "TOGGLE_ACTIVE");
 
                 await connection.ExecuteAsync(
                     "sp_RestaurantCRUD",

@@ -25,7 +25,6 @@ namespace MenuOptics.Services
                     "whsec_5faaa8f893e8ee04fe332d778da9a4b4807614c9f57791447440cfdcb58bca33" // Replace with your Stripe webhook secret
                 );
 
-                Console.WriteLine(stripeEvent.Type);
                 using var connection = _context.CreateConnection();
                 connection.Open();
                 try
@@ -38,7 +37,6 @@ namespace MenuOptics.Services
                         parameters.Add("@SubscriptionStatus", subscription.Status == "active" ? "Active" : "Expired");
                         parameters.Add("@UserId", subscription.Status == "active" ? "Active" : "Expired");
                         parameters.Add("@Action", "UPDATE_SUBSCRIPTION");
-
                         await connection.ExecuteAsync("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
                     }
                 }
