@@ -1,0 +1,17 @@
+using MenuOptics.Models;
+
+namespace MenuOptics.Services
+{
+    public interface IAuthService
+    {
+        Task<ResponseDto> LoginAsync(LoginDto model, string requestId);
+        Task<ResponseDto> LogoutAsync();
+        string CreateCheckoutSession(string? plan, int userId);
+        Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model);
+        Task<ResponseDto> RevokeTokenAsync(RefreshTokenRequestDto model);
+        Task<ResponseDto> CheckEmailAsync(CheckEmailDto model);
+        Task<ResponseDto> SendOtpAsync(SendOtpDto model);
+        Task<ResponseDto> VerifyOtpAsync(VerifyOtpDto model);
+        Task SignInWithCookieAsync(UserDto user, int effectiveUserId, bool isParent);
+    }
+}

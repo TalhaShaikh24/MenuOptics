@@ -9,6 +9,5 @@ namespace MenuOptics.Services
         Task<ResponseDto> SignupRestaurantAsync(CreateRestaurantDto model, string? nameIdentifierClaim, string requestId);
         Task<ResponseDto> UpdateRestaurantAsync(UpdateRestaurantDto model, string? nameIdentifierClaim, string requestId);
         Task<ResponseDto> ToggleRestaurantActiveAsync(int restaurantId, RestaurantStatusRequestDto request, string? nameIdentifierClaim, string requestId);
-        Task<ResponseDto> SetPasswordAsync(SetPasswordDto model, string? nameIdentifierClaim);
     }
 }

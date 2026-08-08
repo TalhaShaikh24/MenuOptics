@@ -28,7 +28,7 @@ $(document).ready(function () {
         const formData = new FormData(document.getElementById('profileEditForm'));
 
         ajaxRequest({
-            url: '/api/ProfileApi/UpdateProfile',
+            url: '/api/UserApi/UpdateCurrentUser',
             method: 'PUT',
             data: formData,
             contentType: false,
@@ -46,7 +46,7 @@ $(document).ready(function () {
 
 function loadCurrentProfile() {
     ajaxRequest({
-        url: '/api/ProfileApi/GetCurrentUser',
+        url: '/api/UserApi/GetCurrentUser',
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {

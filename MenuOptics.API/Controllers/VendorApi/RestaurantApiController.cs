@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 
-namespace MenuOptics.Controllers.Api
+namespace MenuOptics.API.Controllers.VendorApi
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -116,13 +116,6 @@ namespace MenuOptics.Controllers.Api
             }
 
             var responseData = await _restaurantService.ToggleRestaurantActiveAsync(restaurantId, request, NameIdentifierClaim, RequestId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
-        [HttpPost("SetPassword")]
-        public async Task<IActionResult> SetPassword(SetPasswordDto model)
-        {
-            var responseData = await _restaurantService.SetPasswordAsync(model, NameIdentifierClaim);
             return StatusCode(responseData.Status, responseData);
         }
     }

@@ -365,41 +365,5 @@ namespace MenuOptics.Services
                 return ResponseDto;
             }
         }
-
-        public async Task<ResponseDto> SetPasswordAsync(SetPasswordDto model, string? nameIdentifierClaim)
-        {
-            var ResponseDto = new ResponseDto();
-            // Intentionally resolved outside the try block (matches original behavior).
-            var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
-            using var connection = _context.CreateConnection();
-
-            try
-            {
-                connection.Open();
-
-                var parameters = new DynamicParameters();
-                parameters.Add("@RestaurantId", model.RestaurantId);
-                parameters.Add("@VendorId", callerVendorId); // Logged-in Vendor Id
-                parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
-                parameters.Add("@ModifiedBy", callerVendorId);
-                parameters.Add("@Action", "SET_PASSWORD");
-
-                await connection.ExecuteAsync(
-                    "sp_RestaurantCRUD",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Password updated successfully.";
-
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = ex.Message;
-                return ResponseDto;
-            }
-        }
     }
 }

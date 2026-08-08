@@ -14,10 +14,12 @@ namespace MenuOptics.Controllers.Api
     public class UserApiController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IAuthService _authService;
 
-        public UserApiController(IUserService userService)
+        public UserApiController(IUserService userService, IAuthService authService)
         {
             _userService = userService;
+            _authService = authService;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -74,6 +76,14 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
+        [HttpGet("GetCurrentUser")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = Convert.ToInt32(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var responseData = await _userService.GetUserAsync(userId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpGet("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers()
@@ -105,6 +115,15 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
+        [HttpPut("UpdateCurrentUser")]
+        public async Task<IActionResult> UpdateCurrentUser([FromForm] User model)
+        {
+            var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            model.UserId = currentUserId;
+            var responseData = await _userService.UpdateUserAsync(model, currentUserId, $"{Request.Scheme}://{Request.Host}");
+            return StatusCode(responseData.Status, responseData);
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPut("ToggleUserActive/{id}")]
         public async Task<IActionResult> ToggleUserActive(int id)
@@ -113,13 +132,11 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-       
-
         [AllowAnonymous]
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
-            var responseData = await _userService.LoginAsync(model, RequestId);
+            var responseData = await _authService.LoginAsync(model, RequestId);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -127,7 +144,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("Logout")]
         public async Task<IActionResult> Logout()
         {
-            var responseData = await _userService.LogoutAsync();
+            var responseData = await _authService.LogoutAsync();
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -179,13 +196,11 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-
-
         [AllowAnonymous]
         [HttpPost("CreateCheckoutSession")]
         public IActionResult CreateCheckoutSession([FromBody] PlanRequest request)
         {
-            var sessionId = _userService.CreateCheckoutSession(request.Plan, request.UserId);
+            var sessionId = _authService.CreateCheckoutSession(request.Plan, request.UserId);
             return Ok(new { sessionId });
         }
 
@@ -193,7 +208,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("RefreshToken")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto model)
         {
-            var responseData = await _userService.RefreshTokenAsync(model);
+            var responseData = await _authService.RefreshTokenAsync(model);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -201,7 +216,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("RevokeToken")]
         public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequestDto model)
         {
-            var responseData = await _userService.RevokeTokenAsync(model);
+            var responseData = await _authService.RevokeTokenAsync(model);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -209,7 +224,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("CheckEmail")]
         public async Task<IActionResult> CheckEmail([FromBody] CheckEmailDto model)
         {
-            var responseData = await _userService.CheckEmailAsync(model);
+            var responseData = await _authService.CheckEmailAsync(model);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -235,7 +250,7 @@ namespace MenuOptics.Controllers.Api
                 return BadRequest(ModelStateErrorResponse());
             }
 
-            var responseData = await _userService.SendOtpAsync(model);
+            var responseData = await _authService.SendOtpAsync(model);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -248,7 +263,7 @@ namespace MenuOptics.Controllers.Api
                 return BadRequest(ModelStateErrorResponse());
             }
 
-            var responseData = await _userService.VerifyOtpAsync(model);
+            var responseData = await _authService.VerifyOtpAsync(model);
             return StatusCode(responseData.Status, responseData);
         }
 
