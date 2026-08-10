@@ -1,7 +1,7 @@
 using MenuOptics.API.Middleware;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
-using MenuOptics.Services;
+using MenuOptics.Services.VendorApi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,9 +16,9 @@ namespace MenuOptics.Controllers.VendorApi
     public class InventoryApiController : ControllerBase
     {
         private readonly IInventoryService _inventoryService;
-        private readonly IActivityLogService _activityLog;
+        private readonly Services.IActivityLogService _activityLog;
 
-        public InventoryApiController(IInventoryService inventoryService, IActivityLogService activityLog)
+        public InventoryApiController(IInventoryService inventoryService, Services.IActivityLogService activityLog)
         {
             _inventoryService = inventoryService;
             _activityLog = activityLog;

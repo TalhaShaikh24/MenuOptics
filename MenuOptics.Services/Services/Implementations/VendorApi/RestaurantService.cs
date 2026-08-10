@@ -1,10 +1,11 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Services.VendorApi;
 using System.Data;
 using System.Data.SqlClient;
 
-namespace MenuOptics.Services
+namespace MenuOptics.Services.VendorApi
 {
     public class RestaurantService : IRestaurantService
     {
@@ -347,7 +348,7 @@ namespace MenuOptics.Services
                 ResponseDto.Data = new
                 {
                     RestaurantId = restaurantId,
-                    IsActive = request.IsActive
+                    request.IsActive
                 };
 
                 return ResponseDto;

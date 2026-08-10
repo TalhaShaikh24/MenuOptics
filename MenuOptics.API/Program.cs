@@ -9,6 +9,7 @@ using MenuOptics.Middleware;
 using MenuOptics.Services;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
+using MenuOptics.Services.VendorApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,8 +43,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IEventOnlyItemService, EventOnlyItemService>();
-builder.Services.AddScoped<IIngredientService, IngredientService>();
-builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<MenuOptics.Services.VendorApi.IIngredientService, MenuOptics.Services.VendorApi.IngredientService>();
+builder.Services.AddScoped<MenuOptics.Services.VendorApi.IInventoryService, MenuOptics.Services.VendorApi.InventoryService>();
+builder.Services.AddScoped<MenuOptics.Services.IIngredientService, MenuOptics.Services.IngredientService>();
+builder.Services.AddScoped<MenuOptics.Services.IInventoryService, MenuOptics.Services.InventoryService>();
 builder.Services.AddScoped<IMenuService, MenuService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IMenuEngineeringInsightsService, MenuEngineeringInsightsService>();

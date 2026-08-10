@@ -3,6 +3,7 @@ using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
 using MenuOptics.Services.EmailTemplates;
+using MenuOptics.Services.VendorApi;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

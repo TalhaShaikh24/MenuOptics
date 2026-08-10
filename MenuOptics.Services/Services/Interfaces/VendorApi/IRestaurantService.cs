@@ -1,6 +1,6 @@
 using MenuOptics.Models;
 
-namespace MenuOptics.Services
+namespace MenuOptics.Services.VendorApi
 {
     public interface IRestaurantService
     {
