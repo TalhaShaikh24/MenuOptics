@@ -1,7 +1,6 @@
 /* ============================================================================
  * Ingredients.js — Restaurant ingredients page (Views/Ingredient/Ingredients.cshtml)
- * Server-side DataTable, CRUD modals, stock entry, bulk actions and
- * vendor link/unlink management.
+ * Server-side DataTable, CRUD modals, stock entry
  *
  * Project convention — every Views-JS file follows this section order:
  *   1. Constants  2. State  3. Initialization  4. Event bindings
@@ -74,10 +73,6 @@ $(document).ready(function () {
         }
     });
 
-    // ── Bulk actions ──────────────────────────────────────────────────────────
-    $('#bulkDeleteBtn').on('click', function () { bulkDeleteIngredients(); });
-    $('#bulkToggleBtn').on('click', function () { bulkToggleIngredients(); });
-
     // ── Export CSV ────────────────────────────────────────────────────────────
     $('#exportCSVBtn').on('click', function () {
         ajaxRequest({
@@ -148,7 +143,7 @@ $(document).ready(function () {
     loadPrivateVendors();
     refreshVendors();
     initIngredientsTable();
-    
+
 });
 
 
@@ -165,7 +160,7 @@ let isPrivateVendor = 0;
 function toggleSizePackSizeByType(typeValue, sizeSelector, packSizeSelector) {
     const $size = $(sizeSelector);
     const $packSize = $(packSizeSelector);
-    const $packSizeRequired = $(packSizeSelector + 'Required'); 
+    const $packSizeRequired = $(packSizeSelector + 'Required');
 
     if (typeValue === 'packItem') {
         $size.prop('disabled', false).prop('required', true);
@@ -191,14 +186,14 @@ function initIngredientsTable() {
     table = $('.ingredients-table').DataTable({
         serverSide: true,
         processing: true,
-        ordering: false, 
+        ordering: false,
         ajax: function (dtParams, callback, settings) {
             // Map DataTables params → our API query params
             const searchValue = dtParams.search ? dtParams.search.value : '';
 
             // Switch endpoint: vendor-specific when a supplier is selected
             const url = activeSupplierVendorId
-                ? `/api/IngredientApi/GetAllIngredientsByVendorId/${activeSupplierVendorId}/${isPrivateVendor ? 'true': 'false'}`
+                ? `/api/IngredientApi/GetAllIngredientsByVendorId/${activeSupplierVendorId}/${isPrivateVendor ? 'true' : 'false'}`
                 : '/api/IngredientApi/GetAllActiveInactiveIngredients';
 
             $.ajax({
@@ -219,13 +214,13 @@ function initIngredientsTable() {
                     });
                 },
                 error: function (xhr, textStatus, errorThrown) {
-                   
+
                     callback({ draw: dtParams.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
                     debugger
-                    if (xhr.status==402)
-                    var $stripe = $('#subscriptioStatus');
+                    if (xhr.status == 402)
+                        var $stripe = $('#subscriptioStatus');
                     $stripe.text(xhr.responseJSON.responseMsg).show();
-                    return; 
+                    return;
                 }
             });
         },
@@ -365,7 +360,7 @@ function addIngredientByUserId(ingredientData) {
             toggleSizePackSizeByType('', '#ingredientSize', '#ingredientPackSize');
             closeModal('addIngredientModal');
         }
-       
+
     });
 }
 
@@ -385,7 +380,7 @@ function getIngredientById(id) {
             $('#editIngredientPackSize').val(ingredient.packSize);
             // No Type column from API — derive it from packSize instead
             const ingredientType = (ingredient.packSize != null) ? 'packItem' : 'catchWeight';
-            $('#editIngredientType').val(ingredientType).prop("disabled",true);
+            $('#editIngredientType').val(ingredientType).prop("disabled", true);
             toggleSizePackSizeByType(ingredientType, '#editIngredientSize', '#editIngredientPackSize');
 
             // Pre-select saved private vendor
@@ -481,45 +476,6 @@ $('#saveStockBtn').on('click', function () {
     });
 });
 
-
-// ── Bulk toggle ───────────────────────────────────────────────────────────────
-function bulkToggleIngredients() {
-    const selectedIds = $('.ingredient-checkbox:checked').map(function () {
-        return $(this).data('id');
-    }).get();
-
-    if (selectedIds.length === 0) {
-        showNotification('Please select at least one ingredient to toggle.', 'error');
-        return;
-    }
-    if (confirm(`Are you sure you want to toggle the active status of ${selectedIds.length} selected ingredient(s)?`)) {
-        let completed = 0;
-        let hasError = false;
-        selectedIds.forEach(id => {
-            ajaxRequest({
-                url: `/api/IngredientApi/ToggleIngredientActive/${id}`,
-                method: 'PUT',
-                showMessage: false,
-                onSuccess: function () {
-                    completed++;
-                    if (completed === selectedIds.length) {
-                        refreshIngredientsTable();
-                        showNotification(`${selectedIds.length} ingredient(s) toggled successfully.`, 'success');
-                    }
-                },
-                onError: function () {
-                    completed++;
-                    hasError = true;
-                    if (completed === selectedIds.length) {
-                        refreshIngredientsTable();
-                        showNotification(hasError ? 'Some ingredients could not be toggled.' : `${selectedIds.length} ingredient(s) toggled successfully.`, hasError ? 'error' : 'success');
-                    }
-                }
-            });
-        });
-    }
-}
-
 // ─── Private Vendor (Supplier) dropdown ───────────────────────────────────────
 
 /**
@@ -534,7 +490,7 @@ function loadPrivateVendors() {
         showMessage: false,
         onSuccess: function (response) {
             const vendors = (response.data || []).filter(v => v.isActive);
-            const $addSelect  = $('#ingredientPrivateVendorId');
+            const $addSelect = $('#ingredientPrivateVendorId');
 
             // Clear existing options (except placeholder)
             $addSelect.find('option:not(:first)').remove();
@@ -565,73 +521,12 @@ function refreshVendors() {
         showMessage: false,
         onSuccess: function (response) {
             const vendors = response.data;
-            const vendorGrid = $('.vendor-grid');
-            const linkedVendorsList = $('.linked-vendors-list');
-            const addVendorEmpty = $('.add-vendor-empty');
-            const linkedVendorEmpty = $('.linked-vendor-empty');
 
-            vendorGrid.empty();
-            linkedVendorsList.empty();
-            addVendorEmpty.hide();
-            linkedVendorEmpty.hide();
-
-            let hasUnlinked = false;
-            let hasLinked = false;
-
-            vendors.forEach(vendor => {
-                const name = vendor.restaurantName || vendor.firstName + ' ' + vendor.lastName;
-
-                const vendorCard = `
-                    <div class="vendor-card">
-                        <div class="vendor-info">
-                            <h4>${name}</h4>
-                            <p class="vendor-contact"><i class="fas fa-phone"></i> ${vendor.phone || 'N/A'}</p>
-                            <p class="vendor-email"><i class="fas fa-envelope"></i> ${vendor.email}</p>
-                        </div>
-                        <div class="vendor-actions">
-                            <button class="btn btn-primary btn-sm link-vendor-btn"
-                                    data-vendor="${name}"
-                                    data-vendor-id="${vendor.userId}">
-                                <i class="fas fa-link"></i> Link Vendor
-                            </button>
-                        </div>
-                    </div>`;
-
-                const linkedVendorItem = `
-                    <div class="linked-vendor-item">
-                        <div class="vendor-info">
-                            <h4>${name}</h4>
-                            <p class="vendor-contact"><i class="fas fa-phone"></i> ${vendor.phone || 'N/A'}</p>
-                            <p class="vendor-email"><i class="fas fa-envelope"></i> ${vendor.email}</p>
-                            <p class="link-date">Linked on: ${DateFormatter.formatWithComma(vendor.modifiedOn || vendor.createdOn)}</p>
-                        </div>
-                        <div class="vendor-actions">
-                            <button class="btn btn-danger btn-sm unlink-vendor-btn"
-                                    data-vendor="${name}"
-                                    data-vendor-id="${vendor.userId}">
-                                <i class="fas fa-unlink"></i> Unlink
-                            </button>
-                        </div>
-                    </div>`;
-
-                if (vendor.isLinked) {
-                    hasLinked = true;
-                    linkedVendorsList.append(linkedVendorItem);
-                } else {
-                    hasUnlinked = true;
-                    vendorGrid.append(vendorCard);
-                }
-            });
-
-            if (!hasUnlinked) addVendorEmpty.show();
-            if (!hasLinked) linkedVendorEmpty.show();
-
-            // ── Populate supplier filter dropdown with linked vendors ──────────
+            // ── Populate supplier filter dropdown ──────────
             const $supplierFilter = $('#supplierFilter');
             const currentVal = $supplierFilter.val();
             $supplierFilter.find('option:not(:first)').remove();
             vendors.forEach(vendor => {
-
                 $supplierFilter.append(
                     `<option value="${vendor.id}" data-private="${vendor.isPrivate}">${vendor.name}</option>`
                 );
@@ -648,62 +543,3 @@ function refreshVendors() {
         }
     });
 }
-
-// Open vendor modal
-$("#linkVendorBtn").on("click", () => {
-    openModal("linkVendorModal");
-    refreshVendors();
-});
-
-// Tab switching
-$(".tab-btn").on("click", function () {
-    const tabName = $(this).data("tab");
-    $(".tab-btn").removeClass("active");
-    $(this).addClass("active");
-    $(".tab-content").removeClass("active");
-    $(`#${tabName}Tab`).addClass("active");
-});
-
-// Link vendor
-$(document).on("click", ".link-vendor-btn", function () {
-    const vendorName = $(this).data("vendor");
-    const vendorId = $(this).data("vendor-id");
-    $(this).addClass("loading").text("Linking...");
-
-    ajaxRequest({
-        url: '/api/UserApi/LinkVendor',
-        method: 'POST',
-        data: { vendorId: vendorId },
-        onSuccess: function () {
-            showNotification(`${vendorName} linked successfully!`, "success");
-            refreshVendors();
-            refreshIngredientsTable();
-        },
-        onError: function () {
-            showNotification(`Failed to link ${vendorName}.`, 'error');
-        }
-    });
-});
-
-// Unlink vendor
-$(document).on("click", ".unlink-vendor-btn", function () {
-    const vendorName = $(this).data("vendor");
-    const vendorId = $(this).data("vendor-id");
-
-    if (confirm(`Are you sure you want to unlink ${vendorName}?`)) {
-        $(this).addClass("loading").text("Unlinking...");
-        ajaxRequest({
-            url: `/api/UserApi/UnlinkVendor/${vendorId}`,
-            method: 'DELETE',
-            showMessage: false,
-            onSuccess: function () {
-                showNotification(`${vendorName} unlinked successfully!`, "success");
-                refreshVendors();
-                refreshIngredientsTable();
-            },
-            onError: function () {
-                showNotification(`Failed to unlink ${vendorName}.`, 'error');
-            }
-        });
-    }
-});

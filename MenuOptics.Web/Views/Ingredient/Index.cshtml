@@ -8,10 +8,6 @@
         <p>Monitor, Manage, and Maintain ingredients from multiple sources.</p>
     </div>
     <div class="header-actions">
-        <button class="btn btn-outline" id="linkVendorBtn">
-            <i class="fas fa-link"></i>
-            Import
-        </button>
         <button class="btn btn-primary" id="addIngredientBtn">
             <i class="fas fa-plus"></i>
             Add Ingredient
@@ -41,14 +37,6 @@
             </select>
         </div>
     </div>
-    <button class="btn btn-danger hidden" id="bulkDeleteBtn">
-        <i class="fas fa-trash"></i>
-        Delete Selected
-    </button>
-    <button class="btn btn-warning hidden" id="bulkToggleBtn">
-        <i class="fas fa-toggle-on"></i>
-        Toggle Selected
-    </button>
 </div>
 
 <!-- Ingredients Table -->
@@ -250,42 +238,6 @@
         <div class="modal-footer">
             <button class="btn btn-outline" onclick="closeModal('editIngredientModal')">Cancel</button>
             <button id="updateIngredientBtn" class="btn btn-primary">Update Ingredient</button>
-        </div>
-    </div>
-</div>
-
-<!-- Link Vendor Modal -->
-<div class="modal" id="linkVendorModal">
-    <div class="modal-content modal-large">
-        <div class="modal-header">
-            <h3>Import distributor</h3>
-            <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <!-- Tab Navigation -->
-            <div class="tab-navigation">
-                <button class="tab-btn active" data-tab="addVendor">Import from distributor</button>
-                <button class="tab-btn" data-tab="linkedVendors">Imported distributors</button>
-            </div>
-
-            <!-- Add Vendor Tab -->
-            <div class="tab-content active" id="addVendorTab">
-                <div class="vendor-grid"></div>
-                <div class="empty-state add-vendor-empty" style="display: none;">
-                    <h2 style="text-align: center;">No Distributors Available to Import</h2>
-                </div>
-            </div>
-
-            <!-- Linked Vendors Tab -->
-            <div class="tab-content" id="linkedVendorsTab">
-                <div class="linked-vendors-list"></div>
-                <div class="empty-state linked-vendor-empty" style="display: none;">
-                    <h2 style="text-align: center;">No Vendors Are Linked</h2>
-                </div>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('linkVendorModal')">Close</button>
         </div>
     </div>
 </div>

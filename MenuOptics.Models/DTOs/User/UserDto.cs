@@ -21,7 +21,6 @@ namespace MenuOptics.Models
         public string? RestaurantName { get; set; }
         public bool IsActive { get; set; }
         public string? Roles { get; set; }
-        public bool IsLinked { get; set; }
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }
         public string? Plan { get; set; }

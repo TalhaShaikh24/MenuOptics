@@ -29,7 +29,6 @@ namespace MenuOptics.Models
         public int? ModifiedBy { get; set; }
         public IFormFile? File { get; set; }
         public string? Plan { get; set; }
-        public bool IsLinked { get; set; }
         public string? StripeCustomerId { get; set; }
         public string? StripeSubscriptionId { get; set; }
         public string? SubscriptionStatus { get; set; }
