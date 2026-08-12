@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Menu Optics | Live Food Costing & AI Menu Engineering</title>
+    <meta name="description" content="Menu Optics provides live ingredient price tracking, pre and post-print food costing, AI-driven menu engineering, and an instant event & catering suite for modern restaurants." />
+
+    <link rel="icon" type="image/png" href="~/favicon.png" />
+    <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon" />
+
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="~/css/styles.css?v=@DateTime.Now.Ticks" />
+    <link rel="stylesheet" href="~/css/landing.css?v=@DateTime.Now.Ticks" />
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        (function () {
+            var t = localStorage.getItem('menuoptics_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+</head>
+<body class="landing-body">
+
+    @RenderBody()
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/js/landing.js?v=@DateTime.Now.Ticks"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

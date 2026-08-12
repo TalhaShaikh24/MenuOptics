@@ -7,6 +7,9 @@
         // Ye paths bina login ke allow hain
         private static readonly HashSet<string> _publicPaths = new(StringComparer.OrdinalIgnoreCase)
         {
+            "/",
+            "/Home",
+            "/Home/Index",
             "/User/Login",
             "/User/Logout",
             "/User/AccessDenied",

@@ -14,16 +14,10 @@ namespace MenuOptics.Controllers
             _logger = logger;
         }
 
-        [Authorize]
+        [AllowAnonymous]
         public IActionResult Index()
         {
-            if (User.IsInRole("Restaurant"))
-            {
-                return RedirectToAction("Index", "Menu");
-            }
-            return RedirectToAction("Index", "User");
-
-            //return View();
+            return View();
         }
 
         public IActionResult Privacy()
@@ -31,7 +25,7 @@ namespace MenuOptics.Controllers
             return View();
         }
 
-        
+
         public IActionResult TermsAndConditions()
         {
             return View();

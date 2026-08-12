@@ -1,8 +1,416 @@
-﻿@{
-    ViewData["Title"] = "Home";
+@{
+    Layout = "_LandingLayout";
+    ViewData["Title"] = "Home - Live Food Costing & AI Menu Engineering";
+    bool isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    string dashboardUrl = (User?.IsInRole("Restaurant") ?? false) ? (Url.Action("Index", "Menu") ?? "/Menu/Index") : (Url.Action("Index", "User") ?? "/User/Index");
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- ═════════════════════════════════════════════════════════════════
+     HEADER: Logo & Navigation
+     ═════════════════════════════════════════════════════════════════ -->
+<header class="landing-header">
+    <div class="landing-container nav-wrapper">
+        <a href="@Url.Action("Index", "Home")" class="brand-logo-link">
+            <img src="~/images/menu optics_logo.png" alt="Menu Optics Logo" />
+        </a>
+
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="#food-costing" class="nav-link">Food Costing</a></li>
+            <li><a href="#ai-insights" class="nav-link">AI Insights</a></li>
+            <li><a href="#catering-suite" class="nav-link">Catering Suite</a></li>
+            <li><a href="#why-us" class="nav-link">Why Menu Optics</a></li>
+        </ul>
+
+        <div class="nav-actions">
+            <button class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme" aria-label="Switch Theme">
+                <i class="fas fa-sun" id="themeIcon"></i>
+            </button>
+            <a href="#welcome-video" class="btn-landing-outline btn-watch-tour">
+                <i class="fas fa-play-circle"></i> Welcome
+            </a>
+            @if (isAuthenticated)
+            {
+                <a href="@dashboardUrl" class="btn-landing-primary">
+                    <i class="fas fa-th-large"></i> Go to Dashboard
+                </a>
+            }
+            else
+            {
+                <a href="@Url.Action("Login", "User")" class="btn-landing-outline">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </a>
+                <a href="@Url.Action("Register", "User")" class="btn-landing-primary">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </a>
+            }
+            <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle Navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     HERO SECTION
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="hero-section">
+    <div class="hero-glow-bg"></div>
+    <div class="landing-container hero-container-relative">
+        <!-- Floating Live Stats Badges (Left & Right Floating Badges) -->
+        <div class="hero-floating-stat stat-left reveal">
+            <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+            <div class="stat-info">
+                <h4>+14.2% Margin Gain</h4>
+                <p>Live Recipe Costing</p>
+            </div>
+        </div>
+
+        <div class="hero-floating-stat stat-right reveal">
+            <div class="stat-icon"><i class="fas fa-brain"></i></div>
+            <div class="stat-info">
+                <h4>Hyper-Local AI</h4>
+                <p>Smart Portioning Insights</p>
+            </div>
+        </div>
+
+        <div class="hero-content">
+            <div class="hero-logo-badge reveal">
+                <img src="~/favicon.png" alt="Emblem" />
+                <span>Next-Gen Menu Optics</span>
+            </div>
+
+            <h1 class="hero-title reveal">
+                Data Driven Insights....<br />
+                <span class="gradient-amber-text">Simplified</span>
+            </h1>
+
+            <p class="hero-subtitle reveal">
+                The hospitality industry moves fast, and static spreadsheets can’t keep up. Menu Optics gives you a live, dynamic view of your menu costing, both before you print and long after, so you can protect your bottom line in real time.
+            </p>
+
+            <div class="hero-actions reveal">
+                @if (isAuthenticated)
+                {
+                    <a href="@dashboardUrl" class="btn-landing-primary btn-landing-lg">
+                        <i class="fas fa-chart-line"></i> Open Dashboard
+                    </a>
+                    <a href="#welcome-video" class="btn-landing-outline btn-landing-lg">
+                        <i class="fas fa-play-circle"></i> Watch Demo
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Register", "User")" class="btn-landing-primary btn-landing-lg">
+                        <i class="fas fa-rocket"></i> Get Started Free
+                    </a>
+                    <a href="#welcome-video" class="btn-landing-outline btn-landing-lg">
+                        <i class="fas fa-play-circle"></i> Watch Demo
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     STATS BANNER
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="stats-banner landing-container">
+    <div class="stats-glass-box reveal">
+        <div>
+            <div class="stat-counter-number" data-target="100" data-suffix="%">100%</div>
+            <div class="stat-counter-label">Pre-Print Margin Accuracy</div>
+        </div>
+        <div>
+            <div class="stat-counter-number" data-target="24" data-suffix="/7">24/7</div>
+            <div class="stat-counter-label">Live Supplier Price Sync</div>
+        </div>
+        <div>
+            <div class="stat-counter-number" data-target="4" data-suffix="x">4x</div>
+            <div class="stat-counter-label">Faster Catering Proposals</div>
+        </div>
+        <div>
+            <div class="stat-counter-number" data-target="15" data-suffix="%+">15%+</div>
+            <div class="stat-counter-label">Average Profit Margin Increase</div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     WELCOME VIDEO TOUR
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="video-tour-section" id="welcome-video">
+    <div class="landing-container">
+        <div class="video-tour-header reveal">
+            <div class="section-tag">
+                <i class="fas fa-play-circle"></i> Video Showcase
+            </div>
+            <h2 class="section-title">
+                Experience the Power of Menu Optics
+            </h2>
+            <p class="section-desc">
+                Take a look at how Menu Optics updates recipes with real-time supplier costs, generates instant banquet proposals, and uses hyper-local AI to safeguard your restaurant's bottom line.
+            </p>
+        </div>
+
+        <div class="video-tour-wrapper reveal">
+            <div class="video-browser-header">
+                <div class="video-browser-dot red"></div>
+                <div class="video-browser-dot yellow"></div>
+                <div class="video-browser-dot green"></div>
+                <div class="video-browser-title">Menu Optics - Walkthrough & Demo Tour</div>
+            </div>
+            <div class="video-frame">
+                <video id="welcomeVideo" controls preload="metadata" playsinline>
+                    <source src="~/videos/Welcome.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     SECTION 1: Pre- & Post-Print Food Costing
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="feature-section" id="food-costing">
+    <div class="landing-container">
+        <div class="feature-grid">
+            <div class="feature-media reveal">
+                <div class="media-wrapper">
+                    <img src="~/images/section_food_costing.png" alt="Know Your Food Cost" class="media-img" />
+                </div>
+            </div>
+            <div class="feature-content reveal">
+                <div class="section-tag">
+                    <i class="fas fa-calculator"></i> Real-Time Food Costing
+                </div>
+                <h2 class="section-title">
+                    KNOW YOUR FOOD COST. <br />
+                    <span class="gradient-amber-text">BEFORE YOU PRINT. BEFORE YOU PLATE</span>
+                </h2>
+                <p class="section-desc">
+                    In a kitchen, prices change daily, but your printed menu shouldn't be a guessing game. Menu Optics bridges the gap between your prep table and your purchasing desk. By pairing live ingredient price tracking with your active recipes, we give you a living, breathing look at your exact food costs.
+                </p>
+                <ul class="feature-list">
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Simulate Margins Pre-Print:</strong> Test dish pricing and target margins before committing to physical menu prints.</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Active Recipe Cost Syncing:</strong> Automatically update recipe plate costs when supplier ingredient prices fluctuate.</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Bottom-Line Shield:</strong> Receive automated alerts when plate margins dip below target thresholds.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     SECTION 2: AI-Driven Menu Engineering Insights
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="feature-section" id="ai-insights">
+    <div class="landing-container">
+        <div class="feature-grid reverse">
+            <div class="feature-media reveal">
+                <div class="media-wrapper">
+                    <img src="~/images/section_ai_insights.png" alt="AI-Driven Menu Engineering Insights" class="media-img" />
+                </div>
+            </div>
+            <div class="feature-content reveal">
+                <div class="section-tag">
+                    <i class="fas fa-brain"></i> Intelligent Analytics
+                </div>
+                <h2 class="section-title">
+                    AI-DRIVEN MENU ENGINEERING INSIGHTS
+                </h2>
+                <div class="section-subtitle">
+                    Maximize margins without risking your guest count
+                </div>
+                <p class="section-desc">
+                    Stop guessing how to price your plates. Our Menu Engineering dashboard combines your unique menu data with advanced, hyper-local AI insights to find the profit hidden in your recipes.
+                </p>
+                <p class="section-desc">
+                    By analyzing your sales mix alongside localized market data, our AI suggests precise, actionable adjustments to your pricing and portioning—giving you the confidence to protect your bottom line while keeping your local customers happy.
+                </p>
+                <ul class="feature-list">
+                    <li>
+                        <i class="fas fa-chart-pie"></i>
+                        <span><strong>Quadrant Matrix Analysis:</strong> Identify your Stars, Plowhorses, Puzzles, and Dogs instantly.</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-location-dot"></i>
+                        <span><strong>Hyper-Local Market Pricing:</strong> Adjust pricing using real regional competitive benchmarking data.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     SECTION 3: The Event & Catering Suite
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="feature-section" id="catering-suite">
+    <div class="landing-container">
+        <div class="feature-grid">
+            <div class="feature-media reveal">
+                <div class="media-wrapper">
+                    <img src="~/images/section_catering_suite.png" alt="The Event & Catering Suite" class="media-img" />
+                </div>
+            </div>
+            <div class="feature-content reveal">
+                <div class="section-tag">
+                    <i class="fas fa-concierge-bell"></i> Banquets & Private Dining
+                </div>
+                <h2 class="section-title">
+                    THE EVENT & CATERING SUITE
+                </h2>
+                <div class="section-subtitle">
+                    Profitable, professional event quotes in minutes.
+                </div>
+                <p class="section-desc">
+                    Don't let fluctuating ingredient costs stall your event bookings. Our Event & Catering Suite uses your real-time supplier pricing to let you build fully costed, highly accurate guest proposals instantly.
+                </p>
+                <p class="section-desc">
+                    No more manual margin guesswork when quoting large banquets or private parties. Build your custom menu, lock in your exact margins, and instantly export a beautiful, professional PDF quote to email directly to your client. Menu Optics streamlines the entire quoting workflow, helping your team secure more business faster and with total accuracy.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     SECTION 4: Why Chefs & Owners Trust Menu Optics
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="why-us-section" id="why-us">
+    <div class="landing-container">
+        <div class="why-us-header reveal">
+            <div class="section-tag">
+                <i class="fas fa-shield-heart"></i> Built for Hospitality Leaders
+            </div>
+            <h2 class="section-title">
+                WHY CHEFS & OWNERS TRUST <span class="gradient-amber-text">MENU OPTICS</span>
+            </h2>
+            <p class="section-desc">
+                Designed specifically for restaurant owners, culinary directors, and executive chefs who demand complete financial visibility.
+            </p>
+        </div>
+
+        <div class="trust-grid">
+            <!-- Card 1 -->
+            <div class="trust-card reveal">
+                <div class="trust-icon-box">
+                    <i class="fas fa-print"></i>
+                </div>
+                <h3>Live Pre- & Post-Print Costing</h3>
+                <p>
+                    Simulate and lock in your target margins before your menus are printed, then automatically track daily ingredient fluctuations to protect your bottom line in real time.
+                </p>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="trust-card reveal">
+                <div class="trust-icon-box">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>AI-Driven Menu Engineering</h3>
+                <p>
+                    Get hyper-local, regional insights specific to your geographic area, offering precise suggestions to adjust your pricing or portioning without risking your guest loyalty.
+                </p>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="trust-card reveal">
+                <div class="trust-icon-box">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <h3>Instant Event & Catering Quotes</h3>
+                <p>
+                    Turn live ingredient costs into professional, customer-facing PDF quotes in minutes, streamlining your booking workflow so you can win more business faster.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     CTA BANNER
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="cta-section landing-container">
+    <div class="cta-box reveal">
+        <h2>Ready to Master Your Menu Margins?</h2>
+        <p>
+            Join forward-thinking restaurants and catering teams using Menu Optics to simplify food costing and boost profitability.
+        </p>
+        @if (isAuthenticated)
+        {
+            <a href="@dashboardUrl" class="btn-landing-primary btn-landing-lg">
+                <i class="fas fa-chart-line"></i> Go to Your Dashboard
+            </a>
+        }
+        else
+        {
+            <a href="@Url.Action("Register", "User")" class="btn-landing-primary btn-landing-lg">
+                <i class="fas fa-paper-plane"></i> Start Your Journey Now
+            </a>
+        }
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     FOOTER
+     ═════════════════════════════════════════════════════════════════ -->
+<footer class="landing-footer">
+    <div class="landing-container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <img src="~/images/menu optics_logo.png" alt="Menu Optics Logo" />
+                <p>
+                    Data-driven insights simplified for restaurants, executive chefs, and catering companies. Protect your bottom line in real time.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h4>Platform</h4>
+                <ul class="footer-links">
+                    <li><a href="#food-costing">Food Costing</a></li>
+                    <li><a href="#ai-insights">AI Insights</a></li>
+                    <li><a href="#catering-suite">Catering Suite</a></li>
+                    <li><a href="#why-us">Why Us</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Account</h4>
+                <ul class="footer-links">
+                    <li><a href="@Url.Action("Login", "User")">Sign In</a></li>
+                    <li><a href="@Url.Action("Register", "User")">Sign Up</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Legal & Policies</h4>
+                <ul class="footer-links">
+                    <li><a href="@Url.Action("TermsAndConditions", "Home")" target="_blank">Terms & Conditions</a></li>
+                    <li><a href="@Url.Action("Privacy", "Home")" target="_blank">Privacy Policy</a></li>
+                    <li><a href="@Url.Action("DataExportPolicy", "Home")" target="_blank">Data Export Policy</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>
+                &copy; @DateTime.Now.Year Menu Optics. All rights reserved.
+            </div>
+            <a href="#" class="back-to-top" title="Back to Top" aria-label="Back to top">
+                <i class="fas fa-chevron-up"></i>
+            </a>
+        </div>
+    </div>
+</footer>
