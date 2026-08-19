@@ -1,0 +1,221 @@
+@{
+    ViewData["Title"] = "Frequently Asked Questions";
+}
+@using System.Security.Claims
+@using MenuOptics
+@using MenuOptics.Utility
+@inject Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper Html
+
+    <div class="page-header">
+        <h1>Frequently Asked Questions</h1>
+    </div>
+
+    <div class="faq-container">
+
+        <!-- Section: Support & Getting Started -->
+        <div class="faq-card">
+            <div class="faq-section-header">
+                <div class="faq-section-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div>
+                    <h3 class="faq-section-title">Support &amp; Getting Started</h3>
+                    <p class="faq-section-subtitle">Get up and running with Menu Optics</p>
+                </div>
+            </div>
+            <div class="faq-list">
+
+                <div class="faq-item" id="faq-registration">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>I have registered, but I don't see any ingredients in my account yet.</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>Welcome aboard! Please note that our ingredient data flow updates every <strong>4 hours</strong>, while invoice data is processed overnight. If your data has not populated within <strong>24 hours</strong> of registration, please contact us at <a href="mailto:support@menuoptics.com" class="faq-link">support&commat;menuoptics.com</a> so we can look into it immediately.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item" id="faq-suppliers">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>Can I enter ingredients from any supplier?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>Yes! Menu Optics is built to handle the dynamic purchasing reality of the food service industry. You can always enter ingredients from sources outside of your primary distributor. However, please keep in mind that these manual entries will <strong>not automatically update</strong> in real-time like your integrated distributor feeds.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item" id="faq-support">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>Who should I reach out to if I encounter a problem?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>We have built a comprehensive library of <strong>video tutorials</strong> designed to walk you through every area of the platform. Before reaching out, we highly encourage you to watch these videos, as they will likely have the answers you need.</p>
+                            <p>If you are still experiencing challenges, please reach out directly to our support team at <a href="mailto:support@menuoptics.com" class="faq-link">support&commat;menuoptics.com</a>. Please note that you <strong>do not need to contact your distributor representative</strong> for platform support—our team is here to handle everything for you!</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section: Platform Features & Functionality -->
+        <div class="faq-card">
+            <div class="faq-section-header">
+                <div class="faq-section-icon features">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div>
+                    <h3 class="faq-section-title">Platform Features &amp; Functionality</h3>
+                    <p class="faq-section-subtitle">Discover powerful tools at your fingertips</p>
+                </div>
+            </div>
+            <div class="faq-list">
+
+                <div class="faq-item" id="faq-live-costing">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>How does the "Live Costing" feature actually work?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>We bridge the gap between your suppliers and your recipe books. Menu Optics integrates directly with your <strong>active vendor pricing</strong>. When an ingredient cost fluctuates at your primary distributor level, your recipe card <strong>instantly updates</strong> to reflect your new, exact margin. This allows you to spot a food cost spike before you prepare a single plate—or before you order more inventory.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item" id="faq-ai-menu">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>How does the hyper-local AI Menu Engineering work?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>Our AI does not rely on basic formulas. Instead, it analyzes your <strong>unique menu performance</strong> and compares it with what competitors are charging for similar dishes in your specific geographic area. It then suggests precise, localized adjustments to your pricing or portioning, allowing you to <strong>maximize your margins</strong> based on what your local market will successfully support.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item" id="faq-catering">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>How fast can I build a proposal with the Event &amp; Catering Suite?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p><strong>In under five minutes.</strong> Because Menu Optics pulls directly from your live ingredient costs, batch recipes, and pre-built menu items, you can construct a custom banquet or catering menu and see your exact profit margin instantly. With one click, you can export a professional, client-facing <strong>PDF quote</strong> and email it directly to your customer straight from the platform.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Section: Integrations, Contracts & Security -->
+        <div class="faq-card">
+            <div class="faq-section-header">
+                <div class="faq-section-icon security">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                    <h3 class="faq-section-title">Integrations, Contracts &amp; Security</h3>
+                    <p class="faq-section-subtitle">Trust, transparency, and seamless connections</p>
+                </div>
+            </div>
+            <div class="faq-list">
+
+                <div class="faq-item" id="faq-pos">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>Will Menu Optics integrate with my current POS and suppliers?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>Menu Optics does not currently integrate directly with POS providers, but we provide easy-to-use <strong>CSV import templates</strong> to get your sales information uploaded quickly and seamlessly. On the supplier side, we have broadline distribution partnerships that allow for <strong>full data transfers</strong>, ensuring your purchase and pricing information remains automatically up to date.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item" id="faq-contract">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>Do I have to sign a long-term contract?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>Menu Optics operates on an <strong>annual subscription basis</strong>. We keep our pricing significantly below our competitors because we want the value and insights of Menu Optics to earn your partnership year after year, across multiple menu changes.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item" id="faq-security">
+                    <button class="faq-question" aria-expanded="false">
+                        <span class="faq-q-label">Q</span>
+                        <span>Is my restaurant's financial and recipe data secure?</span>
+                        <i class="fas fa-chevron-down faq-chevron"></i>
+                    </button>
+                    <div class="faq-answer">
+                        <div class="faq-answer-inner">
+                            <p>Absolutely. We take data security very seriously. All of your proprietary recipes, menu items, costing data, and sales volumes are protected with <strong>industry-standard, bank-level encryption</strong> and stored securely in the <strong>Microsoft Azure cloud</strong>. Your data belongs to you—and you alone. To learn more, please refer to our <a href="@Url.Action("TermsAndConditions", "Home")" target="_blank" class="faq-link">Terms &amp; Conditions</a> located in the platform footer.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Contact Support CTA -->
+        <div class="faq-cta">
+            <div class="faq-cta-icon">
+                <i class="fas fa-headset"></i>
+            </div>
+            <div class="faq-cta-content">
+                <h3>Still have questions?</h3>
+                <p>Our support team is ready to help you get the most out of Menu Optics.</p>
+            </div>
+            <a href="mailto:support@menuoptics.com" class="btn btn-primary faq-cta-btn">
+                <i class="fas fa-envelope"></i> Contact Support
+            </a>
+        </div>
+
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var faqItems = document.querySelectorAll('.faq-item');
+
+        faqItems.forEach(function (item) {
+            var question = item.querySelector('.faq-question');
+
+            question.addEventListener('click', function () {
+                var isActive = item.classList.contains('active');
+
+                // Close all
+                faqItems.forEach(function (other) {
+                    other.classList.remove('active');
+                    other.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+                });
+
+                // Open clicked if it was closed
+                if (!isActive) {
+                    item.classList.add('active');
+                    question.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
+    });
+</script>

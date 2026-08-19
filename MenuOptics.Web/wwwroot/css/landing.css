@@ -94,7 +94,6 @@ html {
 }
 
 .landing-container {
-    max-width: 1240px;
     margin: 0 auto;
     padding: 0 24px;
 }
@@ -598,7 +597,7 @@ html {
 
 .trust-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 30px;
 }
 
@@ -677,7 +676,7 @@ html {
 /* ── Interactive Stats Banner ────────────────────────────────────── */
 .stats-banner {
     padding: 60px 0;
-    margin: 40px 0 80px 0;
+    margin: 40px 60px 80px 60px;
 }
 
 .stats-glass-box {

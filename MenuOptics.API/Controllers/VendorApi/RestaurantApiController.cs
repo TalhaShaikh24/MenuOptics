@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using System;
 using System.Security.Claims;
 
 namespace MenuOptics.API.Controllers.VendorApi
@@ -86,12 +87,16 @@ namespace MenuOptics.API.Controllers.VendorApi
 
             if (result.Status is 200 or 201)
             {
-                var webUrl = _configuration["WebUrl"] ?? "https://menuoptics.ca";
-                var htmlBody = WelcomeEmailTemplate.Build(model.FirstName, model.RestaurantName, webUrl, model.Email);
-                await _emailService.SendEmailAsync(
-                    model.Email,
-                    "Welcome to Menu Optics!",
-                    htmlBody);
+                var environment = _configuration["Enviroment"];
+                if (!string.Equals(environment, "Sandbox", StringComparison.OrdinalIgnoreCase))
+                {
+                    var webUrl = _configuration["WebUrl"] ?? "https://menuoptics.ca";
+                    var htmlBody = WelcomeEmailTemplate.Build(model.FirstName, model.RestaurantName, webUrl, model.Email);
+                    await _emailService.SendEmailAsync(
+                        model.Email,
+                        "Welcome to Menu Optics!",
+                        htmlBody);
+                }
             }
 
             return StatusCode(result.Status, result);
