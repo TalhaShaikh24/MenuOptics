@@ -1,8 +1,9 @@
 using Dapper;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.Enums;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Stripe;
 using Stripe.Checkout;
 using System.Data;
@@ -96,7 +97,7 @@ namespace MenuOptics.Services
                     IntroVideoViewedOn = user.IntroVideoViewedOn,
                 };
 
-                if (user.Roles?.Contains("Restaurant") == true && user.IntroVideoViewedOn == true)
+                if (user.Roles?.Contains(Roles.Restaurant.ToString()) == true && user.IntroVideoViewedOn == true)
                 {
                     var updateParams = new DynamicParameters();
                     updateParams.Add("@UserId", user.UserId);
@@ -105,7 +106,7 @@ namespace MenuOptics.Services
                     await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
                 }
 
-                if (user.Roles?.Contains("Vendor") == true)
+                if (user.Roles?.Contains(Roles.Vendor.ToString()) == true)
                 {
                     await _activityLog.LogAsync(user.UserId, requestId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success");

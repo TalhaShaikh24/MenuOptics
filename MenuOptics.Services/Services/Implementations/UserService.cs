@@ -8,6 +8,7 @@ using Stripe.Checkout;
 using System.Data;
 using System.Data.SqlClient;
 using System.Security.Claims;
+using MenuOptics.Models.Enums;
 
 namespace MenuOptics.Services
 {
@@ -135,7 +136,7 @@ namespace MenuOptics.Services
                 {
                     filePathUrl = await _fileService.UploadFileAsync(model.File, "uploads");
                 }
-
+                string abc = Roles.Restaurant.ToString();
                 var parameters = new DynamicParameters();
                 parameters.Add("@FirstName", model.FirstName);
                 parameters.Add("@LastName", model.LastName);
@@ -149,16 +150,17 @@ namespace MenuOptics.Services
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
-                parameters.Add("@RestaurantName", model.Role == "Restaurant" ? model.RestaurantName : null);
+                parameters.Add("@RestaurantName", model.Role == Roles.Restaurant.ToString() ? model.RestaurantName : null);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", model.Role);
                 parameters.Add("@IsRegistrationCompleted", 1);
-                parameters.Add("@SubscriptionStatus", model.Role == "Vendor" || model.Role == "Admin" ? null : "Pending");
-                parameters.Add("@IsParent", model.Role == "Vendor" || model.Role == "Admin" ? null : 1);
+                parameters.Add("@SubscriptionStatus", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : "Pending");
+                parameters.Add("@IsParent", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : 1);
                 parameters.Add("@CreatedBy", model.CreatedBy ?? fallbackCreatedBy);
                 parameters.Add("@Action", "INSERT");
 
                 int userId = await connection.ExecuteScalarAsync<int>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "User created successfully.";
                 ResponseDto.Data = new { UserId = userId };
@@ -344,7 +346,7 @@ namespace MenuOptics.Services
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@Gender", model.Gender);
-                parameters.Add("@RestaurantName", model.Role == "Restaurant" ? model.RestaurantName : null);
+                parameters.Add("@RestaurantName", model.Role == Roles.Restaurant.ToString() ? model.RestaurantName : null);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@ModifiedBy", modifiedBy);
                 parameters.Add("@Action", "UPDATE");
@@ -431,7 +433,7 @@ namespace MenuOptics.Services
             try
             {
                 // Restaurant owners who are members (IsParent=false) cannot create sub-members
-                if (callerRole.Contains("Restaurant") && isParentClaim != "true")
+                if (callerRole.Contains(Roles.Restaurant.ToString()) && isParentClaim != "true")
                 {
                     ResponseDto.Status = 403;
                     ResponseDto.ResponseMsg = "Only the parent restaurant account can add members.";
@@ -439,7 +441,7 @@ namespace MenuOptics.Services
                 }
 
                 int resolvedParentId;
-                if (callerRole.Contains("Admin"))
+                if (callerRole.Contains(Roles.Admin.ToString()))
                 {
                     if (!model.ParentId.HasValue || model.ParentId <= 0)
                     {
@@ -707,7 +709,7 @@ namespace MenuOptics.Services
                     return ResponseDto;
                 }
 
-                if (user.Roles?.Contains("Restaurant") == true && user.IntroVideoViewedOn == true)
+                if (user.Roles?.Contains(Roles.Restaurant.ToString()) == true && user.IntroVideoViewedOn == true)
                 {
                     var updateParams = new DynamicParameters();
                     updateParams.Add("@UserId", user.UserId);
@@ -741,7 +743,7 @@ namespace MenuOptics.Services
                     IntroVideoViewedOn = user.IntroVideoViewedOn,
                 };
 
-                if (user.Roles?.Contains("Restaurant") == true && user.IntroVideoViewedOn == true)
+                if (user.Roles?.Contains(Roles.Restaurant.ToString()) == true && user.IntroVideoViewedOn == true)
                 {
                     var updateParams = new DynamicParameters();
                     updateParams.Add("@UserId", user.UserId);

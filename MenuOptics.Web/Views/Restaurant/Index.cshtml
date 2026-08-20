@@ -1,4 +1,5 @@
-﻿@{
+﻿@using MenuOptics.Models.Enums
+@{
     ViewData["Title"] = "Restaurants";
 }
 
@@ -192,7 +193,7 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
-                    <input type="hidden" name="role" value="Restaurant">
+                    <input type="hidden" name="role" value="@Roles.Restaurant.ToString()">
                     <div class="form-group">
                         <label>Active</label>
                         <input type="checkbox" name="isActive" checked>
@@ -218,7 +219,7 @@
                 <form id="editRestaurantForm" enctype="multipart/form-data">
                     <input type="hidden" name="userId">
                     <input type="hidden" name="profilePic">
-                    <input type="hidden" name="role" value="Restaurant">
+                    <input type="hidden" name="role" value="@Roles.Restaurant.ToString()">
                     <div class="form-row">
                         <div class="form-group">
                             <label>Restaurant Name <span style="color:red">*</span></label>

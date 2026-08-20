@@ -1,4 +1,5 @@
-﻿@{
+﻿@using MenuOptics.Models.Enums
+@{
     Layout = "_AuthLayout";
     ViewData["Title"] = "Signup";
 }
@@ -101,7 +102,7 @@
                     <label for="role">Your Role</label>
                     <div class="input-wrapper">
                         <i class="fas fa-briefcase"></i>
-                        <input type="hidden" id="role" name="role" value="restaurant" placeholder="Enter role" required>
+                        <input type="hidden" id="role" name="role" value="@Roles.Restaurant.ToString()" placeholder="Enter role" required>
                     </div>
                 </div>
             </div>

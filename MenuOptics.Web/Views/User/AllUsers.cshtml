@@ -1,4 +1,5 @@
-﻿@{
+﻿@using MenuOptics.Models.Enums
+@{
     ViewData["Title"] = "Users";
 }
 
@@ -169,8 +170,8 @@
                         <label>Role <span style="color:red">*</span></label>
                         <select id="editRole" name="role" required>
                             <option value="">Select Role</option>
-                            <option value="Vendor">Vendor</option>
-                            <option value="Admin">Admin</option>
+                            <option value="@Roles.Vendor.ToString()">Vendor</option>
+                            <option value="@Roles.Admin.ToString()">Admin</option>
                         </select>
                     </div>
                 </div>
