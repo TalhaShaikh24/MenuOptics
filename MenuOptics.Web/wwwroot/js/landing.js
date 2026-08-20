@@ -149,4 +149,160 @@ document.addEventListener('DOMContentLoaded', function () {
 
         counters.forEach(c => counterObserver.observe(c));
     }
+
+    // 6. Landing Page FAQ Accordion, Filtering & Search
+    const faqCards = document.querySelectorAll('.landing-faq-card');
+    const faqPills = document.querySelectorAll('.faq-pill-btn');
+    const faqGroups = document.querySelectorAll('.landing-faq-group');
+    const searchInput = document.getElementById('landingFaqSearch');
+    const clearBtn = document.getElementById('landingFaqClear');
+    const emptyState = document.getElementById('landingFaqEmpty');
+    const resetBtn = document.getElementById('landingFaqResetBtn');
+
+    if (faqCards.length > 0) {
+        // Accordion Toggle
+        faqCards.forEach(card => {
+            const trigger = card.querySelector('.landing-faq-trigger');
+            const panel = card.querySelector('.landing-faq-panel');
+
+            if (trigger && panel) {
+                trigger.addEventListener('click', function () {
+                    const isActive = card.classList.contains('active');
+
+                    // Close all other cards in same group or globally for clean experience
+                    faqCards.forEach(otherCard => {
+                        if (otherCard !== card && otherCard.classList.contains('active')) {
+                            otherCard.classList.remove('active');
+                            const otherTrigger = otherCard.querySelector('.landing-faq-trigger');
+                            const otherPanel = otherCard.querySelector('.landing-faq-panel');
+                            if (otherTrigger) otherTrigger.setAttribute('aria-expanded', 'false');
+                            if (otherPanel) otherPanel.style.maxHeight = null;
+                        }
+                    });
+
+                    if (isActive) {
+                        card.classList.remove('active');
+                        trigger.setAttribute('aria-expanded', 'false');
+                        panel.style.maxHeight = null;
+                    } else {
+                        card.classList.add('active');
+                        trigger.setAttribute('aria-expanded', 'true');
+                        panel.style.maxHeight = panel.scrollHeight + 30 + 'px';
+                    }
+                });
+            }
+        });
+
+        // Category Filter Function
+        let currentCategory = 'all';
+        let currentSearchTerm = '';
+
+        function applyFaqFilters() {
+            let totalVisible = 0;
+
+            faqGroups.forEach(group => {
+                const groupCategory = group.getAttribute('data-group-category');
+                const isCategoryMatch = (currentCategory === 'all' || currentCategory === groupCategory);
+
+                if (!isCategoryMatch) {
+                    group.classList.add('hidden-by-filter');
+                } else {
+                    group.classList.remove('hidden-by-filter');
+                }
+
+                // Check cards within group for search matching
+                const cardsInGroup = group.querySelectorAll('.landing-faq-card');
+                let visibleCardsInGroup = 0;
+
+                cardsInGroup.forEach(card => {
+                    const questionText = card.querySelector('.faq-question-text')?.textContent.toLowerCase() || '';
+                    const answerText = card.querySelector('.landing-faq-panel-inner')?.textContent.toLowerCase() || '';
+                    const isSearchMatch = !currentSearchTerm || 
+                                          questionText.includes(currentSearchTerm) || 
+                                          answerText.includes(currentSearchTerm);
+
+                    if (isSearchMatch) {
+                        card.classList.remove('hidden-by-search');
+                        if (isCategoryMatch) {
+                            visibleCardsInGroup++;
+                            totalVisible++;
+                        }
+                    } else {
+                        card.classList.add('hidden-by-search');
+                    }
+                });
+
+                // Hide group header if no visible cards in group
+                if (isCategoryMatch && visibleCardsInGroup === 0 && currentSearchTerm) {
+                    group.classList.add('hidden-by-filter');
+                }
+            });
+
+            // Handle empty search state
+            if (emptyState) {
+                if (totalVisible === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                }
+            }
+        }
+
+        // Pill Button Clicks
+        faqPills.forEach(pill => {
+            pill.addEventListener('click', function () {
+                faqPills.forEach(p => {
+                    p.classList.remove('active');
+                    p.setAttribute('aria-selected', 'false');
+                });
+                pill.classList.add('active');
+                pill.setAttribute('aria-selected', 'true');
+                currentCategory = pill.getAttribute('data-category') || 'all';
+                applyFaqFilters();
+            });
+        });
+
+        // Search Input Handling
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                currentSearchTerm = this.value.trim().toLowerCase();
+                if (clearBtn) {
+                    clearBtn.style.display = currentSearchTerm ? 'flex' : 'none';
+                }
+                applyFaqFilters();
+            });
+        }
+
+        // Clear Search Button
+        if (clearBtn && searchInput) {
+            clearBtn.addEventListener('click', function () {
+                searchInput.value = '';
+                currentSearchTerm = '';
+                clearBtn.style.display = 'none';
+                applyFaqFilters();
+                searchInput.focus();
+            });
+        }
+
+        // Reset Search Button
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function () {
+                if (searchInput) {
+                    searchInput.value = '';
+                    currentSearchTerm = '';
+                }
+                if (clearBtn) clearBtn.style.display = 'none';
+
+                // Reset pills to all
+                faqPills.forEach(p => {
+                    const isAll = p.getAttribute('data-category') === 'all';
+                    p.classList.toggle('active', isAll);
+                    p.setAttribute('aria-selected', isAll ? 'true' : 'false');
+                });
+                currentCategory = 'all';
+
+                applyFaqFilters();
+            });
+        }
+    }
 });
