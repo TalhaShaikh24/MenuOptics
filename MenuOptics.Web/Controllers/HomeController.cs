@@ -20,17 +20,26 @@ namespace MenuOptics.Controllers
             return View();
         }
 
+        [AllowAnonymous]
         public IActionResult Privacy()
         {
             return View();
         }
 
-
+        [AllowAnonymous]
         public IActionResult TermsAndConditions()
         {
             return View();
         }
+
+        [AllowAnonymous]
         public IActionResult DataExportPolicy()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        public IActionResult Faq()
         {
             return View();
         }

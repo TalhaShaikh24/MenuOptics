@@ -22,6 +22,7 @@
             "/Payment/Success",
             "/Home/TermsAndConditions",
             "/Home/Privacy",
+            "/Home/Faq",
         };
 
         public AuthRedirectMiddleware(RequestDelegate next)

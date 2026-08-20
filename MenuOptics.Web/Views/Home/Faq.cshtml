@@ -1,0 +1,542 @@
+@{
+    Layout = "_LandingLayout";
+    ViewData["Title"] = "Frequently Asked Questions (FAQ)";
+    bool isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
+    string dashboardUrl = (User?.IsInRole("Restaurant") ?? false) ? (Url.Action("Index", "Menu") ?? "/Menu/Index") : (Url.Action("Index", "User") ?? "/User/Index");
+}
+
+<!-- ═════════════════════════════════════════════════════════════════
+     HEADER: Logo & Navigation
+     ═════════════════════════════════════════════════════════════════ -->
+<header class="landing-header">
+    <div class="landing-container nav-wrapper">
+        <a href="@Url.Action("Index", "Home")" class="brand-logo-link">
+            <img src="~/images/menu optics_light_logo.png" alt="Menu Optics Logo" />
+        </a>
+
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="@Url.Action("Index", "Home")#food-costing" class="nav-link">Food Costing</a></li>
+            <li><a href="@Url.Action("Index", "Home")#ai-insights" class="nav-link">AI Insights</a></li>
+            <li><a href="@Url.Action("Index", "Home")#catering-suite" class="nav-link">Catering Suite</a></li>
+            <li><a href="@Url.Action("Index", "Home")#why-us" class="nav-link">Why Menu Optics</a></li>
+            <li><a href="@Url.Action("Faq", "Home")" class="nav-link active">FAQ</a></li>
+        </ul>
+
+        <div class="nav-actions">
+            <button class="theme-toggle-btn hidden" id="themeToggleBtn" title="Switch Theme" aria-label="Switch Theme">
+                <i class="fas fa-sun" id="themeIcon"></i>
+            </button>
+            @if (isAuthenticated)
+            {
+                <a href="@dashboardUrl" class="btn-landing-primary">
+                    <i class="fas fa-th-large"></i> Go to Dashboard
+                </a>
+            }
+            else
+            {
+                <a href="@Url.Action("Login", "User")" class="btn-landing-outline">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </a>
+                <a href="@Url.Action("Register", "User")" class="btn-landing-primary">
+                    <i class="fas fa-user-plus"></i> Sign Up
+                </a>
+            }
+            <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle Navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     FAQ HERO SECTION
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="hero-section faq-page-hero">
+    <div class="hero-glow-bg"></div>
+    <div class="landing-container hero-container-relative">
+
+        <div class="hero-content">
+            <div class="hero-logo-badge reveal">
+                <i class="fas fa-question-circle"></i>
+                <span>Help &amp; Knowledge Hub</span>
+            </div>
+
+            <h1 class="hero-title reveal">
+                Frequently Asked <br />
+                <span class="gradient-amber-text">Questions</span>
+            </h1>
+
+            <p class="hero-subtitle reveal">
+                Have questions about live food costing, hyper-local AI menu engineering, supplier syncing, or event quotes? Find comprehensive answers below.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     FAQ INTERACTIVE CONTENT SECTION
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="landing-faq-section faq-standalone-page" id="faq-main">
+    <div class="landing-container">
+
+        <!-- Controls: Live Search & Category Filter Pills -->
+        <div class="landing-faq-controls reveal">
+            <div class="landing-faq-search-wrapper">
+                <i class="fas fa-search landing-faq-search-icon"></i>
+                <input type="text" id="landingFaqSearch" class="landing-faq-search-input" placeholder="Search questions, features, or topics..." aria-label="Search FAQs" autofocus />
+                <button type="button" id="landingFaqClear" class="landing-faq-clear-btn" aria-label="Clear Search" style="display: none;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="landing-faq-pills" id="landingFaqPills" role="tablist">
+                <button type="button" class="faq-pill-btn active" data-category="all" role="tab" aria-selected="true">
+                    <i class="fas fa-layer-group"></i> All Questions
+                </button>
+                <button type="button" class="faq-pill-btn" data-category="general" role="tab" aria-selected="false">
+                    <i class="fas fa-info-circle"></i> General &amp; Overview
+                </button>
+                <button type="button" class="faq-pill-btn" data-category="costing" role="tab" aria-selected="false">
+                    <i class="fas fa-calculator"></i> Food Costing &amp; Recipes
+                </button>
+                <button type="button" class="faq-pill-btn" data-category="ai" role="tab" aria-selected="false">
+                    <i class="fas fa-brain"></i> AI &amp; Menu Engineering
+                </button>
+                <button type="button" class="faq-pill-btn" data-category="catering" role="tab" aria-selected="false">
+                    <i class="fas fa-concierge-bell"></i> Event &amp; Catering Suite
+                </button>
+                <button type="button" class="faq-pill-btn" data-category="security" role="tab" aria-selected="false">
+                    <i class="fas fa-shield-alt"></i> Onboarding &amp; Security
+                </button>
+                <button type="button" class="faq-pill-btn" data-category="pricing" role="tab" aria-selected="false">
+                    <i class="fas fa-calendar-check"></i> Pricing &amp; Demos
+                </button>
+            </div>
+        </div>
+
+        <!-- FAQ Categories & Accordion List -->
+        <div class="landing-faq-content reveal">
+
+            <!-- Category 1: General & Overview -->
+            <div class="landing-faq-group" data-group-category="general">
+                <div class="landing-faq-group-title">
+                    <div class="group-icon-badge">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <span>General &amp; Overview</span>
+                </div>
+                <div class="landing-faq-items">
+                    <div class="landing-faq-card" data-category="general">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">What is Menu Optics?</span>
+                            <span class="faq-category-tag">General</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Menu Optics is a cloud-based menu engineering and live food costing platform built for restaurant owners, executive chefs, culinary directors, and catering operators. It replaces static, manual spreadsheets with real-time supplier price tracking, pre-print margin simulations, hyper-local AI menu engineering, and an instant catering quote generator.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="general">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How is Menu Optics different from standard inventory software or spreadsheets?</span>
+                            <span class="faq-category-tag">General</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    While traditional spreadsheets are static and quickly become outdated as supplier prices change, Menu Optics provides <strong>Live Recipe Costing</strong>. It connects your active recipes to real-time supplier price updates, allowing you to see your exact plate costs and margins dynamically. Additionally, our platform features hyper-local AI pricing suggestions and an integrated event quoting engine designed specifically for hospitality operators.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="general">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">Who is Menu Optics designed for?</span>
+                            <span class="faq-category-tag">General</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Menu Optics is tailored for single-unit independent restaurants, multi-location restaurant groups, banquet halls, private dining venues, catering companies, and hospitality management firms looking for complete financial visibility and bottom-line protection.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 2: Food Costing & Recipe Management -->
+            <div class="landing-faq-group" data-group-category="costing">
+                <div class="landing-faq-group-title">
+                    <div class="group-icon-badge">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+                    <span>Food Costing &amp; Recipe Management</span>
+                </div>
+                <div class="landing-faq-items">
+                    <div class="landing-faq-card" data-category="costing">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How does pre-print margin simulation work?</span>
+                            <span class="faq-category-tag">Costing</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Before sending a menu to the printer or publishing it online, Menu Optics allows you to test various menu price points and portion sizes against live ingredient costs. You can simulate your exact target margins ahead of time, ensuring every dish printed on your menu meets your profitability targets from day one.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="costing">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">What happens when my distributor changes ingredient prices?</span>
+                            <span class="faq-category-tag">Costing</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Menu Optics features <strong>24/7 Live Supplier Price Sync</strong> and an automated <strong>Bottom-Line Shield</strong>. When an ingredient price fluctuates, your recipe plate costs automatically recalculate in real time. If an ingredient price surge drops a dish's margin below your set target threshold, you’ll receive an automated alert so you can make necessary adjustments immediately.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="costing">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">Can I manage batch recipes and sub-recipes?</span>
+                            <span class="faq-category-tag">Costing</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Yes. Menu Optics allows you to nest sub-recipes, batch preps, and component recipes into final plated menu items. When a core commodity price changes, every associated prep and final dish recalculates automatically.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 3: AI & Menu Engineering -->
+            <div class="landing-faq-group" data-group-category="ai">
+                <div class="landing-faq-group-title">
+                    <div class="group-icon-badge">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <span>AI &amp; Menu Engineering</span>
+                </div>
+                <div class="landing-faq-items">
+                    <div class="landing-faq-card" data-category="ai">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How does the AI Menu Engineering feature work?</span>
+                            <span class="faq-category-tag">AI Insights</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Menu Optics categorizes your menu using classic menu engineering principles—automatically identifying your <strong>Stars</strong>, <strong>Plowhorses</strong>, <strong>Puzzles</strong>, and <strong>Dogs</strong> based on popularity and contribution margin.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="ai">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">What makes your AI "hyper-local", and who is it available to?</span>
+                            <span class="faq-category-tag">AI Insights</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Unlike generic tools that evaluate national averages, Menu Optics analyzes your sales mix alongside regional competitive benchmarking data to suggest precise, actionable adjustments—such as subtle portion tweaks or price adjustments—that preserve guest loyalty while maximizing profitability in your specific market.
+                                </p>
+                                <div class="landing-faq-highlight-box">
+                                    <i class="fas fa-crown"></i>
+                                    <span><strong>Note:</strong> Hyper-Local Market Pricing and regional competitive benchmarking insights are available exclusively to <strong>Pro Account tier</strong> users.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 4: Event & Catering Suite -->
+            <div class="landing-faq-group" data-group-category="catering">
+                <div class="landing-faq-group-title">
+                    <div class="group-icon-badge">
+                        <i class="fas fa-concierge-bell"></i>
+                    </div>
+                    <span>Event &amp; Catering Suite</span>
+                </div>
+                <div class="landing-faq-items">
+                    <div class="landing-faq-card" data-category="catering">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How does the Event &amp; Catering Suite work?</span>
+                            <span class="faq-category-tag">Catering</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    The Event &amp; Catering Suite lets you build custom banquet or private dining menus backed by your live supplier ingredient costs. You can lock in exact profit margins for large guest counts and instantly generate export-ready, professional PDF proposals to email directly to clients.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="catering">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How does this speed up our quoting process?</span>
+                            <span class="faq-category-tag">Catering</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Because ingredient costing is updated automatically, your sales or culinary team no longer needs to manually re-cost custom banquet proposals. Users typically create and send custom, fully margin-checked proposals <strong>4x faster</strong> than using spreadsheets.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 5: Onboarding, Integrations & Security -->
+            <div class="landing-faq-group" data-group-category="security">
+                <div class="landing-faq-group-title">
+                    <div class="group-icon-badge">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <span>Onboarding, Integrations &amp; Security</span>
+                </div>
+                <div class="landing-faq-items">
+                    <div class="landing-faq-card" data-category="security">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How long does it take to set up Menu Optics?</span>
+                            <span class="faq-category-tag">Onboarding</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Once you have registered for Menu Optics, the Partnered-Distributor data will start downloading within <strong>4 hours</strong>. Once the ingredient data is processed from the distributor, you can start building out your batch recipes and menu items.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="security">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">Can I export my data if I need to?</span>
+                            <span class="faq-category-tag">Security</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Yes. Menu Optics supports flexible data management, allowing you to export your recipes, costing reports, and event proposals whenever needed in accordance with our <a href="@Url.Action("DataExportPolicy", "Home")" target="_blank" class="landing-faq-inline-link">Data Export Policy</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="security">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">Is my recipe and pricing data secure?</span>
+                            <span class="faq-category-tag">Security</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    Security and privacy are core to our platform. Your proprietary recipes, supplier pricing, and operational sales data are stored securely and remain exclusively yours. We never share your proprietary financial or recipe data with third parties.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category 6: Pricing & Getting Started -->
+            <div class="landing-faq-group" data-group-category="pricing">
+                <div class="landing-faq-group-title">
+                    <div class="group-icon-badge">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <span>Pricing &amp; Getting Started</span>
+                </div>
+                <div class="landing-faq-items">
+                    <div class="landing-faq-card" data-category="pricing">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How can I see Menu Optics in action?</span>
+                            <span class="faq-category-tag">Demo</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    You can explore the core features of Menu Optics by watching our <a href="@Url.Action("Index", "Home")#welcome-video" class="landing-faq-inline-link">on-demand video walkthrough</a> or scheduling a live demo with our team to see how live food costing and pre-print margin simulations work for your specific operation.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="landing-faq-card" data-category="pricing">
+                        <button type="button" class="landing-faq-trigger" aria-expanded="false">
+                            <span class="faq-badge-q">Q</span>
+                            <span class="faq-question-text">How do I schedule a walk-through for my team?</span>
+                            <span class="faq-category-tag">Contact</span>
+                            <i class="fas fa-chevron-down landing-faq-arrow"></i>
+                        </button>
+                        <div class="landing-faq-panel">
+                            <div class="landing-faq-panel-inner">
+                                <p>
+                                    To schedule a walk-through, please reach out to us directly at <a href="mailto:admin@menuoptics.com" class="landing-faq-inline-link">admin@menuoptics.com</a> or use our booking page to reserve a time with our team.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty Search State -->
+            <div id="landingFaqEmpty" class="landing-faq-empty" style="display: none;">
+                <div class="empty-icon-wrap">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>No matching questions found</h3>
+                <p>Try searching for different keywords or browse by category above.</p>
+                <button type="button" id="landingFaqResetBtn" class="btn-landing-outline btn-landing-sm">
+                    <i class="fas fa-redo"></i> Reset Search
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Help & Contact CTA Footer inside FAQ -->
+        <div class="landing-faq-footer-card reveal">
+            <div class="faq-footer-left">
+                <div class="faq-footer-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div>
+                    <h3>Still have questions?</h3>
+                    <p>Our culinary and technology specialists are always available to help answer questions or guide you through a personalized demo.</p>
+                </div>
+            </div>
+            <div class="faq-footer-right">
+                <a href="mailto:admin@menuoptics.com" class="btn-landing-primary">
+                    <i class="fas fa-envelope"></i> Contact Us
+                </a>
+                <a href="@Url.Action("Index", "Home")#welcome-video" class="btn-landing-outline">
+                    <i class="fas fa-play-circle"></i> Watch Video Tour
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     CTA BANNER
+     ═════════════════════════════════════════════════════════════════ -->
+<section class="cta-section landing-container">
+    <div class="cta-box reveal">
+        <h2>Ready to Master Your Menu Margins?</h2>
+        <p>
+            Join forward-thinking restaurants and catering teams using Menu Optics to simplify food costing and boost profitability.
+        </p>
+        @if (isAuthenticated)
+        {
+            <a href="@dashboardUrl" class="btn-landing-primary btn-landing-lg">
+                <i class="fas fa-chart-line"></i> Go to Your Dashboard
+            </a>
+        }
+        else
+        {
+            <a href="@Url.Action("Register", "User")" class="btn-landing-primary btn-landing-lg">
+                <i class="fas fa-paper-plane"></i> Start Your Journey Now
+            </a>
+        }
+    </div>
+</section>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     FOOTER
+     ═════════════════════════════════════════════════════════════════ -->
+<footer class="landing-footer">
+    <div class="landing-container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <img src="~/images/menu optics_light_logo.png" alt="Menu Optics Logo" />
+                <p>
+                    Data-driven insights simplified for restaurants, executive chefs, and catering companies. Protect your bottom line in real time.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h4>Platform</h4>
+                <ul class="footer-links">
+                    <li><a href="@Url.Action("Index", "Home")#food-costing">Food Costing</a></li>
+                    <li><a href="@Url.Action("Index", "Home")#ai-insights">AI Insights</a></li>
+                    <li><a href="@Url.Action("Index", "Home")#catering-suite">Catering Suite</a></li>
+                    <li><a href="@Url.Action("Index", "Home")#why-us">Why Us</a></li>
+                    <li><a href="@Url.Action("Faq", "Home")">FAQ</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Account</h4>
+                <ul class="footer-links">
+                    <li><a href="@Url.Action("Login", "User")">Sign In</a></li>
+                    <li><a href="@Url.Action("Register", "User")">Sign Up</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Legal & Policies</h4>
+                <ul class="footer-links">
+                    <li><a href="@Url.Action("TermsAndConditions", "Home")" target="_blank">Terms & Conditions</a></li>
+                    <li><a href="@Url.Action("Privacy", "Home")" target="_blank">Privacy Policy</a></li>
+                    <li><a href="@Url.Action("DataExportPolicy", "Home")" target="_blank">Data Export Policy</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>
+                &copy; @DateTime.Now.Year Menu Optics. All rights reserved.
+            </div>
+            <a href="#" class="back-to-top" title="Back to Top" aria-label="Back to top">
+                <i class="fas fa-chevron-up"></i>
+            </a>
+        </div>
+    </div>
+</footer>

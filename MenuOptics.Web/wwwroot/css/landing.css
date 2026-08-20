@@ -1503,3 +1503,19 @@ html {
         display: none;
     }
 }
+
+.faq-page-hero {
+    padding: 150px 0 50px;
+}
+
+.faq-standalone-page {
+    padding: 20px 0 90px;
+}
+
+.nav-link.active {
+    color: var(--text-main);
+}
+
+.nav-link.active::after {
+    width: 100%;
+}
