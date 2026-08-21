@@ -85,7 +85,7 @@ namespace MenuOptics.API.Middleware
                 context.Result = new ObjectResult(new ResponseDto
                 {
                     Status = 402,
-                    ResponseMsg = $"Your subscription status is {status ?? "Pending"}. An active subscription is required to access this feature.",
+                    ResponseMsg = $"Your subscription status is {status ?? "Pending"}. An active subscription is required.",
                     Data = new
                     {
                         SubscriptionStatus = status ?? PaymentStatus.Pending.ToString(),

@@ -124,7 +124,6 @@ function renderSubscription(data) {
     }
 
     $('#infoSubId').text(data.stripeSubscriptionId || 'N/A');
-    $('#infoCustId').text(data.stripeCustomerId || 'N/A');
 }
 
 function showAlertBanner(title, message) {
