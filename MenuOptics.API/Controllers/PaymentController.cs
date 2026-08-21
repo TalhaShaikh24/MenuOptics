@@ -3,7 +3,9 @@ using MenuOptics.Services;
 
 namespace MenuOptics.Controllers
 {
-    public class PaymentController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
 
@@ -12,7 +14,7 @@ namespace MenuOptics.Controllers
             _paymentService = paymentService;
         }
 
-        [HttpGet("/payment/successpayment")]
+        [HttpGet("successpayment")]
         public async Task<IActionResult> PaymentSuccess([FromQuery] string? session_id, string? user_id)
         {
             var responseData = await _paymentService.PaymentSuccessAsync(session_id, user_id);

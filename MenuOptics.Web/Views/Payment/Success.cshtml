@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Success";
     Layout = null;
 }
@@ -80,16 +80,13 @@
             }
 
         @@keyframes float {
-            0%, 100%
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
 
-        {
-            transform: translateY(0px) rotate(0deg);
-        }
-
-        50% {
-            transform: translateY(-20px) rotate(180deg);
-        }
-
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
         }
 
         .header {
@@ -205,16 +202,13 @@
             }
 
         @@keyframes shimmer {
-            0%
+            0% {
+                background-position: -200% 0;
+            }
 
-        {
-            background-position: -200% 0;
-        }
-
-        100% {
-            background-position: 200% 0;
-        }
-
+            100% {
+                background-position: 200% 0;
+            }
         }
 
         .success-icon-section {
@@ -256,18 +250,15 @@
             }
 
         @@keyframes ripple {
-            0%
+            0% {
+                transform: scale(0.8);
+                opacity: 1;
+            }
 
-        {
-            transform: scale(0.8);
-            opacity: 1;
-        }
-
-        100% {
-            transform: scale(1.2);
-            opacity: 0;
-        }
-
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
         }
 
         .success-code {
@@ -289,16 +280,13 @@
         }
 
         @@keyframes bounce {
-            0%, 100%
+            0%, 100% {
+                transform: translateY(0);
+            }
 
-        {
-            transform: translateY(0);
-        }
-
-        50% {
-            transform: translateY(-10px);
-        }
-
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         .content-section {
@@ -448,144 +436,126 @@
             }
 
         @@keyframes slideDown {
-            from
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
 
-        {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @@keyframes slideUp {
-            from
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
 
-        {
-            opacity: 0;
-            transform: translateY(40px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @@keyframes pulse {
-            0%, 100%
+            0%, 100% {
+                transform: scale(1);
+            }
 
-        {
-            transform: scale(1);
-        }
-
-        50% {
-            transform: scale(1.05);
-        }
-
+            50% {
+                transform: scale(1.05);
+            }
         }
 
         @@media (max-width: 1024px) {
-            .payment-success-container
+            .payment-success-container {
+                padding: 48px 32px;
+            }
 
-        {
-            padding: 48px 32px;
-        }
-
-        .success-title {
-            font-size: 40px;
-        }
-
+            .success-title {
+                font-size: 40px;
+            }
         }
 
         @@media (max-width: 768px) {
-            .header
+            .header {
+                padding: 12px 20px;
+            }
 
-        {
-            padding: 12px 20px;
-        }
+            .header-content {
+                flex-direction: column;
+                gap: 12px;
+            }
 
-        .header-content {
-            flex-direction: column;
-            gap: 12px;
-        }
+            .main-container {
+                padding: 120px 20px 32px;
+            }
 
-        .main-container {
-            padding: 120px 20px 32px;
-        }
+            .payment-success-container {
+                padding: 32px 24px;
+            }
 
-        .payment-success-container {
-            padding: 32px 24px;
-        }
+            .success-icon {
+                width: 100px;
+                height: 100px;
+                font-size: 40px;
+            }
 
-        .success-icon {
-            width: 100px;
-            height: 100px;
-            font-size: 40px;
-        }
+            .success-title {
+                font-size: 32px;
+            }
 
-        .success-title {
-            font-size: 32px;
-        }
+            .success-subtitle {
+                font-size: 20px;
+            }
 
-        .success-subtitle {
-            font-size: 20px;
-        }
+            .success-message {
+                font-size: 16px;
+            }
 
-        .success-message {
-            font-size: 16px;
-        }
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
 
-        .action-buttons {
-            flex-direction: column;
-            align-items: center;
-        }
+            .btn {
+                width: 100%;
+                max-width: 280px;
+                justify-content: center;
+            }
 
-        .btn {
-            width: 100%;
-            max-width: 280px;
-            justify-content: center;
-        }
-
-        .contact-info {
-            grid-template-columns: 1fr;
-        }
-
+            .contact-info {
+                grid-template-columns: 1fr;
+            }
         }
 
         @@media (max-width: 480px) {
-            .payment-success-container
+            .payment-success-container {
+                padding: 24px 16px;
+            }
 
-        {
-            padding: 24px 16px;
-        }
+            .success-icon {
+                width: 80px;
+                height: 80px;
+                font-size: 32px;
+            }
 
-        .success-icon {
-            width: 80px;
-            height: 80px;
-            font-size: 32px;
-        }
+            .success-code {
+                width: 50px;
+                height: 50px;
+                font-size: 16px;
+            }
 
-        .success-code {
-            width: 50px;
-            height: 50px;
-            font-size: 16px;
-        }
+            .success-title {
+                font-size: 28px;
+            }
 
-        .success-title {
-            font-size: 28px;
-        }
-
-        .btn {
-            padding: 14px 24px;
-            font-size: 14px;
-        }
-
+            .btn {
+                padding: 14px 24px;
+                font-size: 14px;
+            }
         }
 
         .loading-overlay {
@@ -618,16 +588,13 @@
         }
 
         @@keyframes spin {
-            0%
+            0% {
+                transform: rotate(0deg);
+            }
 
-        {
-            transform: rotate(0deg);
-        }
-
-        100% {
-            transform: rotate(360deg);
-        }
-
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -696,15 +663,18 @@
                 </div>
             </div>
 
-           
+
         </div>
     </main>
 
     <script>
         window.addEventListener('load', function() {
-            setTimeout(function() {
-                document.getElementById('loadingOverlay').classList.add('hidden');
-            }, 1000);
+            var overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                setTimeout(function() {
+                    overlay.classList.add('hidden');
+                }, 1000);
+            }
         });
 
         document.addEventListener('DOMContentLoaded', function() {

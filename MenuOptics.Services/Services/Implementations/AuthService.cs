@@ -21,6 +21,7 @@ namespace MenuOptics.Services
         private readonly IEmailService _emailService;
         private readonly IFileUploadService _fileService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IConfiguration _configuration;
 
         public AuthService(
             DapperContext context,
@@ -29,7 +30,8 @@ namespace MenuOptics.Services
             ITokenService tokenService,
             IEmailService emailService,
             IFileUploadService fileService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IConfiguration configuration)
         {
             _context = context;
             _environment = environment;
@@ -38,6 +40,7 @@ namespace MenuOptics.Services
             _emailService = emailService;
             _fileService = fileService;
             _httpContextAccessor = httpContextAccessor;
+            _configuration = configuration;
         }
 
         public async Task<ResponseDto> LoginAsync(LoginDto model, string requestId)
@@ -146,14 +149,34 @@ namespace MenuOptics.Services
 
         public string CreateCheckoutSession(string? plan, int userId)
         {
-            StripeConfiguration.ApiKey = "sk_test_51M9O4qKR3yBF1l8fZJ5Ll6Q7x0V0ec9i8rgqi8FMKtHTqSx3WYMvdCeOpuOdpImJ6OmhTiq6DDUhB83zumFikT2700QEmhSeSP";
+            var stripeKey = _configuration["Stripe:SecretKey"]
+                ?? "sk_test_51M9O4qKR3yBF1l8fZJ5Ll6Q7x0V0ec9i8rgqi8FMKtHTqSx3WYMvdCeOpuOdpImJ6OmhTiq6DDUhB83zumFikT2700QEmhSeSP";
+            StripeConfiguration.ApiKey = stripeKey;
 
-            var priceId = plan switch
+            var starterPrice = _configuration["Stripe:StarterPriceId"] ?? "price_1Rt2KhKR3yBF1l8fWC1Q2J6T";
+            var proPrice = _configuration["Stripe:ProfessionalPriceId"] ?? "price_1Rt2LNKR3yBF1l8f4ww3GlNh";
+
+            var priceId = (plan?.ToLower()) switch
             {
-                "starter" => "price_1Rt2KhKR3yBF1l8fWC1Q2J6T",
-                "professional" => "price_1Rt2LNKR3yBF1l8f4ww3GlNh",
-                _ => throw new Exception("Invalid plan")
+                "starter" => starterPrice,
+                _ => proPrice
             };
+
+            // Dynamically resolve client Web Base URL from Origin or Referer header
+            var httpContext = _httpContextAccessor.HttpContext;
+            string? origin = httpContext?.Request.Headers["Origin"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(origin))
+            {
+                var referer = httpContext?.Request.Headers["Referer"].FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var uri))
+                {
+                    origin = $"{uri.Scheme}://{uri.Authority}";
+                }
+            }
+
+            var baseUrl = !string.IsNullOrWhiteSpace(origin)
+                ? origin.TrimEnd('/')
+                : (_configuration["WebUrl"] ?? "https://localhost:7103").TrimEnd('/');
 
             var options = new SessionCreateOptions
             {
@@ -171,8 +194,8 @@ namespace MenuOptics.Services
                 {
                     { "UserId", userId.ToString() }
                 },
-                SuccessUrl = $"https://localhost:7103/Payment/successpayment?session_id={{CHECKOUT_SESSION_ID}}&user_id={userId}",
-                CancelUrl = "https://localhost:7103/Payment/Cancel",
+                SuccessUrl = $"{baseUrl}/Payment/successpayment?session_id={{CHECKOUT_SESSION_ID}}&user_id={userId}",
+                CancelUrl = $"{baseUrl}/Payment/Cancel",
             };
 
             var service = new SessionService();
@@ -450,6 +473,8 @@ namespace MenuOptics.Services
 
         public async Task SignInWithCookieAsync(UserDto user, int effectiveUserId, bool isParent)
         {
+            var isVendorCreated = user.VendorId.HasValue && user.VendorId.Value > 0;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username),
@@ -458,7 +483,8 @@ namespace MenuOptics.Services
                 new Claim("FirstName", user.FirstName ?? ""),
                 new Claim("LastName", user.LastName ?? ""),
                 new Claim("ActualUserId", user.UserId.ToString()),
-                new Claim("IsParent", isParent.ToString().ToLower())
+                new Claim("IsParent", isParent.ToString().ToLower()),
+                new Claim("IsVendorCreated", isVendorCreated.ToString().ToLower())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

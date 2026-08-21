@@ -36,6 +36,8 @@ namespace MenuOptics.Services
             var effectiveUserId = user.ParentId.HasValue ? user.ParentId.Value : user.UserId;
             var isParent = !user.ParentId.HasValue;
 
+            var isVendorCreated = user.VendorId.HasValue && user.VendorId.Value > 0;
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username!),
@@ -45,6 +47,7 @@ namespace MenuOptics.Services
                 new Claim("LastName", user.LastName ?? ""),
                 new Claim("ActualUserId", user.UserId.ToString()),
                 new Claim("IsParent", isParent.ToString().ToLower()),
+                new Claim("IsVendorCreated", isVendorCreated.ToString().ToLower()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 

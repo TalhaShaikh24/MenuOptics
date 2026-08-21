@@ -28,23 +28,12 @@ namespace MenuOptics.Web.Middleware
         {
             var path = context.Request.Path.Value ?? string.Empty;
             bool isApi = path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase);
-            bool isPaymentSuccess = path.Equals("/payment/successpayment", StringComparison.OrdinalIgnoreCase);
-
-            if (isApi || isPaymentSuccess)
+            if (isApi)
             {
                 // Proxy the request to the API
-                string targetUrl;
-                if (isApi)
-                {
-                    var relativePath = path.Substring(5); // Remove "/api/"
-                    var query = context.Request.QueryString.Value ?? string.Empty;
-                    targetUrl = $"{_apiBaseUrl}api/{relativePath}{query}";
-                }
-                else
-                {
-                    var query = context.Request.QueryString.Value ?? string.Empty;
-                    targetUrl = $"{_apiBaseUrl}payment/successpayment{query}";
-                }
+                var relativePath = path.Substring(5); // Remove "/api/"
+                var query = context.Request.QueryString.Value ?? string.Empty;
+                var targetUrl = $"{_apiBaseUrl}api/{relativePath}{query}";
 
                 var requestMessage = new HttpRequestMessage();
                 

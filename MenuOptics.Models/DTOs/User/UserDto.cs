@@ -30,5 +30,7 @@ namespace MenuOptics.Models
         public bool? IsParent { get; set; }
         public int? ParentId { get; set; }
         public bool? IntroVideoViewedOn { get; set; }
+        public int? CreatedBy { get; set; }
+        public int? VendorId { get; set; }
     }
 }

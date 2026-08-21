@@ -1,0 +1,297 @@
+@{
+    ViewData["Title"] = "Subscription";
+}
+
+<style>
+    .sub-details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    @@media (max-width: 900px) {
+        .sub-details-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .package-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .package-badge-tag {
+        display: inline-block;
+        background: #f08d11;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+    }
+
+    .package-price-text {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #111827;
+        margin-bottom: 0.25rem;
+    }
+
+    .package-price-sub {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 1.25rem;
+    }
+
+    .sub-feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .sub-feature-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.925rem;
+        color: #374151;
+        margin-bottom: 0.75rem;
+    }
+
+    .sub-feature-list li i {
+        color: #059669;
+        font-size: 0.95rem;
+    }
+
+    .info-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.85rem 0;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 0.925rem;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .info-value {
+        color: #111827;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .card-actions-bar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+    }
+</style>
+
+<div class="page-header">
+    <div class="header-text">
+        <h1>Subscription Management</h1>
+        <p>Manage your restaurant's subscription plan, billing status, and renewal.</p>
+    </div>
+    <div class="header-actions">
+        <button id="btnRefreshSubscription" class="btn btn-outline-sm">
+            <i class="fas fa-sync-alt"></i> Refresh Status
+        </button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <!-- Stat 1: Status -->
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Subscription Status</p>
+                <p class="stat-value" id="statStatusText">Loading...</p>
+                <p class="stat-change-text" id="statStatusSub">Live billing state</p>
+            </div>
+            <div class="stat-icon active" id="statStatusIcon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat 2: Plan -->
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Current Plan</p>
+                <p class="stat-value" id="statPlanText">Yearly Plan</p>
+                <p class="stat-change-text">Annual billing</p>
+            </div>
+            <div class="stat-icon orders">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat 3: Next Renewal -->
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Next Renewal Date</p>
+                <p class="stat-value" id="statRenewalText">--</p>
+                <p class="stat-change-text">Billing cycle end</p>
+            </div>
+            <div class="stat-icon expiring">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat 4: Amount -->
+    <div class="stat-card">
+        <div class="stat-content">
+            <div class="stat-info">
+                <p class="stat-label">Billing Amount</p>
+                <p class="stat-value" id="statAmountText">$50 / mo</p>
+                <p class="stat-change-text">Billed yearly</p>
+            </div>
+            <div class="stat-icon revenue">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Alert Card (Shown only when payment is past due, failed, or expired) -->
+<div id="paymentAlertCard" class="card alert-card" style="display: none; margin-bottom: 24px;">
+    <div class="card-content" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h3 class="alert-title" id="alertTitle" style="font-size: 16px; margin: 0 0 4px 0;">
+                <i class="fas fa-exclamation-triangle"></i> Payment Action Required
+            </h3>
+            <p id="alertMessage" style="margin: 0; color: #6b7280; font-size: 14px;">
+                Your subscription payment could not be processed. Please retry payment to restore full account access.
+            </p>
+        </div>
+        <div>
+            <button id="btnRetryPaymentAlert" class="btn btn-primary">
+                <i class="fas fa-credit-card"></i> Pay Now / Reactivate
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Subscription Details Card -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fas fa-receipt"></i> Subscription & Package Details</h3>
+    </div>
+    <div class="card-content">
+        <div class="sub-details-grid">
+            <!-- Left Box: Package Information -->
+            <div class="package-box">
+                <span class="package-badge-tag">Most Popular</span>
+                <h3 style="font-size: 1.3rem; font-weight: 700; color: #111827; margin: 0 0 0.5rem 0;">
+                    Yearly
+                </h3>
+                <div class="package-price-text" id="pkgPriceDisplay">$50<span>/month</span></div>
+                <div class="package-price-sub">Billed yearly &bull; All features unlocked</div>
+
+                <ul class="sub-feature-list">
+                    <li><i class="fas fa-check"></i> Advanced analytics</li>
+                    <li><i class="fas fa-check"></i> Priority support</li>
+                    <li><i class="fas fa-check"></i> Menu Costing & Item Analysis</li>
+                    <li><i class="fas fa-check"></i> Recipe & Ingredient Management</li>
+                    <li><i class="fas fa-check"></i> Menu Engineering Insights</li>
+                    <li><i class="fas fa-check"></i> Inventory Management Suite</li>
+                    <li><i class="fas fa-check"></i> Unlimited Staff Member Accounts</li>
+                </ul>
+            </div>
+
+            <!-- Right Box: Account & Stripe Details -->
+            <div>
+                <h4 style="font-size: 1.1rem; font-weight: 600; color: #111827; margin: 0 0 1rem 0;">
+                    Account & Billing Information
+                </h4>
+                <ul class="info-list">
+                    <li class="info-row">
+                        <span class="info-label">Restaurant</span>
+                        <span class="info-value" id="infoRestaurantName">--</span>
+                    </li>
+                    <li class="info-row">
+                        <span class="info-label">Account Email</span>
+                        <span class="info-value" id="infoEmail">--</span>
+                    </li>
+                    <li class="info-row">
+                        <span class="info-label">Billing Cycle</span>
+                        <span class="info-value" id="infoBillingCycle">Annual (Yearly)</span>
+                    </li>
+                    <li class="info-row">
+                        <span class="info-label">Payment Method</span>
+                        <span class="info-value" id="infoPaymentMethod">Card on file</span>
+                    </li>
+                    <li class="info-row">
+                        <span class="info-label">Subscription ID</span>
+                        <span class="info-value" id="infoSubId" style="font-family: monospace; font-size: 0.85rem;">--</span>
+                    </li>
+                    <li class="info-row">
+                        <span class="info-label">Customer ID</span>
+                        <span class="info-value" id="infoCustId" style="font-family: monospace; font-size: 0.85rem;">--</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="card-actions-bar">
+            <button id="btnRenewSubscription" class="btn btn-primary" style="display: none;">
+                <i class="fas fa-redo"></i> Renew / Reactivate Subscription
+            </button>
+            <button id="btnCancelSubscription" class="btn btn-danger" style="display: none;">
+                <i class="fas fa-times-circle"></i> Cancel Subscription
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Subscription Modal -->
+<div class="modal" id="cancelSubscriptionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i> Cancel Subscription</h3>
+            <button class="modal-close" onclick="closeModal('cancelSubscriptionModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to cancel your Menu Optics subscription?</p>
+            <p style="color: #6b7280; font-size: 0.9rem;">
+                Upon cancellation, access to menu analytics, ingredient costing, and inventory suites will be suspended for your restaurant and staff members.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('cancelSubscriptionModal')">Keep Subscription</button>
+            <button class="btn btn-danger" id="btnConfirmCancelSub">
+                <i class="fas fa-ban"></i> Confirm Cancellation
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Views-JS/subscription.js"></script>
+}

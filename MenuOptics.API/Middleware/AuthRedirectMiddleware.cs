@@ -1,4 +1,4 @@
-﻿namespace MenuOptics.Middleware
+namespace MenuOptics.Middleware
 {
     public class AuthRedirectMiddleware
     {
@@ -17,6 +17,8 @@
             "/User/Register",
             "/Payment/Cancel",
             "/Payment/Success",
+            "/Payment/successpayment",
+            "/Payment/SuccessPayment",
             "/Home/TermsAndConditions",
             "/Home/Privacy",
         };
