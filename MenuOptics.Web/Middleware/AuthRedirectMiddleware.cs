@@ -25,6 +25,7 @@ namespace MenuOptics.Middleware
             "/Home/TermsAndConditions",
             "/Home/Privacy",
             "/Home/Faq",
+            "/Home/Error"
         };
 
         public AuthRedirectMiddleware(RequestDelegate next)
@@ -35,7 +36,7 @@ namespace MenuOptics.Middleware
         public async Task InvokeAsync(HttpContext context)
         {
             var path = context.Request.Path.Value ?? string.Empty;
-
+            
             // API calls, static files aur public paths skip karo
             bool isApi = path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase);
             bool isStatic = path.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase)
