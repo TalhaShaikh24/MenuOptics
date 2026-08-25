@@ -23,6 +23,7 @@ namespace MenuOptics.Models
 
         [Required(ErrorMessage = "restaurantName is required.")]
         public string RestaurantName { get; set; } = string.Empty;
+        public string SubscriptionType { get; set; } = string.Empty;
 
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }

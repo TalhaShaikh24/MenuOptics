@@ -11,6 +11,10 @@ namespace MenuOptics.Services.VendorApi
     {
         private readonly DapperContext _context;
         private readonly IActivityLogService _activityLog;
+        private static readonly HashSet<string> _allowedSubscriptionType = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "CORE","PREMIUM"
+        };
 
         public RestaurantService(DapperContext context, IActivityLogService activityLog)
         {
@@ -126,6 +130,14 @@ namespace MenuOptics.Services.VendorApi
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var ResponseDto = new ResponseDto();
 
+
+            if (model.SubscriptionType != null && !_allowedSubscriptionType.Contains(model.SubscriptionType.ToUpper()))
+            {
+                ResponseDto.Status = 400;
+                ResponseDto.ResponseMsg = $"Invalid Subscribtion Type '{model.SubscriptionType}'. Allowed types: {string.Join(", ", _allowedSubscriptionType)}";
+                return (ResponseDto);
+            }
+
             using var connection = _context.CreateConnection();
             connection.Open();
             try
@@ -151,6 +163,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@Phone", model.Phone);
                 parameters.Add("@RestaurantName", model.RestaurantName);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword("dbMF0sgx45FD0nVb"));
+                parameters.Add("@SubscriptionType", model.SubscriptionType);
                 parameters.Add("@SubscriptionStatus", "Active");
                 parameters.Add("@CreatedBy", callerVendorId);
                 parameters.Add("@Action", "INSERT");

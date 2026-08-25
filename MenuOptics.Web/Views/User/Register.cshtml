@@ -50,10 +50,14 @@
                 </div>
                 <div class="step" data-step="2">
                     <div class="step-number">2</div>
-                    <span>Details</span>
+                    <span>Location</span>
                 </div>
                 <div class="step" data-step="3">
                     <div class="step-number">3</div>
+                    <span>Vendor</span>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
                     <span>Account Setup</span>
                 </div>
             </div>
@@ -143,8 +147,32 @@
 
           
 
-            <!-- Step 3: Account Setup -->
+            <!-- Step 3: Connect Vendor -->
             <div class="form-step" data-step="3">
+                <div class="form-group">
+                    <label for="password">Select Primay Distributor <span style="color:red">*</span></label>
+                    <div class="input-wrapper">
+                       <select id="primaryDistributor" name="vendorId" required>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Distributor Customer Account Number <span style="color:red">*</span></label>
+                    <div class="input-wrapper">
+                        <input type="text" id="customerNumber" name="vendorCustomerNumber" placeholder="Enter Distributor Customer Account Number" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Select Secondary Distributor</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="secondaryVendor" name="secondaryVendor" placeholder="Enter Secondary Distributor">
+                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Account Setup -->
+            <div class="form-step" data-step="4">
                 <div class="form-group">
                     <label for="password">Password</label>
                     <div class="input-wrapper">
@@ -244,7 +272,7 @@
 @section Scripts {
     @* <script src="~/views-js/register.js"></script> *@
     <script src="https://js.stripe.com/v3/"></script>
-    <script src="~/js/globalajax.js"></script>
-    <script src="~/views-js/register.js"></script>
+    <script src="~/js/globalajax.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/views-js/register.js?v=@DateTime.Now.Ticks"></script>
 
 }

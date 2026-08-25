@@ -10,7 +10,7 @@
 
 /* ── 1. Constants ─────────────────────────────────────────────────────── */
 
-const totalSteps = 3;
+const totalSteps = 4;
 const stripe = Stripe('pk_test_51M9O4qKR3yBF1l8fXy3z9Vvtnn8A5e4frQt5lJgfpPOBcBMx6ZZFG93mpFCWgN0EjYXL0l7ioxvtSA07AJzUUOJX00XWJkik2w');
 
 /* ── 2. State ─────────────────────────────────────────────────────────── */
@@ -19,8 +19,17 @@ let currentStep = 1;
 
 /* ── 3. Initialization ────────────────────────────────────────────────── */
 
+$(document).ready(function () {
+    GetAllVendors();
+
+})
+
+
 // Run once on page load in case checkbox is pre-checked or browser autofills it
 updateNextButtonState();
+
+
+
 
 /* ── 4. Event bindings ────────────────────────────────────────────────── */
 
@@ -68,6 +77,7 @@ $('#registerForm').on('submit', function (e) {
     e.preventDefault();
 
     if (!validateCurrentStep()) return;
+    if (!isFormValid("#registerForm")) return;
 
     const password = $('#password').val();
     const confirmPassword = $('#confirmPassword').val();
@@ -138,6 +148,54 @@ function initiateStripeCheckout(plan, userId) {
         }
     });
 }
+
+
+function GetAllVendors() {
+    ajaxRequest({
+        url: '/api/UserApi/GetAllVendors',
+        method: 'GET',
+        isQuery: false,
+        showMessage: false,
+
+        onSuccess: function (response) {
+            if (response.status === 200) {
+
+                const $vendorDropdown = $('#primaryDistributor');
+                $vendorDropdown.empty();
+                debugger
+                $vendorDropdown.append(
+                    $('<option>', {
+                        value: '',
+                        text: 'Select Distributor'
+                    })
+                );
+
+                var activeVendors = response.data.filter(x => x.isActive == true);
+
+                activeVendors.forEach(function (vendor) {
+                    $vendorDropdown.append(
+                        $('<option>', {
+                            value: vendor.id,
+                            text: vendor.name
+                        })
+                    );
+                });
+            }
+        },
+
+        onError: function (xhr) {
+            const response = xhr.responseJSON;
+
+            $('#error-message')
+                .text(response?.responseMsg || 'Server error occurred.')
+                .show();
+
+            $('#success-message').hide();
+            resetSubmitButton();
+        }
+    });
+}
+
 
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
 

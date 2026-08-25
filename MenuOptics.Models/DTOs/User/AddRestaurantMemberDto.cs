@@ -22,7 +22,6 @@ namespace MenuOptics.Models
         public string? State { get; set; }
         public string? City { get; set; }
         public string? Zip { get; set; }
-        public string? Gender { get; set; }
 
         // Only used when called by Admin to specify which restaurant owner this member belongs to
         public int? ParentId { get; set; }

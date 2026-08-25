@@ -149,7 +149,9 @@ namespace MenuOptics.Services
                 parameters.Add("@State", model.State);
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
-                parameters.Add("@Gender", model.Gender);
+                parameters.Add("@VendorId", model.VendorId);
+                parameters.Add("@SecondaryVendor", model.SecondaryVendor);
+                parameters.Add("@VendorCustomerNumber", model.VendorCustomerNumber);
                 parameters.Add("@RestaurantName", model.Role == Roles.Restaurant.ToString() ? model.RestaurantName : null);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", model.Role);
@@ -345,7 +347,6 @@ namespace MenuOptics.Services
                 parameters.Add("@State", model.State);
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
-                parameters.Add("@Gender", model.Gender);
                 parameters.Add("@RestaurantName", model.Role == Roles.Restaurant.ToString() ? model.RestaurantName : null);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@ModifiedBy", modifiedBy);
@@ -467,7 +468,6 @@ namespace MenuOptics.Services
                 parameters.Add("@State", model.State);
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
-                parameters.Add("@Gender", model.Gender);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@ParentId", resolvedParentId);
                 parameters.Add("@IsRegistrationCompleted", 1);

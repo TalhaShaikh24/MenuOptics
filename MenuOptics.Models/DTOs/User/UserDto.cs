@@ -17,16 +17,17 @@ namespace MenuOptics.Models
         public string? State { get; set; }
         public string? City { get; set; }
         public string? Zip { get; set; }
-        public string? Gender { get; set; }
         public string? RestaurantName { get; set; }
         public bool IsActive { get; set; }
         public string? Roles { get; set; }
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }
-        public string? Plan { get; set; }
         public string? StripeCustomerId { get; set; }
         public string? StripeSubscriptionId { get; set; }
+        public string? SubscriptionType { get; set; }
         public string? SubscriptionStatus { get; set; }
+        public string? SecondaryVendor { get; set; }
+        public string? VendorCustomerNumber { get; set; }
         public bool? IsParent { get; set; }
         public int? ParentId { get; set; }
         public bool? IntroVideoViewedOn { get; set; }

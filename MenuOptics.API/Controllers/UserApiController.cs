@@ -100,6 +100,7 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
+        [AllowAnonymous]
         [HttpGet("GetAllVendors")]
         public async Task<IActionResult> GetAllVendors()
         {

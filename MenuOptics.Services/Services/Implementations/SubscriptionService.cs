@@ -59,7 +59,7 @@ namespace MenuOptics.Services
                     UserId = user.UserId,
                     RestaurantName = user.RestaurantName,
                     Email = user.Email,
-                    Plan = user.Plan ?? "Starter",
+                    Plan = user.SubscriptionType ?? "Starter",
                     SubscriptionStatus = user.SubscriptionStatus ?? PaymentStatus.Pending.ToString(),
                     StripeCustomerId = user.StripeCustomerId,
                     StripeSubscriptionId = user.StripeSubscriptionId,
@@ -201,6 +201,7 @@ namespace MenuOptics.Services
                 updateParams.Add("@UserId", user.UserId);
                 updateParams.Add("@StripeCustomerId", user.StripeCustomerId);
                 updateParams.Add("@StripeSubscriptionId", user.StripeSubscriptionId);
+                updateParams.Add("@SubscriptionType", user.SubscriptionType);
                 updateParams.Add("@SubscriptionStatus", PaymentStatus.Canceled.ToString());
                 updateParams.Add("@Action", "UPDATE_SUBSCRIPTION");
 
@@ -317,7 +318,7 @@ namespace MenuOptics.Services
                     return responseDto;
                 }
 
-                var plan = user.Plan ?? "starter";
+                var plan = user.SubscriptionType ?? "starter";
                 return await CreateCheckoutSessionAsync(effectiveUserId, plan, requestBaseUrl);
             }
             catch (Exception ex)

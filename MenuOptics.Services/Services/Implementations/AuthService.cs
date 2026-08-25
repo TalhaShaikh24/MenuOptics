@@ -473,7 +473,8 @@ namespace MenuOptics.Services
 
         public async Task SignInWithCookieAsync(UserDto user, int effectiveUserId, bool isParent)
         {
-            var isVendorCreated = user.VendorId.HasValue && user.VendorId.Value > 0;
+            var stripeSubscriptionId = user.StripeSubscriptionId ?? "";
+            var subscriptionType = user.SubscriptionType ?? "";
 
             var claims = new List<Claim>
             {
@@ -484,7 +485,8 @@ namespace MenuOptics.Services
                 new Claim("LastName", user.LastName ?? ""),
                 new Claim("ActualUserId", user.UserId.ToString()),
                 new Claim("IsParent", isParent.ToString().ToLower()),
-                new Claim("IsVendorCreated", isVendorCreated.ToString().ToLower())
+                new Claim("StripeSubscriptionId", stripeSubscriptionId.ToString().ToLower()),
+                new Claim("SubscriptionType", subscriptionType.ToString().ToLower())
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
