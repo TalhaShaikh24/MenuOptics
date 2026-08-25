@@ -330,7 +330,7 @@ html {
 }
 
 .hero-main-logo {
-    height: 75px;
+    height: 90px;
     width: auto;
     max-width: 90%;
     object-fit: contain;
@@ -945,9 +945,17 @@ html {
     border-radius: 50%;
 }
 
-.video-browser-dot.red { background-color: #ff5f56; }
-.video-browser-dot.yellow { background-color: #ffbd2e; }
-.video-browser-dot.green { background-color: #27c93f; }
+.video-browser-dot.red {
+    background-color: #ff5f56;
+}
+
+.video-browser-dot.yellow {
+    background-color: #ffbd2e;
+}
+
+.video-browser-dot.green {
+    background-color: #27c93f;
+}
 
 .video-browser-title {
     margin: 0 auto 0 12px;
@@ -1268,7 +1276,7 @@ html {
     box-shadow: 0 0 0 3px var(--primary-glow), 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-.landing-faq-search-input:focus + .landing-faq-search-icon {
+.landing-faq-search-input:focus+.landing-faq-search-icon {
     color: var(--primary-amber);
 }
 
@@ -1529,6 +1537,27 @@ html {
 .landing-faq-inline-link:hover {
     color: #ffaa33;
     border-bottom-style: solid;
+}
+
+.landing-faq-sublist {
+    margin: 10px 0 12px 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.landing-faq-sublist li {
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+.landing-faq-sublist li:last-child {
+    margin-bottom: 0;
+}
+
+.landing-faq-sublist li strong {
+    color: var(--text-main);
 }
 
 .landing-faq-highlight-box {

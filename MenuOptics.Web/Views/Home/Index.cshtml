@@ -75,17 +75,14 @@
                     <a href="@dashboardUrl" class="btn-landing-primary btn-landing-lg">
                         <i class="fas fa-chart-line"></i> Open Dashboard
                     </a>
-                    <a href="#welcome-video" class="btn-landing-outline btn-landing-lg">
-                        <i class="fas fa-play-circle"></i> Watch Demo
-                    </a>
                 }
                 else
                 {
                     <a href="@Url.Action("Register", "User")" class="btn-landing-primary btn-landing-lg">
                         <i class="fas fa-rocket"></i> Get Started
                     </a>
-                    <a href="#welcome-video" class="btn-landing-outline btn-landing-lg">
-                        <i class="fas fa-play-circle"></i> Watch Demo
+                    <a href="@Url.Action("Login", "User")" class="btn-landing-outline btn-landing-lg">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
                     </a>
                 }
             </div>
@@ -386,39 +383,6 @@
     </div>
 </section>
 
-<!-- ═════════════════════════════════════════════════════════════════
-     WELCOME VIDEO TOUR
-     ═════════════════════════════════════════════════════════════════ -->
-<section class="video-tour-section" id="welcome-video">
-    <div class="landing-container">
-        <div class="video-tour-header reveal">
-            <div class="section-tag">
-                <i class="fas fa-play-circle"></i> Video Showcase
-            </div>
-            <h2 class="section-title">
-                Experience the Power of Menu Optics
-            </h2>
-            <p class="section-desc">
-                Take a look at how Menu Optics updates recipes with real-time supplier costs, generates instant banquet proposals, and uses hyper-local AI to safeguard your restaurant's bottom line.
-            </p>
-        </div>
-
-        <div class="video-tour-wrapper reveal">
-            <div class="video-browser-header">
-                <div class="video-browser-dot red"></div>
-                <div class="video-browser-dot yellow"></div>
-                <div class="video-browser-dot green"></div>
-                <div class="video-browser-title">Menu Optics - Walkthrough & Demo Tour</div>
-            </div>
-            <div class="video-frame">
-                <video id="welcomeVideo" controls preload="metadata" playsinline>
-                    <source src="~/videos/Welcome.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-        </div>
-    </div>
-</section>
 
 <!-- ═════════════════════════════════════════════════════════════════
      CTA BANNER
