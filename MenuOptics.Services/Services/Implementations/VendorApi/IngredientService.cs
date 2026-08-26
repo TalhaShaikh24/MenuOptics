@@ -42,7 +42,7 @@ namespace MenuOptics.Services.VendorApi
                 return (400, ResponseDto);
             }
 
-            if (!_allowedUnits.Contains(model.Unit?.ToLower()))
+            if (!_allowedUnits.Contains(model.Unit.ToLower()))
             {
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = $"Invalid unit '{model.Unit}'. Allowed units: {string.Join(", ", _allowedUnits)}";
@@ -59,13 +59,15 @@ namespace MenuOptics.Services.VendorApi
                 decimal basePrice = 0;
                 decimal size = 0;
 
-                // When PackSize given
+                // When PackSize given. Means it is a packed item.
+                // Price is calculated as per item. For example a cotton of 10 pepsi cans (300ml). The price here will be per one can (300ml)
                 if (model.PackSize != null && model.PackSize > 0)
                 {
                     basePrice = model.BasePrice / model.PackSize.Value;
                     size = model.Size;
                 }
-                // When Weight given
+                // When Weight given. Means it is a catch weight item.
+                // Price is calculated as per unit. For example meet is sold per kg. So the price here will be price per kg.
                 else if (model.Weight != null && model.Weight > 0)
                 {
                     basePrice = model.BasePrice;
@@ -117,7 +119,7 @@ namespace MenuOptics.Services.VendorApi
 
                 int ingredientId = result.IngredientId;
 
-                string missingRaw = (string?)result.MissingRestaurantIds;
+                string? missingRaw = (string?)result.MissingRestaurantIds;
 
                 List<int> invalidRestaurantIds = new();
                 if (!string.IsNullOrEmpty(missingRaw))

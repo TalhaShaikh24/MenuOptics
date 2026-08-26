@@ -18,7 +18,6 @@ namespace MenuOptics.Services
             _context = context;
             _environment = environment;
             _fileService = fileService;
-
         }
 
         public async Task<ResponseDto> CreateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId)
@@ -37,7 +36,7 @@ namespace MenuOptics.Services
                     model.Recipes = JsonConvert.DeserializeObject<List<MenuItemRecipe>>(recipes);
                 }
 
-                string featuredImagePath = null;
+                string? featuredImagePath = null;
 
                 if (model.FeaturedImageFile != null && model.FeaturedImageFile.Length > 0)
                 {
@@ -113,10 +112,23 @@ namespace MenuOptics.Services
                 parameters.Add("@MenuItemId", id);
                 parameters.Add("@Action", "SELECT");
 
-                var menuItem = await connection.QueryFirstOrDefaultAsync<Menu>(
+                var results = await connection.QueryAsync<Menu, string, string, Menu>(
                     "sp_MenuCRUD",
+                    (menu, ingredientsJson, recipesJson) =>
+                    {
+                        menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
+                            : new List<MenuItemIngredient>();
+                        menu.Recipes = !string.IsNullOrEmpty(recipesJson)
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemRecipe>>(recipesJson)
+                            : new List<MenuItemRecipe>();
+                        return menu;
+                    },
                     parameters,
+                    splitOn: "Ingredients,Recipes",
                     commandType: CommandType.StoredProcedure);
+
+                var menuItem = results.FirstOrDefault();
 
                 if (menuItem == null)
                 {
@@ -124,21 +136,6 @@ namespace MenuOptics.Services
                     ResponseDto.ResponseMsg = "Menu item not found.";
                     return ResponseDto;
                 }
-
-                var ingredients = await connection.QueryAsync<MenuItemIngredient>(
-                    "SELECT mi.MenuItemId, mi.IngredientId, i.Name AS IngredientName, mi.Uom, mi.Quantity, i.Unit " +
-                    "FROM MenuItemIngredients mi INNER JOIN Ingredients i ON i.IngredientId = mi.IngredientId " +
-                    "WHERE mi.MenuItemId = @MenuItemId",
-                    new { MenuItemId = id });
-
-                var recipesQuery = await connection.QueryAsync<MenuItemRecipe>(
-                    "SELECT mr.MenuItemId, mr.RecipeId, r.Name AS RecipeName, mr.Quantity, r.Unit " +
-                    "FROM MenuItemRecipes mr INNER JOIN Recipes r ON r.RecipeId = mr.RecipeId " +
-                    "WHERE mr.MenuItemId = @MenuItemId",
-                    new { MenuItemId = id });
-
-                menuItem.Ingredients = ingredients.ToList();
-                menuItem.Recipes = recipesQuery.ToList();
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Menu item retrieved successfully.";
@@ -265,7 +262,7 @@ namespace MenuOptics.Services
                     model.Recipes = JsonConvert.DeserializeObject<List<MenuItemRecipe>>(recipes);
                 }
 
-                string featuredImagePath = model.FeaturedImage;
+                string? featuredImagePath = model.FeaturedImage;
 
                 if (model.FeaturedImageFile != null && model.FeaturedImageFile.Length > 0)
                 {
@@ -367,7 +364,7 @@ namespace MenuOptics.Services
                 if (menuItem == null)
                 {
                     ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Category not found.";
+                    ResponseDto.ResponseMsg = "Menu not found.";
                     return ResponseDto;
                 }
 
@@ -395,7 +392,5 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
-        
     }
 }
