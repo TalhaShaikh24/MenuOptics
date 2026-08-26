@@ -644,7 +644,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", id);
                 parameters.Add("@IsActive", !member.IsActive);
                 parameters.Add("@ModifiedBy", currentUserId);
-                parameters.Add("@Action", "TOGGLE_ACTIVE");
+                parameters.Add("@Action", "TOGGLE_ACTIVE_MEMBER");
 
                 await connection.ExecuteAsync("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
