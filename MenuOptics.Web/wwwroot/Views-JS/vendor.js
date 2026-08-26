@@ -99,7 +99,6 @@ function getUserById(id) {
             $('#editUserForm [name="state"]').val(user.state);
             $('#editUserForm [name="city"]').val(user.city);
             $('#editUserForm [name="zip"]').val(user.zip);
-            $('#editUserForm [name="gender"]').val(user.gender);
             $('#editUserForm [name="profilePic"]').val(user.profilePic);
             if (user.profilePic) {
                 $('#editProfilePicPreview').attr('src', imageBaseUrl +user.profilePic).show();

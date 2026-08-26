@@ -116,8 +116,6 @@ function validateRestaurantData(formData) {
 
 // Add restaurant
 function addRestaurant(formData) {
-
-    formData.isActive = formData.isActive == "on" ? 1 :0
     ajaxRequest({
         url: '/api/UserApi/CreateUser',
         method: 'POST',
@@ -159,7 +157,6 @@ function getRestaurantById(id) {
             $('#editRestaurantForm [name="state"]').val(restaurant.state);
             $('#editRestaurantForm [name="city"]').val(restaurant.city);
             $('#editRestaurantForm [name="zip"]').val(restaurant.zip);
-            $('#editRestaurantForm [name="gender"]').val(restaurant.gender);
             $('#editRestaurantForm [name="profilePic"]').val(restaurant.profilePic);
             if (restaurant.profilePic) {
                 $('#editProfilePicPreview').attr('src', imageBaseUrl+restaurant.profilePic).show();
@@ -178,10 +175,6 @@ function getRestaurantById(id) {
 
 // Update restaurant
 function updateRestaurant(formData) {
-    // Convert checkbox value properly
-    const isActive = formData.get("isActive") === "on" ? true : false;
-    formData.set("isActive", isActive);
-
     ajaxRequest({
         url: '/api/UserApi/UpdateUser',
         method: 'PUT',

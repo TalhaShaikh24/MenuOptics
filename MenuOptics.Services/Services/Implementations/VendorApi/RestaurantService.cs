@@ -31,105 +31,10 @@ namespace MenuOptics.Services.VendorApi
             throw new InvalidOperationException("Vendor identity could not be determined from token.");
         }
 
-        public async Task<ResponseDto> GetMyRestaurantsAsync(string? nameIdentifierClaim, string requestId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
-                var parameters = new DynamicParameters();
-                parameters.Add("@VendorId", callerVendorId);
-                parameters.Add("@Action", "SELECT_ALL");
-
-                var restaurants = await connection.QueryAsync<UserDto>(
-                    "sp_RestaurantCRUD", parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Restaurants retrieved successfully.";
-                ResponseDto.Data = restaurants;
-
-                await _activityLog.LogAsync(callerVendorId, requestId, "GET /api/RestaurantApi/GetMyRestaurants",
-                    null, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Success");
-
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-
-                await _activityLog.LogAsync(null, requestId, "GET /api/RestaurantApi/GetMyRestaurants",
-                    null, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
-
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
-        public async Task<ResponseDto> GetMyRestaurantAsync(int id, string? nameIdentifierClaim, string requestId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
-                var parameters = new DynamicParameters();
-                parameters.Add("@RestaurantId", id);
-                parameters.Add("@VendorId", callerVendorId);
-                parameters.Add("@Action", "SELECT");
-
-                var restaurant = await connection.QueryFirstOrDefaultAsync<UserDto>(
-                    "sp_RestaurantCRUD", parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                if (restaurant == null)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Restaurant not found or you do not have access to it.";
-
-                    await _activityLog.LogAsync(callerVendorId, requestId, "GET /api/RestaurantApi/GetMyRestaurant",
-                        id.ToString(), System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
-
-                    return ResponseDto;
-                }
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Restaurant retrieved successfully.";
-                ResponseDto.Data = restaurant;
-
-                await _activityLog.LogAsync(callerVendorId, requestId, "GET /api/RestaurantApi/GetMyRestaurant",
-                    id.ToString(), System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Success");
-
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-
-                await _activityLog.LogAsync(null, requestId, "GET /api/RestaurantApi/GetMyRestaurant",
-                    id.ToString(), System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
-
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
         public async Task<ResponseDto> SignupRestaurantAsync(CreateRestaurantDto model, string? nameIdentifierClaim, string requestId)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var ResponseDto = new ResponseDto();
-
 
             if (model.SubscriptionType != null && !_allowedSubscriptionType.Contains(model.SubscriptionType.ToUpper()))
             {
@@ -218,6 +123,14 @@ namespace MenuOptics.Services.VendorApi
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var ResponseDto = new ResponseDto();
+
+            if (model.SubscriptionType != null && !_allowedSubscriptionType.Contains(model.SubscriptionType.ToUpper()))
+            {
+                ResponseDto.Status = 400;
+                ResponseDto.ResponseMsg = $"Invalid Subscribtion Type '{model.SubscriptionType}'. Allowed types: {string.Join(", ", _allowedSubscriptionType)}";
+                return (ResponseDto);
+            }
+
             using var connection = _context.CreateConnection();
             connection.Open();
             try
@@ -235,26 +148,6 @@ namespace MenuOptics.Services.VendorApi
 
                 var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
 
-                var checkParams = new DynamicParameters();
-                checkParams.Add("@RestaurantId", model.RestaurantId);
-                checkParams.Add("@VendorId", callerVendorId);
-                checkParams.Add("@Action", "SELECT");
-
-                var existing = await connection.QueryFirstOrDefaultAsync<UserDto>(
-                    "sp_RestaurantCRUD", checkParams,
-                    commandType: CommandType.StoredProcedure);
-
-                if (existing == null)
-                {
-                    ResponseDto.Status = 403;
-                    ResponseDto.ResponseMsg = "Access denied: You can only update your own restaurants.";
-
-                    await _activityLog.LogAsync(callerVendorId, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
-                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
-
-                    return ResponseDto;
-                }
-
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", model.RestaurantId);
                 parameters.Add("@VendorId", callerVendorId);
@@ -263,6 +156,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@Email", model.Email);
                 parameters.Add("@Phone", model.Phone);
                 parameters.Add("@RestaurantName", model.RestaurantName);
+                parameters.Add("@SubscriptionType", model.SubscriptionType);
                 parameters.Add("@ModifiedBy", callerVendorId);
                 parameters.Add("@Action", "UPDATE");
 
@@ -279,13 +173,24 @@ namespace MenuOptics.Services.VendorApi
 
                 return ResponseDto;
             }
-            catch (SqlException sqlEx)
+            catch (SqlException sqlEx) when (sqlEx.State == 1)//All other SQL Exceptions
             {
                 ResponseDto.Status = 503;
                 ResponseDto.ResponseMsg = $"Exception: {sqlEx.Message}";
 
                 await _activityLog.LogAsync(null, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
-                    payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
+                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
+
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx) when (sqlEx.State == 2) //Access denied SQL Exception
+            {
+                ResponseDto.Status = 403;
+                ResponseDto.ResponseMsg = $"{sqlEx.Message}";
+
+                await _activityLog.LogAsync(null, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
+                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
+
                 return ResponseDto;
             }
             catch (InvalidOperationException invalidOpEx)
@@ -324,26 +229,6 @@ namespace MenuOptics.Services.VendorApi
             {
                 var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
 
-                var checkParams = new DynamicParameters();
-                checkParams.Add("@RestaurantId", restaurantId);
-                checkParams.Add("@VendorId", callerVendorId);
-                checkParams.Add("@Action", "SELECT");
-
-                var existing = await connection.QueryFirstOrDefaultAsync<UserDto>(
-                    "sp_RestaurantCRUD", checkParams,
-                    commandType: CommandType.StoredProcedure);
-
-                if (existing == null)
-                {
-                    ResponseDto.Status = 403;
-                    ResponseDto.ResponseMsg = "Access denied: You can only update your own restaurants.";
-
-                    await _activityLog.LogAsync(callerVendorId, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
-                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
-
-                    return ResponseDto;
-                }
-
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", restaurantId);
                 parameters.Add("@VendorId", callerVendorId);
@@ -364,18 +249,39 @@ namespace MenuOptics.Services.VendorApi
                     request.IsActive
                 };
 
+                await _activityLog.LogAsync(callerVendorId, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                    payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Success");
+
                 return ResponseDto;
             }
-            catch (SqlException sqlEx)
+            catch (SqlException sqlEx) when (sqlEx.State == 1)//All other SQL Exceptions
             {
                 ResponseDto.Status = 503;
                 ResponseDto.ResponseMsg = $"Exception: {sqlEx.Message}";
+
+                await _activityLog.LogAsync(null, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
+
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx) when (sqlEx.State == 2) //Access denied SQL Exception
+            {
+                ResponseDto.Status = 403;
+                ResponseDto.ResponseMsg = $"{sqlEx.Message}";
+
+                await _activityLog.LogAsync(null, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
+
                 return ResponseDto;
             }
             catch (Exception ex)
             {
                 ResponseDto.Status = 500;
                 ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
+
+                await _activityLog.LogAsync(null, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
+
                 return ResponseDto;
             }
         }

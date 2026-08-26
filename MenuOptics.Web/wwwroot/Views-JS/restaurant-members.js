@@ -58,9 +58,6 @@ $(document).ready(function () {
         }
 
         const formData = new FormData(formEl);
-        // Map checkbox value
-        const isActiveCheckbox = $('#editMemberIsActive').is(':checked');
-        formData.set('isActive', isActiveCheckbox ? 'true' : 'false');
 
         updateMember(formData);
     });
@@ -123,11 +120,8 @@ window.editMember = function (id) {
             form.find('[name="state"]').val(member.state);
             form.find('[name="city"]').val(member.city);
             form.find('[name="zip"]').val(member.zip);
-            form.find('[name="gender"]').val(member.gender || "");
             form.find('[name="profilePic"]').val(member.profilePic || "");
             form.find('[name="password"]').val(""); // Reset password field
-
-            $('#editMemberIsActive').prop('checked', member.isActive);
 
             if (member.profilePic) {
                 $('#editMemberProfilePicPreview').attr('src', member.profilePic).show();

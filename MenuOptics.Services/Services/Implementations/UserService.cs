@@ -156,6 +156,7 @@ namespace MenuOptics.Services
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", model.Role);
                 parameters.Add("@IsRegistrationCompleted", 1);
+                parameters.Add("@SubscriptionType", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : "CORE");
                 parameters.Add("@SubscriptionStatus", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : "Pending");
                 parameters.Add("@IsParent", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : 1);
                 parameters.Add("@CreatedBy", model.CreatedBy ?? fallbackCreatedBy);
@@ -348,7 +349,6 @@ namespace MenuOptics.Services
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
                 parameters.Add("@RestaurantName", model.Role == Roles.Restaurant.ToString() ? model.RestaurantName : null);
-                parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@ModifiedBy", modifiedBy);
                 parameters.Add("@Action", "UPDATE");
 
@@ -572,15 +572,10 @@ namespace MenuOptics.Services
                 var checkParams = new DynamicParameters();
                 checkParams.Add("@UserId", model.MemberId);
                 checkParams.Add("@Action", "SELECT");
-                var member = await connection.QueryFirstOrDefaultAsync<UserDto>(
-                    "sp_UserCRUD", checkParams, commandType: CommandType.StoredProcedure);
 
-                if (member == null || member.ParentId != currentUserId)
-                {
-                    ResponseDto.Status = 403;
-                    ResponseDto.ResponseMsg = "Access denied: You can only update your own members.";
-                    return ResponseDto;
-                }
+                //QueryFirstAsync means it will always expect a record or the exception will be thrown from Store Procedure
+                var member = await connection.QueryFirstAsync<UserDto>(
+                    "sp_UserCRUD", checkParams, commandType: CommandType.StoredProcedure);
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", model.MemberId);
@@ -592,13 +587,11 @@ namespace MenuOptics.Services
                 parameters.Add("@State", model.State);
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
-                parameters.Add("@Gender", model.Gender);
-                parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@ModifiedBy", currentUserId);
                 if (!string.IsNullOrWhiteSpace(model.Password))
                     parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 else
-                    parameters.Add("@PasswordHash", (object)null);
+                    parameters.Add("@PasswordHash", null);
                 parameters.Add("@Action", "UPDATE_MEMBER");
 
                 var updated = await connection.QueryFirstOrDefaultAsync<UserDto>(
@@ -609,9 +602,15 @@ namespace MenuOptics.Services
                 ResponseDto.Data = updated;
                 return ResponseDto;
             }
-            catch (SqlException sqlEx)
+            catch (SqlException sqlEx) when (sqlEx.State == 1)//All other SQL Exceptions
             {
                 ResponseDto.Status = 503;
+                ResponseDto.ResponseMsg = $"Exception: {sqlEx.Message}";
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx) when (sqlEx.State == 2) //Access denied SQL Exception
+            {
+                ResponseDto.Status = 403;
                 ResponseDto.ResponseMsg = $"{sqlEx.Message}";
                 return ResponseDto;
             }
@@ -629,21 +628,17 @@ namespace MenuOptics.Services
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
             connection.Open();
+
             try
             {
                 // Fetch member to validate ownership and current status
                 var checkParams = new DynamicParameters();
                 checkParams.Add("@UserId", id);
                 checkParams.Add("@Action", "SELECT");
-                var member = await connection.QueryFirstOrDefaultAsync<UserDto>(
-                    "sp_UserCRUD", checkParams, commandType: CommandType.StoredProcedure);
 
-                if (member == null || member.ParentId != currentUserId)
-                {
-                    ResponseDto.Status = 403;
-                    ResponseDto.ResponseMsg = "Access denied: You can only manage your own members.";
-                    return ResponseDto;
-                }
+                //QueryFirstAsync means it will always expect a record or the exception will be thrown from Store Procedure
+                var member = await connection.QueryFirstAsync<UserDto>(
+                    "sp_UserCRUD", checkParams, commandType: CommandType.StoredProcedure);
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", id);
@@ -656,6 +651,18 @@ namespace MenuOptics.Services
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = $"Member {(!member.IsActive ? "activated" : "deactivated")} successfully.";
                 ResponseDto.Data = new { MemberId = id, IsActive = !member.IsActive };
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx) when (sqlEx.State == 1)//All other SQL Exceptions
+            {
+                ResponseDto.Status = 503;
+                ResponseDto.ResponseMsg = $"Exception: {sqlEx.Message}";
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx) when (sqlEx.State == 2) //Access denied SQL Exception
+            {
+                ResponseDto.Status = 403;
+                ResponseDto.ResponseMsg = $"{sqlEx.Message}";
                 return ResponseDto;
             }
             catch (Exception ex)

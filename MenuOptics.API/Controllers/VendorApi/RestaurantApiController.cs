@@ -36,20 +36,6 @@ namespace MenuOptics.API.Controllers.VendorApi
 
         private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
 
-        [HttpGet("GetMyRestaurants")]
-        public async Task<IActionResult> GetMyRestaurants()
-        {
-            var responseData = await _restaurantService.GetMyRestaurantsAsync(NameIdentifierClaim, RequestId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
-        [HttpGet("GetMyRestaurant/{id}")]
-        public async Task<IActionResult> GetMyRestaurant(int id)
-        {
-            var responseData = await _restaurantService.GetMyRestaurantAsync(id, NameIdentifierClaim, RequestId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
         [HttpPost("SignupRestaurant")]
         public async Task<IActionResult> SignupRestaurant([FromBody] CreateRestaurantDto model)
         {
@@ -102,8 +88,8 @@ namespace MenuOptics.API.Controllers.VendorApi
             return StatusCode(result.Status, result);
         }
 
-        [HttpPut("UpdateRestaurantDto")]
-        public async Task<IActionResult> UpdateRestaurantDto([FromBody] UpdateRestaurantDto model)
+        [HttpPut("UpdateRestaurant")]
+        public async Task<IActionResult> UpdateRestaurant([FromBody] UpdateRestaurantDto model)
         {
             var responseData = await _restaurantService.UpdateRestaurantAsync(model, NameIdentifierClaim, RequestId);
             return StatusCode(responseData.Status, responseData);

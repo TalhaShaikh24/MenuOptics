@@ -17,7 +17,6 @@ namespace MenuOptics.Models
         public string? State { get; set; }
         public string? City { get; set; }
         public string? Zip { get; set; }
-        public string? Gender { get; set; }
         public string? Password { get; set; }
         public bool? IsActive { get; set; }
         public IFormFile? File { get; set; }
