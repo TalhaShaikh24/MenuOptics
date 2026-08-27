@@ -851,9 +851,9 @@ function refreshMenuGrid() {
                                         ${item.cost == item.currentCost
                             ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>`
                             : `
-                                                <span onclick="showMenuCostBreakdown(${item.menuItemId})" style="cursor:pointer;" title="Click to view ingredient cost breakdown">
-                                                    <span class="text-highlight danger">${costPercentage}%</span>
-                                                    <span class="text-highlight">${currentCostPercentage}% <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i></span>
+                                                <span>
+                                                    <span class="text-highlight danger" title="Food Cost % at the time this item was created/updated">${costPercentage}%</span>
+                                                    <span class="text-highlight" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">${currentCostPercentage}% <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i></span>
                                                 </span>
                                               `
                         }
@@ -877,8 +877,9 @@ function refreshMenuGrid() {
                                     <span class="price">$${item.sellingPrice.toFixed(2)}</span>
                                     ${item.cost == item.currentCost 
                                         ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
-                                        : `<div class="clickable-cost-breakdown" onclick="showMenuCostBreakdown(${item.menuItemId})" style="cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="Click to view ingredient cost breakdown">
-                                            Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}</span> <span class="cost text-highlight success">$${item.currentCost.toFixed(2)} <i class="fas fa-info-circle" style="font-size:12px; opacity:0.7; margin-left:2px;"></i></span>
+                                            : `<div class="clickable-cost-breakdown" style="display:inline-flex; align-items:center; gap:4px;">
+                                            Cost: <span class="cost text-highlight danger" title="Cost at the time this item was created/updated.">$${item.cost.toFixed(2)}</span> 
+                                            <span class="cost text-highlight success" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">$${item.currentCost.toFixed(2)} <i class="fas fa-info-circle" style="font-size:12px; opacity:0.7; margin-left:2px;"></i></span>
                                            </div>`
                                     }
                                 </div>

@@ -507,12 +507,12 @@ function refreshRecipesTable() {
                                   </span>
                                 `
                                                     : `
-                                  <div onclick="showRecipeCostBreakdown(${item.recipeId})" style="cursor:pointer;" title="Click to view ingredient cost breakdown">
-                                      <span class="text-highlight danger">
+                                  <div>
+                                      <span class="text-highlight danger" title="Cost at the time this recipe was created/updated.">
                                         $${Number(cost).toFixed(2)}
                                       </span>
                                       <br>
-                                      <span class="text-highlight success">
+                                      <span class="text-highlight success" style="cursor:pointer;" onclick="showRecipeCostBreakdown(${item.recipeId})" title="Click to view ingredient cost breakdown">
                                         $${Number(currentCost).toFixed(2)}
                                         <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i>
                                       </span>
