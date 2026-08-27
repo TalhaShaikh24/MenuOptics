@@ -493,12 +493,13 @@ namespace MenuOptics.Services
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
             connection.Open();
+
             try
             {
                 var parameters = new DynamicParameters();
                 
-
                 parameters = new DynamicParameters();
+                parameters.Add("@UserId", currentUserId);
                 parameters.Add("@IngredientId", id);
                 parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");

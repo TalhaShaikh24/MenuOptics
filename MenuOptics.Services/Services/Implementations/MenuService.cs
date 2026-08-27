@@ -123,7 +123,7 @@ namespace MenuOptics.Services
                     model.Recipes = JsonConvert.DeserializeObject<List<MenuItemRecipe>>(recipes);
                 }
 
-                string? featuredImagePath = model.FeaturedImage;
+                string? featuredImagePath = null;
 
                 if (model.FeaturedImageFile != null && model.FeaturedImageFile.Length > 0)
                 {

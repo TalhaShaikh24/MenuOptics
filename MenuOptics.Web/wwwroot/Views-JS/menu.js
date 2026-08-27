@@ -1170,9 +1170,9 @@ function showMenuCostBreakdown(menuItemId) {
                 trendHtml = `<span class="trend-badge neutral" style="color: #6b7280; background: #f3f4f6; font-weight: 500; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-minus"></i> $0.00</span>`;
             }
 
-            const sourceBadge = sourceLabel
+            const sourceBadge = sourceLabel && sourceLabel !== "Ingredient"
                 ? `<span style="background: #fef3c7; color: #92400e; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-utensils"></i> ${sourceLabel}</span>`
-                : `<span style="background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-cube"></i> Ingredient</span>`;
+                : `<span style="background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-cube"></i> ${sourceLabel}</span>`;
 
             rows.push(`
                 <tr style="border-bottom: 1px solid #f1f5f9;">
