@@ -84,7 +84,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreatePrivateVendorAsync(PrivateVendor model, int currentUserId)
+        public async Task<ResponseDto> CreatePrivateVendorAsync(PrivateVendor model, int currentUserId, int actualUserId)
         {
             var responseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -93,7 +93,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@IsActive", true);
                 parameters.Add("@Action", "INSERT");
 
@@ -117,7 +117,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdatePrivateVendorAsync(PrivateVendor model, int currentUserId)
+        public async Task<ResponseDto> UpdatePrivateVendorAsync(PrivateVendor model, int currentUserId, int actualUserId)
         {
             var responseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -127,7 +127,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@PrivateVendorId", model.PrivateVendorId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Action", "UPDATE");
 
@@ -151,7 +151,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> TogglePrivateVendorActiveAsync(int id, int currentUserId)
+        public async Task<ResponseDto> TogglePrivateVendorActiveAsync(int id, int currentUserId, int actualUserId)
         {
             var responseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -160,15 +160,19 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@PrivateVendorId", id);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
-                await connection.ExecuteAsync(
-                    "sp_PrivateVendorCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var result = await connection.QueryFirstAsync("sp_PrivateVendorCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 responseDto.Status = 200;
-                responseDto.ResponseMsg = "Private vendor status toggled successfully.";
-                responseDto.Data = new { PrivateVendorId = id };
+                responseDto.ResponseMsg = $"Private Vendor {(result.IsActive ? "activated" : "deactivated")} successfully."; ;
+                responseDto.Data = new 
+                { 
+                    PrivateVendorId = id, 
+                    IsActive = result.IsActive 
+                };
+
                 return responseDto;
             }
             catch (Exception ex)

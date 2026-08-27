@@ -24,8 +24,6 @@ namespace MenuOptics.Controllers.Api
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        private int CurrentUserIdOrDefault => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
-
         private string RequestBaseUrl => $"{Request.Scheme}://{Request.Host}";
 
         private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
@@ -65,7 +63,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("CreateUser")]
         public async Task<IActionResult> CreateUser([FromForm] User model)
         {
-            var responseData = await _userService.CreateUserAsync(model, CurrentUserIdOrDefault, RequestBaseUrl);
+            var responseData = await _userService.CreateUserAsync(model, CurrentUserId, RequestBaseUrl);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -104,7 +102,7 @@ namespace MenuOptics.Controllers.Api
         [HttpGet("GetAllVendors")]
         public async Task<IActionResult> GetAllVendors()
         {
-            var responseData = await _userService.GetAllVendorsAsync(CurrentUserIdOrDefault);
+            var responseData = await _userService.GetAllVendorsAsync(CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -112,16 +110,15 @@ namespace MenuOptics.Controllers.Api
         [HttpPut("UpdateUser")]
         public async Task<IActionResult> UpdateUser([FromForm] User model)
         {
-            var responseData = await _userService.UpdateUserAsync(model, CurrentUserIdOrDefault, RequestBaseUrl);
+            var responseData = await _userService.UpdateUserAsync(model, CurrentUserId, RequestBaseUrl);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateCurrentUser")]
         public async Task<IActionResult> UpdateCurrentUser([FromForm] User model)
         {
-            var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            model.UserId = currentUserId;
-            var responseData = await _userService.UpdateUserAsync(model, currentUserId, $"{Request.Scheme}://{Request.Host}");
+            model.UserId = CurrentUserId;
+            var responseData = await _userService.UpdateUserAsync(model, CurrentUserId, $"{Request.Scheme}://{Request.Host}");
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -129,7 +126,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPut("ToggleUserActive/{id}")]
         public async Task<IActionResult> ToggleUserActive(int id)
         {
-            var responseData = await _userService.ToggleUserActiveAsync(id, CurrentUserIdOrDefault);
+            var responseData = await _userService.ToggleUserActiveAsync(id, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 

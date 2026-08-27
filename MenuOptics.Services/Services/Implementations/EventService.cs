@@ -14,7 +14,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<ResponseDto> GetAllEventsAsync(int restaurantId)
+        public async Task<ResponseDto> GetAllEventsAsync(int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -24,7 +24,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@Action", "SELECT_ALL");
-                parameters.Add("@RestaurantId", restaurantId);
+                parameters.Add("@RestaurantId", currentUserId);
 
                 var events = await connection.QueryAsync<Event>(
                     "sp_EventCRUD",
@@ -44,7 +44,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> GetEventAsync(int id, int restaurantId)
+        public async Task<ResponseDto> GetEventAsync(int id, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -54,7 +54,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@EventId", id);
-                parameters.Add("@RestaurantId", restaurantId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Action", "SELECT_BY_ID");
 
                 var evt = await connection.QuerySingleOrDefaultAsync<Event>(
@@ -94,7 +94,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreateEventAsync(Event model, int restaurantId)
+        public async Task<ResponseDto> CreateEventAsync(Event model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -105,7 +105,7 @@ namespace MenuOptics.Services
             {
                 // 1. Insert the event
                 var parameters = new DynamicParameters();
-                parameters.Add("@RestaurantId", restaurantId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@EventName", model.EventName);
                 parameters.Add("@EventDate", model.EventDate);
                 parameters.Add("@Location", model.Location);
@@ -116,6 +116,7 @@ namespace MenuOptics.Services
                 parameters.Add("@PricePerGuest", model.PricePerGuest);
                 parameters.Add("@TotalFoodCost", model.TotalFoodCost);
                 parameters.Add("@TotalRevenue", model.TotalRevenue);
+                parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
 
                 int eventId = await connection.ExecuteScalarAsync<int>(
@@ -149,7 +150,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateEventAsync(Event model, int restaurantId)
+        public async Task<ResponseDto> UpdateEventAsync(Event model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -171,7 +172,7 @@ namespace MenuOptics.Services
                 parameters.Add("@PricePerGuest", model.PricePerGuest);
                 parameters.Add("@TotalFoodCost", model.TotalFoodCost);
                 parameters.Add("@TotalRevenue", model.TotalRevenue);
-                parameters.Add("@ModifiedBy", restaurantId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "UPDATE");
 
                 await connection.ExecuteAsync(
@@ -330,7 +331,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> ToggleEventActiveAsync(int id, int restaurantId)
+        public async Task<ResponseDto> ToggleEventActiveAsync(int id, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -340,24 +341,14 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@EventId", id);
-                parameters.Add("@ModifiedBy", restaurantId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
-                var evt = await connection.QueryFirstOrDefaultAsync<Event>("sp_EventCRUD",parameters,commandType: CommandType.StoredProcedure);
-
-                if (evt == null)
-                {
-                    return new ResponseDto
-                    {
-                        Status = 404,
-                        ResponseMsg = "Event not found."
-                    };
-                }
-
+                var result = await connection.QueryFirstAsync<Event>("sp_EventCRUD",parameters,commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = $"Event {(evt.IsActive ? "deactivated" : "activated")} successfully.";
-                ResponseDto.Data = new { EventId = id, IsActive = !evt.IsActive };
+                ResponseDto.ResponseMsg = $"Event {(result.IsActive ? "activated" : "deactivated")} successfully.";
+                ResponseDto.Data = new { EventId = id, IsActive = result.IsActive };
                 return ResponseDto;
             }
             catch (Exception ex)

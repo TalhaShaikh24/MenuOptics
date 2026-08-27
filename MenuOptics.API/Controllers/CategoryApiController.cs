@@ -21,6 +21,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
         [HttpGet("GetAllCategories")]
         public async Task<IActionResult> GetAllCategories()
@@ -39,21 +40,21 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("CreateCategory")]
         public async Task<IActionResult> CreateCategory([FromBody] Category model)
         {
-            var responseData = await _categoryService.CreateCategoryAsync(model, CurrentUserId);
+            var responseData = await _categoryService.CreateCategoryAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateCategory")]
         public async Task<IActionResult> UpdateCategory([FromBody] Category model)
         {
-            var responseData = await _categoryService.UpdateCategoryAsync(model, CurrentUserId);
+            var responseData = await _categoryService.UpdateCategoryAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("ToggleCategoryActive/{id}")]
         public async Task<IActionResult> ToggleCategoryActive(int id)
         {
-            var responseData = await _categoryService.ToggleCategoryActiveAsync(id, CurrentUserId);
+            var responseData = await _categoryService.ToggleCategoryActiveAsync(id, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 

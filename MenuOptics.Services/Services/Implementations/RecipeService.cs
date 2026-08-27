@@ -15,7 +15,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<ResponseDto> CreateRecipeAsync(Recipe model, string ingredients, int currentUserId)
+        public async Task<ResponseDto> CreateRecipeAsync(Recipe model, string ingredients, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -41,7 +41,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Cost", 0);
                 parameters.Add("@Description", model.Description);
-                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
 
                 int recipeId = await connection.ExecuteScalarAsync<int>("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -105,7 +105,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateRecipeAsync(Recipe model, string ingredients, int currentUserId)
+        public async Task<ResponseDto> UpdateRecipeAsync(Recipe model, string ingredients, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -139,7 +139,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Cost", model.Cost);
                 parameters.Add("@Description", model.Description);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "UPDATE");
 
                 int affectedRows = await connection.ExecuteAsync("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -301,7 +301,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> ToggleRecipeActiveAsync(int id, int currentUserId)
+        public async Task<ResponseDto> ToggleRecipeActiveAsync(int id, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -309,29 +309,21 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
-                parameters.Add("@RecipeId", id);
-                parameters.Add("@UserId", currentUserId);
-                parameters.Add("@Action", "SELECT");
-
-                var recipe = await connection.QueryFirstOrDefaultAsync<Recipe>("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
-                if (recipe == null)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Recipe not found.";
-                    return ResponseDto;
-                }
 
                 parameters = new DynamicParameters();
                 parameters.Add("@RecipeId", id);
-                parameters.Add("@UserId", currentUserId);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
-                await connection.ExecuteAsync("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var result = await connection.QueryFirstAsync("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = $"Recipe {(recipe.IsActive ? "deactivated" : "activated")} successfully.";
-                ResponseDto.Data = new { RecipeId = id, IsActive = !recipe.IsActive };
+                ResponseDto.ResponseMsg = $"Recipe {(result.IsActive ? "activated" : "deactivated")} successfully.";
+                ResponseDto.Data = new 
+                { 
+                    RecipeId = id, 
+                    IsActive = result.IsActive 
+                };
                 return ResponseDto;
             }
             catch (Exception ex)

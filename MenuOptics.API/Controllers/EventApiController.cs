@@ -19,34 +19,34 @@ namespace MenuOptics.Controllers.Api
         {
             _eventService = eventService;
         }
-
-        private int CurrentRestaurantId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
         [HttpGet("GetAllEvents")]
         public async Task<IActionResult> GetAllEvents()
         {
-            var responseData = await _eventService.GetAllEventsAsync(CurrentRestaurantId);
+            var responseData = await _eventService.GetAllEventsAsync(CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpGet("GetEvent/{id}")]
         public async Task<IActionResult> GetEvent(int id)
         {
-            var responseData = await _eventService.GetEventAsync(id, CurrentRestaurantId);
+            var responseData = await _eventService.GetEventAsync(id, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPost("CreateEvent")]
         public async Task<IActionResult> CreateEvent([FromBody] Event model)
         {
-            var responseData = await _eventService.CreateEventAsync(model, CurrentRestaurantId);
+            var responseData = await _eventService.CreateEventAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateEvent")]
         public async Task<IActionResult> UpdateEvent([FromBody] Event model)
         {
-            var responseData = await _eventService.UpdateEventAsync(model, CurrentRestaurantId);
+            var responseData = await _eventService.UpdateEventAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -81,7 +81,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPut("ToggleEventActive/{id}")]
         public async Task<IActionResult> ToggleEventActive(int id)
         {
-            var responseData = await _eventService.ToggleEventActiveAsync(id, CurrentRestaurantId);
+            var responseData = await _eventService.ToggleEventActiveAsync(id, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

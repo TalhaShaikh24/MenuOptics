@@ -19,8 +19,7 @@ namespace MenuOptics.Services
             _environment = environment;
             _fileService = fileService;
         }
-
-        public async Task<ResponseDto> CreateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId)
+        public async Task<ResponseDto> CreateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -52,7 +51,7 @@ namespace MenuOptics.Services
                 parameters.Add("@SellingPrice", model.SellingPrice);
                 parameters.Add("@FeaturedImage", featuredImagePath);
                 parameters.Add("@IsAvailable", model.IsAvailable);
-                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
 
                 int menuItemId = await connection.ExecuteScalarAsync<int>("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -100,146 +99,7 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
-        public async Task<ResponseDto> GetMenuItemAsync(int id)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@MenuItemId", id);
-                parameters.Add("@Action", "SELECT");
-
-                var results = await connection.QueryAsync<Menu, string, string, Menu>(
-                    "sp_MenuCRUD",
-                    (menu, ingredientsJson, recipesJson) =>
-                    {
-                        menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
-                            : new List<MenuItemIngredient>();
-                        menu.Recipes = !string.IsNullOrEmpty(recipesJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemRecipe>>(recipesJson)
-                            : new List<MenuItemRecipe>();
-                        return menu;
-                    },
-                    parameters,
-                    splitOn: "Ingredients,Recipes",
-                    commandType: CommandType.StoredProcedure);
-
-                var menuItem = results.FirstOrDefault();
-
-                if (menuItem == null)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Menu item not found.";
-                    return ResponseDto;
-                }
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Menu item retrieved successfully.";
-                ResponseDto.Data = menuItem;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
-        public async Task<ResponseDto> GetAllMenuItemsByAdminAsync()
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Action", "SELECT_ALL_ADMIN");
-
-                var menuItems = await connection.QueryAsync<Menu, string, Menu>(
-                    "sp_MenuCRUD",
-                    (menu, ingredientsJson) =>
-                    {
-                        menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
-                            : new List<MenuItemIngredient>();
-                        return menu;
-                    },
-                    parameters,
-                    splitOn: "Ingredients",
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Menu items retrieved successfully.";
-                ResponseDto.Data = menuItems;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
-        public async Task<ResponseDto> GetAllMenuItemsAsync(bool? isActive, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
-                parameters.Add("@IsActive", isActive);
-                parameters.Add("@Action", "SELECT_ALL");
-
-                var menuItems = await connection.QueryAsync<Menu, string, string, Menu>(
-                    "sp_MenuCRUD",
-                    (menu, ingredientsJson, recipesJson) =>
-                    {
-                        menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
-                            : new List<MenuItemIngredient>();
-                        menu.Recipes = !string.IsNullOrEmpty(recipesJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemRecipe>>(recipesJson)
-                            : new List<MenuItemRecipe>();
-                        return menu;
-                    },
-                    parameters,
-                    splitOn: "Ingredients,Recipes",
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Menu items retrieved successfully.";
-                ResponseDto.Data = menuItems;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
-        public async Task<ResponseDto> UpdateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId)
+        public async Task<ResponseDto> UpdateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -257,6 +117,7 @@ namespace MenuOptics.Services
                 {
                     model.Ingredients = JsonConvert.DeserializeObject<List<MenuItemIngredient>>(ingredients);
                 }
+
                 if (!string.IsNullOrWhiteSpace(recipes))
                 {
                     model.Recipes = JsonConvert.DeserializeObject<List<MenuItemRecipe>>(recipes);
@@ -279,7 +140,7 @@ namespace MenuOptics.Services
                 parameters.Add("@SellingPrice", model.SellingPrice);
                 parameters.Add("@FeaturedImage", featuredImagePath);
                 parameters.Add("@IsAvailable", model.IsAvailable);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@IsActive", true);
                 parameters.Add("@IngredientsJson", ingredients);
                 parameters.Add("@RecipesJson", recipes);
@@ -347,8 +208,7 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
-        public async Task<ResponseDto> ToggleMenuActiveAsync(int id, int currentUserId)
+        public async Task<ResponseDto> GetMenuItemAsync(int id)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -359,26 +219,151 @@ namespace MenuOptics.Services
                 parameters.Add("@MenuItemId", id);
                 parameters.Add("@Action", "SELECT");
 
-                var menuItem = await connection.QueryFirstOrDefaultAsync<Menu>("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var results = await connection.QueryAsync<Menu, string, string, Menu>(
+                    "sp_MenuCRUD",
+                    (menu, ingredientsJson, recipesJson) =>
+                    {
+                        menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
+                            : new List<MenuItemIngredient>();
+                        menu.Recipes = !string.IsNullOrEmpty(recipesJson)
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemRecipe>>(recipesJson)
+                            : new List<MenuItemRecipe>();
+                        return menu;
+                    },
+                    parameters,
+                    splitOn: "Ingredients,Recipes",
+                    commandType: CommandType.StoredProcedure);
+
+                var menuItem = results.FirstOrDefault();
 
                 if (menuItem == null)
                 {
                     ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Menu not found.";
+                    ResponseDto.ResponseMsg = "Menu item not found.";
                     return ResponseDto;
                 }
 
-                parameters = new DynamicParameters();
-                parameters.Add("@MenuItemId", id);
-                parameters.Add("@IsActive", !menuItem.IsActive);
-                parameters.Add("@ModifiedBy", currentUserId);
-                parameters.Add("@Action", "TOGGLE_ACTIVE");
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = "Menu item retrieved successfully.";
+                ResponseDto.Data = menuItem;
+                return ResponseDto;
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
+                return ResponseDto;
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+        public async Task<ResponseDto> GetAllMenuItemsByAdminAsync()
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@Action", "SELECT_ALL_ADMIN");
 
-                await connection.ExecuteAsync("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var menuItems = await connection.QueryAsync<Menu, string, Menu>(
+                    "sp_MenuCRUD",
+                    (menu, ingredientsJson) =>
+                    {
+                        menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
+                            : new List<MenuItemIngredient>();
+                        return menu;
+                    },
+                    parameters,
+                    splitOn: "Ingredients",
+                    commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = $"Menu Item {(menuItem.IsActive ? "deactivated" : "activated")} successfully.";
-                ResponseDto.Data = new { MenuItemId = id, IsActive = !menuItem.IsActive };
+                ResponseDto.ResponseMsg = "Menu items retrieved successfully.";
+                ResponseDto.Data = menuItems;
+                return ResponseDto;
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
+                return ResponseDto;
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+        public async Task<ResponseDto> GetAllMenuItemsAsync(bool? isActive, int currentUserId)
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@IsActive", isActive);
+                parameters.Add("@Action", "SELECT_ALL");
+
+                var menuItems = await connection.QueryAsync<Menu, string, Menu>(
+                 "sp_MenuCRUD",
+                 (menu, ingredientsJson) =>
+                 {
+                     menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
+                         ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
+                         : new List<MenuItemIngredient>();
+                     return menu;
+                 },
+                 parameters,
+                 splitOn: "Ingredients",
+                 commandType: CommandType.StoredProcedure);
+
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = "Menu items retrieved successfully.";
+                ResponseDto.Data = menuItems;
+                return ResponseDto;
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
+                return ResponseDto;
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+        public async Task<ResponseDto> ToggleMenuActiveAsync(int id, int currentUserId, int actualUserId)
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+            try
+            {
+                var parameters = new DynamicParameters();
+                
+
+                parameters = new DynamicParameters();
+                parameters.Add("@MenuItemId", id);
+                parameters.Add("@ModifiedBy", actualUserId);
+                parameters.Add("@Action", "TOGGLE_ACTIVE");
+
+                var result = await connection.QueryFirstAsync("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = $"Menu Item {(result.IsActive ? "activated" : "deactivated")} successfully.";
+                ResponseDto.Data = new 
+                { 
+                    MenuItemId = id, 
+                    IsActive = result.isActive 
+                };
                 return ResponseDto;
             }
             catch (Exception ex)

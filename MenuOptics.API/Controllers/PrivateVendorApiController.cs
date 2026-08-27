@@ -21,6 +21,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
         [HttpGet("GetAllPrivateVendors")]
         public async Task<IActionResult> GetAllPrivateVendors()
@@ -39,21 +40,21 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("CreatePrivateVendor")]
         public async Task<IActionResult> CreatePrivateVendor([FromBody] PrivateVendor model)
         {
-            var responseData = await _privateVendorService.CreatePrivateVendorAsync(model, CurrentUserId);
+            var responseData = await _privateVendorService.CreatePrivateVendorAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdatePrivateVendor")]
         public async Task<IActionResult> UpdatePrivateVendor([FromBody] PrivateVendor model)
         {
-            var responseData = await _privateVendorService.UpdatePrivateVendorAsync(model, CurrentUserId);
+            var responseData = await _privateVendorService.UpdatePrivateVendorAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("TogglePrivateVendorActive/{id}")]
         public async Task<IActionResult> TogglePrivateVendorActive(int id)
         {
-            var responseData = await _privateVendorService.TogglePrivateVendorActiveAsync(id, CurrentUserId);
+            var responseData = await _privateVendorService.TogglePrivateVendorActiveAsync(id, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

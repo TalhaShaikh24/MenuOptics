@@ -61,7 +61,9 @@ $(document).ready(function () {
 // Store ingredients, recipes and categories data globally
 let ingredientsWithPrices = [];
 let recipesWithPrices = [];
+let allRecipesData = [];
 let categories = [];
+let cachedMenuItems = [];
 
 
 let isStaffFacing = false;
@@ -168,6 +170,7 @@ function initializeRecipesSelect(selectId, modalId, detailsId, costInputId) {
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
+            allRecipesData = response.data || [];
             recipesWithPrices = response.data.map(recipe => ({
                 id: recipe.recipeId,
                 text: recipe.name,
@@ -801,7 +804,8 @@ function refreshMenuGrid() {
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-            const menuItems = response.data;
+            const menuItems = response.data || [];
+            cachedMenuItems = menuItems;
             const grid = $('#menuGrid');
             grid.empty();
 
@@ -847,8 +851,10 @@ function refreshMenuGrid() {
                                         ${item.cost == item.currentCost
                             ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>`
                             : `
-                                                <span class="text-highlight danger">${costPercentage}%<span class="tooltip-icon danger" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>
-                                                <span class="text-highlight">${currentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Food Cost % according to the current prices.">i</span></span>
+                                                <span onclick="showMenuCostBreakdown(${item.menuItemId})" style="cursor:pointer;" title="Click to view ingredient cost breakdown">
+                                                    <span class="text-highlight danger">${costPercentage}%</span>
+                                                    <span class="text-highlight">${currentCostPercentage}% <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i></span>
+                                                </span>
                                               `
                         }
                                     </span>
@@ -869,9 +875,12 @@ function refreshMenuGrid() {
                             <div class="item-details">
                                 <div class="pricing">
                                     <span class="price">$${item.sellingPrice.toFixed(2)}</span>
-                                    ${item.cost == item.currentCost ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
-                            : `Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}<span class="tooltip-icon danger" data-tooltip="Cost at the time this item was created/updated.">i</span></span> <span class="cost text-highlight">$${item.currentCost.toFixed(2)}<span class="tooltip-icon success" data-tooltip="Cost according to the current prices.">i</span></span>`
-                        }
+                                    ${item.cost == item.currentCost 
+                                        ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
+                                        : `<div class="clickable-cost-breakdown" onclick="showMenuCostBreakdown(${item.menuItemId})" style="cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="Click to view ingredient cost breakdown">
+                                            Cost: <span class="cost text-highlight danger">$${item.cost.toFixed(2)}</span> <span class="cost text-highlight success">$${item.currentCost.toFixed(2)} <i class="fas fa-info-circle" style="font-size:12px; opacity:0.7; margin-left:2px;"></i></span>
+                                           </div>`
+                                    }
                                 </div>
                             </div>
                             <div class="item-stats">
@@ -1124,3 +1133,77 @@ async function generateMenuPDF(menuData, filename) {
 
     pdfMake.createPdf(docDefinition).download(`${filename}.pdf`);
 }
+
+// Show menu item cost breakdown modal (uses data already received in GetAllMenuItems)
+function showMenuCostBreakdown(menuItemId) {
+    const $tbody = $('#costBreakdownTableBody');
+    $tbody.empty();
+    $('#costBreakdownEmptyMsg').hide();
+
+    const menuItem = cachedMenuItems.find(m => m.menuItemId == menuItemId);
+    if (!menuItem) {
+        return;
+    }
+
+    $('#costBreakdownMenuName').text(menuItem.name || 'Menu Item');
+    $('#costBreakdownCategory').text(menuItem.categoryName ? `Category: ${menuItem.categoryName}` : '');
+
+    const rows = [];
+    const ingredients = menuItem.ingredients || [];
+
+    if (ingredients.length > 0) {
+        ingredients.forEach(ing => {
+            const ingName = ing.ingredientName || (ing.name || `Ingredient #${ing.ingredientId}`);
+            
+            const sourceLabel = ing.source && ing.source.trim() !== '' ? ing.source.trim() : null;
+
+            const oldPrice = ing.oldPrice != null ? parseFloat(ing.oldPrice) : (parseFloat(ing.currentPrice) || 0);
+            const currentPrice = ing.currentPrice != null ? parseFloat(ing.currentPrice) : oldPrice;
+
+            const diff = currentPrice - oldPrice;
+            let trendHtml = '';
+            if (diff > 0.005) {
+                trendHtml = `<span class="trend-badge up" style="color: #dc2626; background: #fee2e2; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-arrow-up"></i> +$${diff.toFixed(2)}</span>`;
+            } else if (diff < -0.005) {
+                trendHtml = `<span class="trend-badge down" style="color: #16a34a; background: #dcfce7; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-arrow-down"></i> -$${Math.abs(diff).toFixed(2)}</span>`;
+            } else {
+                trendHtml = `<span class="trend-badge neutral" style="color: #6b7280; background: #f3f4f6; font-weight: 500; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-minus"></i> $0.00</span>`;
+            }
+
+            const sourceBadge = sourceLabel
+                ? `<span style="background: #fef3c7; color: #92400e; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-utensils"></i> ${sourceLabel}</span>`
+                : `<span style="background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-cube"></i> Ingredient</span>`;
+
+            rows.push(`
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">
+                        ${ingName}
+                    </td>
+                    <td style="padding: 10px 14px;">
+                        ${sourceBadge}
+                    </td>
+                    <td style="padding: 10px 14px; color: #475569; font-weight: 500;">
+                        $${oldPrice.toFixed(2)}
+                    </td>
+                    <td style="padding: 10px 14px; color: #1e293b; font-weight: 600;">
+                        $${currentPrice.toFixed(2)}
+                    </td>
+                    <td style="padding: 10px 14px;">
+                        ${trendHtml}
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    if (rows.length === 0) {
+        $('#costBreakdownEmptyMsg').show();
+    } else {
+        $tbody.html(rows.join(''));
+        $('#costBreakdownEmptyMsg').hide();
+    }
+
+    openModal('menuCostBreakdownModal');
+}
+
+window.showMenuCostBreakdown = showMenuCostBreakdown;

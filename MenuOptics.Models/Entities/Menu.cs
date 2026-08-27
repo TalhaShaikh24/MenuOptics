@@ -36,6 +36,10 @@ namespace MenuOptics.Models
         public string IngredientName { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
         public string Uom { get; set; } = string.Empty;
+
+        public string? Source { get; set; }
+        public decimal CurrentPrice { get; set; }
+        public decimal? OldPrice { get; set; }
     }
 
     public class MenuItemRecipe

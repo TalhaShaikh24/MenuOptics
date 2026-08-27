@@ -19,18 +19,19 @@ namespace MenuOptics.Controllers.API
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
         [HttpPost("CreateRecipe")]
         public async Task<IActionResult> CreateRecipe([FromForm] Recipe model, [FromForm] string ingredients)
         {
-            var responseData = await _recipeService.CreateRecipeAsync(model, ingredients, CurrentUserId);
+            var responseData = await _recipeService.CreateRecipeAsync(model, ingredients, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateRecipe")]
         public async Task<IActionResult> UpdateRecipe([FromForm] Recipe model, [FromForm] string ingredients)
         {
-            var responseData = await _recipeService.UpdateRecipeAsync(model, ingredients, CurrentUserId);
+            var responseData = await _recipeService.UpdateRecipeAsync(model, ingredients, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -51,7 +52,7 @@ namespace MenuOptics.Controllers.API
         [HttpPut("ToggleRecipeActive/{id}")]
         public async Task<IActionResult> ToggleRecipeActive(int id)
         {
-            var responseData = await _recipeService.ToggleRecipeActiveAsync(id, CurrentUserId);
+            var responseData = await _recipeService.ToggleRecipeActiveAsync(id, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

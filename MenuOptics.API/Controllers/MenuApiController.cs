@@ -17,13 +17,20 @@ namespace MenuOptics.Controllers.Api
         {
             _menuService = menuService;
         }
-
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
         [HttpPost("CreateMenuItem")]
         public async Task<IActionResult> CreateMenuItem([FromForm] Menu model, [FromForm] string ingredients, [FromForm] string recipes)
         {
-            var responseData = await _menuService.CreateMenuItemAsync(model, ingredients, recipes, CurrentUserId);
+            var responseData = await _menuService.CreateMenuItemAsync(model, ingredients, recipes, CurrentUserId, ActualUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
+        [HttpPut("UpdateMenuItem")]
+        public async Task<IActionResult> UpdateMenuItem([FromForm] Menu model, [FromForm] string ingredients, [FromForm] string recipes)
+        {
+            var responseData = await _menuService.UpdateMenuItemAsync(model, ingredients, recipes, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -48,17 +55,10 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-        [HttpPut("UpdateMenuItem")]
-        public async Task<IActionResult> UpdateMenuItem([FromForm] Menu model, [FromForm] string ingredients, [FromForm] string recipes)
-        {
-            var responseData = await _menuService.UpdateMenuItemAsync(model, ingredients, recipes, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
         [HttpPut("ToggleMenuActive/{id}")]
         public async Task<IActionResult> ToggleMenuActive(int id)
         {
-            var responseData = await _menuService.ToggleMenuActiveAsync(id, CurrentUserId);
+            var responseData = await _menuService.ToggleMenuActiveAsync(id, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

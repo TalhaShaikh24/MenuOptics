@@ -14,6 +14,7 @@
 let recipeTable;
 let ingredientsWithPrices = [];
 let recipeDescriptions = {}
+let cachedRecipes = [];
 
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
@@ -111,6 +112,8 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
             ingredientsWithPrices = activeIngredients.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
+                price: ing.price,
+                cost: ing.price,
                 Cost: ing.price,
                 unit: ing.unit, // Storage unit
                 size: ing.size, // Size
@@ -200,7 +203,7 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
                     <select name="ingredient_uom_${id}" required>
                         ${uomOptions}
                     </select>
-                    <input type="number" step="1" name="ingredient_quantity_${id}" value="${savedQuantity}" placeholder="Enter Wt / Qty" style="width:150px;" min="0">
+                    <input type="number" step="0.01" name="ingredient_quantity_${id}" value="${savedQuantity}" placeholder="Enter Wt / Qty" style="width:150px;" min="0">
                     
                     <span class="ingredient-price" style="min-width:100px;">Cost: $0.00</span>
                 </div>
@@ -239,8 +242,12 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
         // Convert the quantity entered in the user-selected UOM back to the
         // ingredient's stored unit (pricing is per stored unit).
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-        const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
-        const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
+        const rawPrice = parseFloat(ingredientData.price ?? ingredientData.cost ?? ingredientData.Cost) || 0;
+        const packDivisor = (ingredientData.packSize != null && parseFloat(ingredientData.size) > 0) ? parseFloat(ingredientData.size) : 1;
+        const pricePerUnit = rawPrice / packDivisor;
+        const convertedQuantity = (typeof convertUnit === 'function')
+            ? convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size)
+            : quantity;
         const price = (pricePerUnit * convertedQuantity).toFixed(2);
         row.find('.ingredient-price').text(`Cost: $${price}`);
     } else {
@@ -460,8 +467,8 @@ function refreshRecipesTable() {
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-            const recipes = response.data;
-            debugger
+            const recipes = response.data || [];
+            cachedRecipes = recipes;
             $('#totalRecipes').text(recipes.length);
 
             recipeTable.clear();
@@ -477,7 +484,6 @@ function refreshRecipesTable() {
                 const cls = item.isActive ? 'good' : 'critical';
                 const lbl = item.isActive ? 'Active' : 'In Active';
                 const cost = item.cost;
-                debugger
                 const currentCost = item.currentCost;
 
                 const row = `
@@ -496,20 +502,21 @@ function refreshRecipesTable() {
                                 cost == currentCost
                                     ? `
                                   <span>
-                                    ${currentCost}
+                                    $${Number(currentCost).toFixed(2)}
                                     <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
                                   </span>
                                 `
                                                     : `
-                                  <span class="text-highlight danger">
-                                    ${cost}
-                                    <span class="tooltip-icon danger" data-tooltip="Cost at the time this recipe was created/updated">i</span>
-                                  </span>
-                                    <br>
-                                  <span class="text-highlight success">
-                                    ${currentCost}
-                                    <span class="tooltip-icon success" data-tooltip="Current cost">i</span>
-                                  </span>
+                                  <div onclick="showRecipeCostBreakdown(${item.recipeId})" style="cursor:pointer;" title="Click to view ingredient cost breakdown">
+                                      <span class="text-highlight danger">
+                                        $${Number(cost).toFixed(2)}
+                                      </span>
+                                      <br>
+                                      <span class="text-highlight success">
+                                        $${Number(currentCost).toFixed(2)}
+                                        <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i>
+                                      </span>
+                                  </div>
                                 `
                             }
                         </td>
@@ -750,4 +757,69 @@ function sanitizePdfFileName(value) {
 function wrapPdfText(value) {
     return (value || '').toString().replace(/([^\s]{45})(?=[^\s])/g, '$1\u200B');
 }
+
+// Show recipe cost breakdown modal (uses data already received in GetAllRecipes)
+function showRecipeCostBreakdown(recipeId) {
+    const $tbody = $('#recipeCostBreakdownTableBody');
+    $tbody.empty();
+    $('#recipeCostBreakdownEmptyMsg').hide();
+
+    const recipe = cachedRecipes.find(r => r.recipeId == recipeId);
+    if (!recipe) {
+        return;
+    }
+
+    $('#recipeCostBreakdownName').text(recipe.name || 'Recipe');
+    $('#recipeCostBreakdownUnit').text(recipe.unit ? `Unit: ${recipe.unit}` : '');
+
+    const rows = [];
+    const ingredients = recipe.ingredients || [];
+
+    if (ingredients.length > 0) {
+        ingredients.forEach(ing => {
+            const ingName = ing.ingredientName || (ing.name || `Ingredient #${ing.ingredientId}`);
+
+            const oldPrice = ing.oldPrice != null ? parseFloat(ing.oldPrice) : (parseFloat(ing.currentPrice) || 0);
+            const currentPrice = ing.currentPrice != null ? parseFloat(ing.currentPrice) : oldPrice;
+
+            const diff = currentPrice - oldPrice;
+            let trendHtml = '';
+            if (diff > 0.005) {
+                trendHtml = `<span class="trend-badge up" style="color: #dc2626; background: #fee2e2; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-arrow-up"></i> +$${diff.toFixed(2)}</span>`;
+            } else if (diff < -0.005) {
+                trendHtml = `<span class="trend-badge down" style="color: #16a34a; background: #dcfce7; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-arrow-down"></i> -$${Math.abs(diff).toFixed(2)}</span>`;
+            } else {
+                trendHtml = `<span class="trend-badge neutral" style="color: #6b7280; background: #f3f4f6; font-weight: 500; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-minus"></i> $0.00</span>`;
+            }
+
+            rows.push(`
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">
+                        ${ingName}
+                    </td>
+                    <td style="padding: 10px 14px; color: #475569; font-weight: 500;">
+                        $${oldPrice.toFixed(2)}
+                    </td>
+                    <td style="padding: 10px 14px; color: #1e293b; font-weight: 600;">
+                        $${currentPrice.toFixed(2)}
+                    </td>
+                    <td style="padding: 10px 14px;">
+                        ${trendHtml}
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    if (rows.length === 0) {
+        $('#recipeCostBreakdownEmptyMsg').show();
+    } else {
+        $tbody.html(rows.join(''));
+        $('#recipeCostBreakdownEmptyMsg').hide();
+    }
+
+    openModal('recipeCostBreakdownModal');
+}
+
+window.showRecipeCostBreakdown = showRecipeCostBreakdown;
 

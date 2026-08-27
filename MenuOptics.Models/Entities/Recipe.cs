@@ -27,5 +27,8 @@ namespace MenuOptics.Models
         public string Unit { get; set; } = string.Empty;
         public string Uom { get; set; } = string.Empty;
         public string IngredientName { get; set; } = string.Empty;
+
+        public decimal CurrentPrice { get; set; }
+        public decimal? OldPrice { get; set; }
     }
 }

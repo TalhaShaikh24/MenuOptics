@@ -6,8 +6,8 @@ namespace MenuOptics.Services
     {
         Task<ResponseDto> GetAllPrivateVendorsAsync(int restaurantId);
         Task<ResponseDto> GetPrivateVendorAsync(int id, int restaurantId);
-        Task<ResponseDto> CreatePrivateVendorAsync(PrivateVendor model, int currentUserId);
-        Task<ResponseDto> UpdatePrivateVendorAsync(PrivateVendor model, int currentUserId);
-        Task<ResponseDto> TogglePrivateVendorActiveAsync(int id, int currentUserId);
+        Task<ResponseDto> CreatePrivateVendorAsync(PrivateVendor model, int currentUserId, int actualUserId);
+        Task<ResponseDto> UpdatePrivateVendorAsync(PrivateVendor model, int currentUserId, int ActualUserId);
+        Task<ResponseDto> TogglePrivateVendorActiveAsync(int id, int currentUserId, int actualUserId);
     }
 }

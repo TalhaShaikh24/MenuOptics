@@ -23,8 +23,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-        private int CurrentUserIdOrDefault => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
+        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
         private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
 
@@ -42,7 +41,7 @@ namespace MenuOptics.Controllers.Api
                 });
             }
 
-            var (statusCode, body) = await _ingredientService.CreateIngredientAsync(model, CurrentUserId);
+            var (statusCode, body) = await _ingredientService.CreateIngredientAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(statusCode, body);
         }
 
@@ -59,10 +58,18 @@ namespace MenuOptics.Controllers.Api
                 });
             }
 
-            var (statusCode, body) = await _ingredientService.AddIngredientStockAsync(model, CurrentUserId);
+            var (statusCode, body) = await _ingredientService.AddIngredientStockAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(statusCode, body);
         }
 
+
+        [HttpPut("UpdateIngredient")]
+        public async Task<IActionResult> UpdateIngredient([FromBody] Ingredient model)
+        {
+            var (statusCode, body) = await _ingredientService.UpdateIngredientAsync(model, CurrentUserId, ActualUserId);
+            return StatusCode(statusCode, body);
+        }
+        
         [HttpGet("GetIngredient/{id}")]
         public async Task<IActionResult> GetIngredient(int id)
         {
@@ -73,14 +80,14 @@ namespace MenuOptics.Controllers.Api
         [HttpGet("GetAllActiveIngredientsByUserId")]
         public async Task<IActionResult> GetAllActiveIngredientsByUserId()
         {
-            var (statusCode, body) = await _ingredientService.GetAllActiveIngredientsByUserIdAsync(Request.Query, CurrentUserIdOrDefault);
+            var (statusCode, body) = await _ingredientService.GetAllActiveIngredientsByUserIdAsync(Request.Query, CurrentUserId);
             return StatusCode(statusCode, body);
         }
 
         [HttpGet("GetAllActiveInactiveIngredients")]
         public async Task<IActionResult> GetAllActiveInactiveIngredients()
         {
-            var (statusCode, body) = await _ingredientService.GetAllActiveInactiveIngredientsAsync(Request.Query, CurrentUserIdOrDefault);
+            var (statusCode, body) = await _ingredientService.GetAllActiveInactiveIngredientsAsync(Request.Query, CurrentUserId);
             return StatusCode(statusCode, body);
         }
 
@@ -99,17 +106,10 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(statusCode, body);
         }
 
-        [HttpPut("UpdateIngredient")]
-        public async Task<IActionResult> UpdateIngredient([FromBody] Ingredient model)
-        {
-            var (statusCode, body) = await _ingredientService.UpdateIngredientAsync(model, CurrentUserId);
-            return StatusCode(statusCode, body);
-        }
-
         [HttpPut("ToggleIngredientActive/{id}")]
         public async Task<IActionResult> ToggleIngredientActive(int id)
         {
-            var (statusCode, body) = await _ingredientService.ToggleIngredientActiveAsync(id, CurrentUserId);
+            var (statusCode, body) = await _ingredientService.ToggleIngredientActiveAsync(id, CurrentUserId, ActualUserId);
             return StatusCode(statusCode, body);
         }
 

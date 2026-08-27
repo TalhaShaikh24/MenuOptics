@@ -26,7 +26,7 @@ namespace MenuOptics.Services
             _activityLog = activityLog;
         }
 
-        public async Task<(int StatusCode, object Body)> CreateIngredientAsync(Ingredient model, int currentUserId)
+        public async Task<(int StatusCode, object Body)> CreateIngredientAsync(Ingredient model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
 
@@ -57,7 +57,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@PrivateVendorId", model.PrivateVendorId);
-                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
 
                 int ingredientId = await connection.ExecuteScalarAsync<int>(
@@ -72,7 +72,7 @@ namespace MenuOptics.Services
                     parameters2.Add("@IngredientId", ingredientId);
                     parameters2.Add("@Stock", model.Stock);
                     parameters2.Add("@Price", (model.Stock * model.Price));
-                    parameters2.Add("@CreatedBy", currentUserId);
+                    parameters2.Add("@CreatedBy", actualUserId);
                     parameters2.Add("@Action", "INSERT");
                 }
 
@@ -94,7 +94,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> AddIngredientStockAsync(Inventory model, int currentUserId)
+        public async Task<(int StatusCode, object Body)> AddIngredientStockAsync(Inventory model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
 
@@ -126,7 +126,7 @@ namespace MenuOptics.Services
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@Stock", model.Stock);
                 parameters.Add("@Price", (model.Stock * ingredient.Price));
-                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
 
                 int inventoryId = await connection.ExecuteScalarAsync<int>(
@@ -144,6 +144,59 @@ namespace MenuOptics.Services
                 ResponseDto.Status = 500;
                 ResponseDto.ResponseMsg = $"{ex.Message}";
                 return (500, ResponseDto);
+            }
+        }
+
+        public async Task<(int StatusCode, object Body)> UpdateIngredientAsync(Ingredient model, int currentUserId, int actualUserId)
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                if (currentUserId == 0)
+                {
+                    ResponseDto.Status = 401;
+                    ResponseDto.ResponseMsg = "Unauthorized";
+                    return (401, ResponseDto);
+                }
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@IngredientId", model.IngredientId);
+                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@Name", model.Name);
+                parameters.Add("@Price", model.Price);
+                parameters.Add("@Unit", model.Unit.ToLower());
+                parameters.Add("@Size", model.Size);
+                parameters.Add("@PackSize", model.PackSize);
+                parameters.Add("@ModifiedBy", actualUserId);
+                parameters.Add("@IsActive", 1);
+                parameters.Add("@Action", "UPDATE");
+
+                await connection.QueryFirstOrDefaultAsync<int>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = "Ingredient updated successfully.";
+                ResponseDto.Data = new { IngredientId = model.IngredientId };
+                return (200, ResponseDto);
+            }
+            catch (SqlException sqlEx)
+            {
+                // SQL Server specific exceptions
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = $"Expection: {sqlEx.Message}";
+                return (500, ResponseDto);
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = $"{ex.Message}";
+                return (500, ResponseDto);
+            }
+            finally
+            {
+                connection.Close();
             }
         }
 
@@ -435,60 +488,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> UpdateIngredientAsync(Ingredient model, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-
-            try
-            {
-                if (currentUserId == 0)
-                {
-                    ResponseDto.Status = 401;
-                    ResponseDto.ResponseMsg = "Unauthorized";
-                    return (401, ResponseDto);
-                }
-
-                var parameters = new DynamicParameters();
-                parameters.Add("@IngredientId", model.IngredientId);
-                parameters.Add("@UserId", currentUserId); 
-                parameters.Add("@Name", model.Name);
-                parameters.Add("@Price", model.Price);
-                parameters.Add("@Unit", model.Unit.ToLower());
-                parameters.Add("@Size", model.Size);
-                parameters.Add("@PackSize", model.PackSize);
-                parameters.Add("@ModifiedBy", currentUserId); 
-                parameters.Add("@IsActive", 1); 
-                parameters.Add("@Action", "UPDATE");
-
-                await connection.QueryFirstOrDefaultAsync<int>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Ingredient updated successfully.";
-                ResponseDto.Data = new { IngredientId = model.IngredientId };
-                return (200, ResponseDto);
-            }
-            catch (SqlException sqlEx)
-            {
-                // SQL Server specific exceptions
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Expection: {sqlEx.Message}";
-                return (500, ResponseDto);
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return (500, ResponseDto);
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
-        public async Task<(int StatusCode, object Body)> ToggleIngredientActiveAsync(int id, int currentUserId)
+        public async Task<(int StatusCode, object Body)> ToggleIngredientActiveAsync(int id, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -496,30 +496,22 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
-                parameters.Add("@IngredientId", id);
-                parameters.Add("@Action", "SELECT");
-
-                var ingredient = await connection.QueryFirstOrDefaultAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                if (ingredient == null)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Ingredient not found.";
-                    return (404, ResponseDto);
-                }
+                
 
                 parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", id);
-                parameters.Add("@Userid", currentUserId);
-                parameters.Add("@IsActive", !ingredient.IsActive);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
-                await connection.ExecuteAsync("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var result = await connection.QueryFirstAsync("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = $"Ingredient {(ingredient.IsActive ? "deactivated" : "activated")} successfully.";
-                ResponseDto.Data = new { IngredientId = id, IsActive = !ingredient.IsActive };
+                ResponseDto.ResponseMsg = $"Ingredient {(result.IsActive ? "activated" : "deactivated")} successfully.";
+                ResponseDto.Data = new 
+                { 
+                    IngredientId = id, 
+                    IsActive = result.isActive 
+                };
                 return (200, ResponseDto);
             }
             catch (SqlException sqlEx)
@@ -546,8 +538,6 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
-       
 
         /// <summary>
         /// Parses the standard DataTables paging/sorting parameters from the query string.

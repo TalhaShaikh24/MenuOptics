@@ -82,7 +82,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreateCategoryAsync(Category model, int currentUserId)
+        public async Task<ResponseDto> CreateCategoryAsync(Category model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -91,7 +91,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
 
                 int categoryId = await connection.ExecuteScalarAsync<int>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -113,7 +113,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateCategoryAsync(Category model, int currentUserId)
+        public async Task<ResponseDto> UpdateCategoryAsync(Category model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -123,7 +123,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@CategoryId", model.CategoryId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Action", "UPDATE");
 
@@ -146,7 +146,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> ToggleCategoryActiveAsync(int id, int currentUserId)
+        public async Task<ResponseDto> ToggleCategoryActiveAsync(int id, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -154,30 +154,17 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
-                parameters.Add("@CategoryId", id);
-                parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@Action", "SELECT_BY_ID");
-
-                var category = await connection.QueryFirstOrDefaultAsync<Category>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                if (category == null)
-                {
-                    ResponseDto.Status = 404;
-                    ResponseDto.ResponseMsg = "Category not found.";
-                    return ResponseDto;
-                }
 
                 parameters = new DynamicParameters();
                 parameters.Add("@CategoryId", id);
-                parameters.Add("@IsActive", !category.IsActive);
-                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
-                await connection.ExecuteAsync("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var result = await connection.QueryFirstAsync("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = $"Category {(category.IsActive ? "deactivated" : "activated")} successfully.";
-                ResponseDto.Data = new { CategoryId = id, IsActive = !category.IsActive };
+                ResponseDto.ResponseMsg = $"Category {(result.IsActive ? "activated" : "deactivated")} successfully.";
+                ResponseDto.Data = new { CategoryId = id, IsActive = result.IsActive };
                 return ResponseDto;
             }
             catch (Exception ex)
