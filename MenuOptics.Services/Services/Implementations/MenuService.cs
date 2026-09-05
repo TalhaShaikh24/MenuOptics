@@ -43,7 +43,7 @@ namespace MenuOptics.Services
                 }
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@CategoryId", model.CategoryId);
@@ -132,7 +132,6 @@ namespace MenuOptics.Services
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@MenuItemId", model.MenuItemId);
-                parameters.Add("@UserId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@CategoryId", model.CategoryId);
@@ -142,8 +141,6 @@ namespace MenuOptics.Services
                 parameters.Add("@IsAvailable", model.IsAvailable);
                 parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@IsActive", true);
-                parameters.Add("@IngredientsJson", ingredients);
-                parameters.Add("@RecipesJson", recipes);
                 parameters.Add("@Action", "UPDATE");
 
                 int affectedRows = await connection.ExecuteAsync("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -160,11 +157,6 @@ namespace MenuOptics.Services
                 deleteParams.Add("@Action", "DELETE_ALL");
                 await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", deleteParams, commandType: CommandType.StoredProcedure);
 
-                var deleteRecipeParams = new DynamicParameters();
-                deleteRecipeParams.Add("@MenuItemId", model.MenuItemId);
-                deleteRecipeParams.Add("@Action", "DELETE_ALL");
-                await connection.ExecuteAsync("sp_MenuItemRecipesCRUD", deleteRecipeParams, commandType: CommandType.StoredProcedure);
-
                 if (model.Ingredients != null && model.Ingredients.Any())
                 {
                     foreach (var ingredient in model.Ingredients)
@@ -178,6 +170,11 @@ namespace MenuOptics.Services
                         await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);
                     }
                 }
+
+                var deleteRecipeParams = new DynamicParameters();
+                deleteRecipeParams.Add("@MenuItemId", model.MenuItemId);
+                deleteRecipeParams.Add("@Action", "DELETE_ALL");
+                await connection.ExecuteAsync("sp_MenuItemRecipesCRUD", deleteRecipeParams, commandType: CommandType.StoredProcedure);
 
                 if (model.Recipes != null && model.Recipes.Any())
                 {
@@ -260,45 +257,7 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-        public async Task<ResponseDto> GetAllMenuItemsByAdminAsync()
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Action", "SELECT_ALL_ADMIN");
-
-                var menuItems = await connection.QueryAsync<Menu, string, Menu>(
-                    "sp_MenuCRUD",
-                    (menu, ingredientsJson) =>
-                    {
-                        menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
-                            : new List<MenuItemIngredient>();
-                        return menu;
-                    },
-                    parameters,
-                    splitOn: "Ingredients",
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Menu items retrieved successfully.";
-                ResponseDto.Data = menuItems;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
+        
         public async Task<ResponseDto> GetAllMenuItemsAsync(bool? isActive, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
@@ -307,7 +266,7 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@IsActive", isActive);
                 parameters.Add("@Action", "SELECT_ALL");
 

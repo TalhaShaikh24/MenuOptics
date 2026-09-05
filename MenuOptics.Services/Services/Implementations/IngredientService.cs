@@ -50,7 +50,7 @@ namespace MenuOptics.Services
                 connection.Open();
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToLower());
@@ -68,7 +68,6 @@ namespace MenuOptics.Services
                 if (ingredientId > 0 && model.Stock != 0)
                 {
                     parameters2.Add("@RestaurantId", currentUserId);
-                    parameters2.Add("@VendorId", null);
                     parameters2.Add("@IngredientId", ingredientId);
                     parameters2.Add("@Stock", model.Stock);
                     parameters2.Add("@Price", (model.Stock * model.Price));
@@ -122,7 +121,6 @@ namespace MenuOptics.Services
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@VendorId", null);
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@Stock", model.Stock);
                 parameters.Add("@Price", (model.Stock * ingredient.Price));
@@ -164,7 +162,7 @@ namespace MenuOptics.Services
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToLower());
@@ -251,7 +249,7 @@ namespace MenuOptics.Services
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@RestaurantId", currentUserId);
                     parameters.Add("@IsActive", 1);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageNumber", pageNumber);
@@ -278,7 +276,7 @@ namespace MenuOptics.Services
                 {
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@RestaurantId", currentUserId);
                     parameters.Add("@IsActive", 1);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
@@ -314,7 +312,7 @@ namespace MenuOptics.Services
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@RestaurantId", currentUserId);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
@@ -340,7 +338,7 @@ namespace MenuOptics.Services
                 {
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@RestaurantId", currentUserId);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
@@ -374,7 +372,7 @@ namespace MenuOptics.Services
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@RestaurantId", currentUserId);
                     if (isPrivate)
                         parameters.Add("@PrivateVendorId", vendorId);
                     else
@@ -404,7 +402,7 @@ namespace MenuOptics.Services
                 {
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", currentUserId);
+                    parameters.Add("@RestaurantId", currentUserId);
                     parameters.Add("@VendorId", vendorId);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
@@ -440,7 +438,7 @@ namespace MenuOptics.Services
                     int pageNumber = (dt.Start / dt.Length) + 1;
 
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", userId);
+                    parameters.Add("@RestaurantId", userId);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageNumber", pageNumber);
                     parameters.Add("@PageSize", dt.Length);
@@ -466,7 +464,7 @@ namespace MenuOptics.Services
                 {
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
-                    parameters.Add("@UserId", userId);
+                    parameters.Add("@RestaurantId", userId);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
@@ -499,7 +497,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 
                 parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@IngredientId", id);
                 parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");

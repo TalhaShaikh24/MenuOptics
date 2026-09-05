@@ -29,7 +29,7 @@ $(document).ready(function () {
     // Event handlers
     $('#saveRecipeBtn').on('click', function () {
         const recipeData = getRecipeFormData('#addRecipeForm', '#ingredientsDetails');
-        if (validateRecipeData(recipeData)) {
+        if (validateRecipeData(recipeData) && isFormValid("#addRecipeForm")) {
             addRecipe(recipeData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -39,7 +39,7 @@ $(document).ready(function () {
     $('#updateRecipeBtn').on('click', function () {
         const recipeData = getRecipeFormData('#editRecipeForm', '#editIngredientsDetails');
         recipeData.append('recipeId', $('#editRecipeId').val());
-        if (validateRecipeData(recipeData)) {
+        if (validateRecipeData(recipeData) && isFormValid("#editRecipeForm")) {
             updateRecipe(recipeData);
         } else {
             showNotification('Please fill in all required fields.', 'error');

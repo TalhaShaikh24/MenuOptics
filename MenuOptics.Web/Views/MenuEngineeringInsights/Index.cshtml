@@ -1,49 +1,354 @@
-﻿@{
+@{
     ViewData["Title"] = "Menu Engineering";
 }
-
 
 <link href="~/css/customrangefilter.css" rel="stylesheet" />
 
 <style>
     .btn {
-        padding: 10px 16px!important;
-        border-radius: 8px!important;
-        font-size: 14px!important;
-        font-weight: 500!important;
-        cursor: pointer!important;
-        transition: all 0.2s ease!important;
-        display: inline-flex!important;
-        align-items: center!important;
-        gap: 8px!important;
-        text-decoration: none!important;
-        border: none!important;
+        padding: 10px 16px !important;
+        border-radius: 8px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        text-decoration: none !important;
+        border: none !important;
     }
+
     .btn-primary {
-        background: #f08d11!important;
-        color: white!important;
-        border: 1px solid #f08d11!important;
+        background: #f08d11 !important;
+        color: white !important;
+        border: 1px solid #f08d11 !important;
     }
 
     .btn-outline {
-        background: transparent!important;
-        color: #374151!important;
-        border: 1px solid #d1d5db!important;
+        background: transparent !important;
+        color: #374151 !important;
+        border: 1px solid #d1d5db !important;
+    }
+
+    /* AI Button & Modal Centering */
+    .btn-ai-gradient {
+        background: linear-gradient(135deg, #f08d11 0%, #d97706 50%, #9333ea 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 14px rgba(147, 51, 234, 0.25) !important;
+        border: none !important;
+        font-weight: 600 !important;
+    }
+
+    .btn-ai-gradient:hover {
+        opacity: 0.95;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(147, 51, 234, 0.35) !important;
+    }
+
+    /* STRICT MODAL CENTERING */
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 9999;
+        overflow-y: auto;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    .modal.show {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .ai-modal-lg .modal-content {
+        max-width: 1050px;
+        width: 100%;
+        max-height: 90vh;
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        margin: auto !important;
+        overflow: hidden;
+        padding: 0;
+    }
+
+    .ai-modal-header {
+        background: #ffffff;
+        padding: 16px 24px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .ai-modal-body {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        background: #f9fafb;
+    }
+
+    .ai-modal-footer {
+        background: #ffffff;
+        padding: 14px 24px;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    /* Badges & Grids */
+    .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #ede9fe;
+        color: #6d28d9;
+    }
+
+    .badge-pill {
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .badge-pill.danger {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .badge-pill.success {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .quadrant-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .quadrant-tag.star { background: #fef3c7; color: #b45309; }
+    .quadrant-tag.plowhorse { background: #e0f2fe; color: #0369a1; }
+    .quadrant-tag.puzzle { background: #f3e8ff; color: #7e22ce; }
+    .quadrant-tag.dog { background: #fee2e2; color: #b91c1c; }
+
+    .ai-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .ai-summary-card {
+        background: white;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .ai-summary-card .label {
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+
+    .ai-summary-card .value {
+        font-size: 22px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .ai-summary-card .sub {
+        font-size: 12px;
+        color: #059669;
+        margin-top: 4px;
+    }
+
+    .ai-quadrant-cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .ai-q-card {
+        background: white;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        text-align: center;
+    }
+
+    .ai-q-card .q-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 4px;
+    }
+
+    .ai-q-card .q-count {
+        font-size: 16px;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .ai-q-card .q-rev {
+        font-size: 11px;
+        color: #6b7280;
+    }
+
+    .ai-section-box {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 18px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .ai-section-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .ai-section-title i {
+        color: #f08d11;
+        margin-right: 8px;
+    }
+
+    .removal-alert-banner {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-left: 4px solid #ef4444;
+        padding: 10px 14px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        color: #991b1b;
+    }
+
+    .ai-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .ai-table th {
+        background: #f3f4f6;
+        padding: 9px 12px;
+        text-align: left;
+        color: #374151;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .ai-table td {
+        padding: 9px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        color: #4b5563;
+        vertical-align: middle;
+    }
+
+    .ai-table tr:hover td {
+        background: #faf5ff;
+    }
+
+    .ai-action-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .timeline-item {
+        background: #f9fafb;
+        border-left: 4px solid #f08d11;
+        padding: 12px 14px;
+        border-radius: 0 8px 8px 0;
+    }
+
+    .timeline-item.short {
+        border-left-color: #3b82f6;
+    }
+
+    .timeline-item.medium {
+        border-left-color: #10b981;
+    }
+
+    .timeline-header {
+        font-weight: 600;
+        font-size: 13px;
+        color: #111827;
+        margin-bottom: 3px;
+    }
+
+    .timeline-desc {
+        font-size: 12px;
+        color: #4b5563;
+        margin-bottom: 3px;
+    }
+
+    .timeline-impact {
+        font-size: 12px;
+        color: #059669;
+        font-weight: 500;
+    }
+
+    .ai-loading-container {
+        display: none;
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .ai-spinner {
+        font-size: 40px;
+        color: #9333ea;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
+    }
+
+    @@keyframes spin {
+        100% { transform: rotate(360deg); }
     }
 </style>
-
 
 <div class="page-header">
     <div class="header-text">
         <h1>Menu Engineering Insights</h1>
-        <p>Analyze menu item performance, profitability, and popularity.</p>
+        <p>Analyze menu item performance, profitability, popularity, and AI-driven recommendations.</p>
     </div>
-    <div class="header-actions" id="exportButtons">
-       
+    <div class="header-actions" style="display: flex; align-items: center; gap: 10px;">
+        <button id="btnOpenAiInsightsModal" class="btn btn-ai-gradient">
+            <i class="fas fa-magic"></i> AI Menu Analysis
+        </button>
+        <div id="exportButtons" style="display: inline-flex; gap: 8px;"></div>
     </div>
 </div>
-
-
 
 <!-- Filters -->
 <div class="filters">
@@ -55,7 +360,6 @@
     <button class="btn btn-outline quadrant-filter" data-quadrant="Plowhorse"><span class="quadrant-icon tooltip-icon" data-tooltip="High Popularity + Low Profitability"><i class="fas fa-horse"></i> Plowhorse</span></button>
     <button class="btn btn-outline quadrant-filter" data-quadrant="Puzzle"><span class="quadrant-icon tooltip-icon" data-tooltip="Low Popularity + High Profitability"><i class="fas fa-puzzle-piece"></i> Puzzle</span></button>
     <button class="btn btn-outline quadrant-filter" data-quadrant="Dog"><span class="quadrant-icon tooltip-icon" data-tooltip="Low Popularity + Low Profitability"><i class="fas fa-dog"></i> Dog</span></button>
-    @* <button class="btn btn-outline" id="high-profit-filter"><i class="fas fa-dollar-sign"></i> High Profit Only</button> *@
     <button class="btn btn-outline" id="clear-filter"><i class="fas fa-times"></i> Clear Filters</button>
     
     <div id="dateRange" style="margin-left:auto"></div>
@@ -90,8 +394,203 @@
     </div>
 </div>
 
+<!-- FULL MENU AI STRATEGY REPORT MODAL (Strict Center Aligned) -->
+<div class="modal ai-modal-lg" id="aiInsightsModal" style="display: none;">
+    <div class="modal-content">
+        <div class="ai-modal-header">
+            <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 18px; color: #111827; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-brain" style="color: #9333ea;"></i> AI Menu Engineering Strategy Report
+                </h3>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <span class="ai-badge" id="aiModalModelBadge"><i class="fas fa-microchip"></i> Analyzing...</span>
+                    <span class="ai-badge" id="aiLocationBadge" style="background: #fee2e2; color: #b91c1c;"><i class="fas fa-map-marker-alt"></i> Location</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn btn-primary" id="btnDownloadAiPdfModal">
+                    <i class="fas fa-file-pdf"></i> Download PDF Report
+                </button>
+                <button class="modal-close" onclick="closeCenteredModal('aiInsightsModal')">&times;</button>
+            </div>
+        </div>
+
+        <div class="ai-modal-body">
+            <div id="aiLoadingIndicator" class="ai-loading-container">
+                <i class="fas fa-spinner ai-spinner"></i>
+                <h4 style="margin: 0 0 6px 0; color: #111827;">Generating Deep Menu Intelligence...</h4>
+                <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                    Analyzing food costs, popularity distribution, margin opportunities, and deprecation candidates.
+                </p>
+            </div>
+
+            <div id="aiReportContainer" style="display: none;">
+                <!-- Summary Metric Cards -->
+                <div class="ai-summary-grid">
+                    <div class="ai-summary-card">
+                        <span class="label">Menu Health Score</span>
+                        <span class="value" id="aiHealthScore">--</span>
+                        <span class="sub">Benchmark target: 80+</span>
+                    </div>
+                    <div class="ai-summary-card">
+                        <span class="label">Est. Monthly Profit Uplift</span>
+                        <span class="value" id="aiProfitUplift" style="color: #059669;">--</span>
+                        <span class="sub">From price & cost tuning</span>
+                    </div>
+                    <div class="ai-summary-card">
+                        <span class="label">Average Food Cost %</span>
+                        <span class="value" id="aiAvgFoodCost">--</span>
+                        <span class="sub">Industry target: 28-32%</span>
+                    </div>
+                    <div class="ai-summary-card">
+                        <span class="label">Analyzed Items</span>
+                        <span class="value" id="aiAnalyzedCount">--</span>
+                        <span class="sub" id="aiDateRangeBadge">Last 30 Days</span>
+                    </div>
+                </div>
+
+                <!-- Quadrant Overview Mini Cards -->
+                <div class="ai-quadrant-cards">
+                    <div class="ai-q-card">
+                        <div class="q-title" style="color:#b45309;"><i class="fas fa-star"></i> Stars</div>
+                        <div class="q-count" id="qStarCount">--</div>
+                        <div class="q-rev" id="qStarRev">--</div>
+                    </div>
+                    <div class="ai-q-card">
+                        <div class="q-title" style="color:#0369a1;"><i class="fas fa-horse"></i> Plowhorses</div>
+                        <div class="q-count" id="qPlowCount">--</div>
+                        <div class="q-rev" id="qPlowRev">--</div>
+                    </div>
+                    <div class="ai-q-card">
+                        <div class="q-title" style="color:#7e22ce;"><i class="fas fa-puzzle-piece"></i> Puzzles</div>
+                        <div class="q-count" id="qPuzzleCount">--</div>
+                        <div class="q-rev" id="qPuzzleRev">--</div>
+                    </div>
+                    <div class="ai-q-card">
+                        <div class="q-title" style="color:#b91c1c;"><i class="fas fa-dog"></i> Dogs</div>
+                        <div class="q-count" id="qDogCount">--</div>
+                        <div class="q-rev" id="qDogRev">--</div>
+                    </div>
+                </div>
+
+                <!-- Local Competitor & Market Intelligence Box -->
+                <div class="ai-section-box" style="border-left: 4px solid #9333ea; background: #faf5ff;">
+                    <div class="ai-section-title" style="margin-bottom: 6px;">
+                        <span><i class="fas fa-store-alt" style="color: #9333ea;"></i> Local Area Competitor & Market Positioning</span>
+                        <span class="ai-badge" style="background:#ede9fe; color:#6d28d9;">Geographic Intelligence</span>
+                    </div>
+                    <p id="aiCompetitorOverview" style="font-size: 13px; color: #374151; line-height: 1.4; margin: 0;"></p>
+                </div>
+
+                <!-- Executive Assessment -->
+                <div class="ai-section-box">
+                    <div class="ai-section-title">
+                        <span><i class="fas fa-clipboard-check"></i> Strategic Executive Assessment</span>
+                    </div>
+                    <p id="aiExecutiveTakeaway" style="font-size: 14px; font-weight: 600; color: #1f2937; margin: 0 0 10px 0;"></p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 12px; border-radius: 8px;">
+                            <strong style="color: #166534;"><i class="fas fa-thumbs-up"></i> Top Strength:</strong>
+                            <span id="aiTopStrength" style="color: #14532d; display: block; margin-top: 2px;">--</span>
+                        </div>
+                        <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 10px 12px; border-radius: 8px;">
+                            <strong style="color: #92400e;"><i class="fas fa-exclamation-triangle"></i> Key Risk Area:</strong>
+                            <span id="aiCriticalRisk" style="color: #78350f; display: block; margin-top: 2px;">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom 10% Removal Table -->
+                <div class="ai-section-box">
+                    <div class="ai-section-title">
+                        <span><i class="fas fa-trash-alt" style="color: #ef4444;"></i> Recommended Menu Retirements (Max 10% Constraint)</span>
+                        <span class="ai-badge" style="background: #fee2e2; color: #b91c1c;">Capped at &le; 10% of total items</span>
+                    </div>
+                    <div class="removal-alert-banner">
+                        <i class="fas fa-info-circle"></i> Retiring low-performing items frees kitchen prep time, reduces spoilage waste, and focuses guest attention on profitable Star items.
+                    </div>
+                    <div class="table-container">
+                        <table class="ai-table" id="aiRemovalTable">
+                            <thead>
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th>Price</th>
+                                    <th>Cost (FC %)</th>
+                                    <th>Units Sold</th>
+                                    <th>Quadrant</th>
+                                    <th>Deprecation Rationale & Action</th>
+                                    <th>Est. Waste Savings</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Title & Naming Enhancements Table (Only if needed) -->
+                <div class="ai-section-box" id="aiTitleImprovementSection" style="display:none;">
+                    <div class="ai-section-title">
+                        <span><i class="fas fa-pen-nib" style="color: #8b5cf6;"></i> Strategic Menu Title & Naming Enhancements</span>
+                        <span class="ai-badge" style="background:#f3e8ff; color:#7e22ce;">Competitor & Perception Optimization</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="ai-table" id="aiTitleTable">
+                            <thead>
+                                <tr>
+                                    <th>Current Item Title</th>
+                                    <th>Suggested High-Converting Title</th>
+                                    <th>Strategic Competitor & Appetite Rationale</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pricing Optimization Table -->
+                <div class="ai-section-box">
+                    <div class="ai-section-title">
+                        <span><i class="fas fa-tags" style="color: #059669;"></i> Tactical Pricing & Margin Optimization</span>
+                    </div>
+                    <div class="table-container">
+                        <table class="ai-table" id="aiPricingTable">
+                            <thead>
+                                <tr>
+                                    <th>Menu Item</th>
+                                    <th>Current Price</th>
+                                    <th>Recommended Price</th>
+                                    <th>Current Margin</th>
+                                    <th>Projected Margin</th>
+                                    <th>Est. Monthly Gain</th>
+                                    <th>Pricing Rationale</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Action Plan Roadmap -->
+                <div class="ai-section-box">
+                    <div class="ai-section-title">
+                        <span><i class="fas fa-tasks" style="color: #6366f1;"></i> 30-60-90 Day Implementation Roadmap</span>
+                    </div>
+                    <div class="ai-action-timeline" id="aiTimelineContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-modal-footer">
+            <button class="btn btn-outline" onclick="closeCenteredModal('aiInsightsModal')">Close</button>
+            <button class="btn btn-primary" id="btnDownloadAiPdfFooter">
+                <i class="fas fa-file-pdf"></i> Download PDF Report
+            </button>
+        </div>
+    </div>
+</div>
 
 @section scripts {
     <script src="~/js/customrangefilter.js"></script>
     <script src="~/views-js/MenuEngineeringInsights.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/views-js/menuEngineeringAi.js?v=@DateTime.Now.Ticks"></script>
 }

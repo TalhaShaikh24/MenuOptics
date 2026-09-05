@@ -5,6 +5,7 @@ namespace MenuOptics.Models
     public class Category
     {
         public int CategoryId { get; set; }
+        public int RestaurantId { get; set; }
         public string Name { get; set; } = string.Empty;
         public DateTime CreatedOn { get; set; }
         public int CreatedBy { get; set; }

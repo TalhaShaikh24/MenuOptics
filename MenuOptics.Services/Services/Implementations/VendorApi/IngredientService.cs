@@ -83,7 +83,7 @@ namespace MenuOptics.Services.VendorApi
                 } 
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", basePrice);
@@ -193,8 +193,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@Price", basePrice);
                 parameters.Add("@PackSize", model.PackSize);
-                parameters.Add("@VendorId", basePrice);
-                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@ModifiedBy", currentUserId);
 
                 if (model.RestaurantPrices != null && model.RestaurantPrices.Any())
@@ -378,7 +377,7 @@ namespace MenuOptics.Services.VendorApi
                 // Merge: use incoming value if provided, otherwise keep existing
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@Name", model.Name ?? ingredient.Name);
                 parameters.Add("@Unit", model.Unit ?? ingredient.Unit);
                 parameters.Add("@IsActive", model.IsActive ?? ingredient.IsActive);

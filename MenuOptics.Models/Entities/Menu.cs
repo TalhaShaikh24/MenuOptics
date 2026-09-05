@@ -7,12 +7,11 @@ namespace MenuOptics.Models
     public class Menu
     {
         public int MenuItemId { get; set; }
-        public int UserId { get; set; }
+        public int RestaurantId { get; set; }
         public string? Name { get; set; }
         public string? Description { get; set; }
         public int CategoryId { get; set; }
         public string? CategoryName { get; set; }
-        
         public decimal Cost { get; set; }
         public decimal CurrentCost { get; set; }
         public decimal SellingPrice { get; set; }
@@ -23,7 +22,6 @@ namespace MenuOptics.Models
         public int CreatedBy { get; set; }
         public DateTime? ModifiedOn { get; set; }
         public int? ModifiedBy { get; set; }
-        public string? FullName { get; set; }
         public bool IsActive { get; set; }
         public List<MenuItemIngredient>? Ingredients { get; set; }
         public List<MenuItemRecipe>? Recipes { get; set; }

@@ -103,12 +103,12 @@ function renderSubscription(data) {
 
     // Stat 4: Amount
     if (data.amount != null) {
-        const currency = data.currency || 'USD';
+        const currency = data.currency || 'CAD';
         $('#statAmountText').text(`$${parseFloat(data.amount).toFixed(2)} ${currency}`);
         $('#pkgPriceDisplay').html(`$${parseFloat(data.amount).toFixed(2)} <span>/${(data.interval || 'year')}</span>`);
     } else {
-        $('#statAmountText').text('$50 / mo');
-        $('#pkgPriceDisplay').html('$50 <span>/month</span>');
+        $('#statAmountText').text('$65 / mo');
+        $('#pkgPriceDisplay').html('$65 <span>/month</span>');
     }
 
     // Right Box Account Details

@@ -5,7 +5,7 @@ namespace MenuOptics.Models
     public class Ingredient
     {
         public int IngredientId { get; set; }
-        public int UserId { get; set; }
+        public int RestaurantId { get; set; }
         public int VendorId { get; set; }
         public int? PrivateVendorId { get; set; }
         public string? VendorProductId { get; set; }

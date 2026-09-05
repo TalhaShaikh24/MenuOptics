@@ -41,13 +41,6 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-        [HttpGet("GetAllMenuItemsByAdmin")]
-        public async Task<IActionResult> GetAllMenuItemsByAdmin()
-        {
-            var responseData = await _menuService.GetAllMenuItemsByAdminAsync();
-            return StatusCode(responseData.Status, responseData);
-        }
-
         [HttpGet("GetAllMenuItems")]
         public async Task<IActionResult> GetAllMenuItems(bool? isActive)
         {

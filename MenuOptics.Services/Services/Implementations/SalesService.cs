@@ -44,7 +44,7 @@ namespace MenuOptics.Services
 
                 // Insert Sale
                 var saleParameters = new DynamicParameters();
-                saleParameters.Add("@UserId", currentUserId);
+                saleParameters.Add("@RestaurantId", currentUserId);
                 saleParameters.Add("@StartDate", model.StartDate);
                 saleParameters.Add("@EndDate", model.EndDate);
                 saleParameters.Add("@Subtotal", model.Subtotal);
@@ -81,7 +81,6 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
         public async Task<ResponseDto> GetAllSalesAsync()
         {
             var ResponseDto = new ResponseDto();
@@ -114,7 +113,6 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
         public async Task<ResponseDto> ImportSalesAsync(IFormFile file, DateTime startDate, DateTime endDate, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
@@ -207,7 +205,7 @@ namespace MenuOptics.Services
 
                 // Insert Sale
                 var saleParameters = new DynamicParameters();
-                saleParameters.Add("@UserId", currentUserId);
+                saleParameters.Add("@RestaurantId", currentUserId);
                 saleParameters.Add("@StartDate", sale.StartDate);
                 saleParameters.Add("@EndDate", sale.EndDate);
                 saleParameters.Add("@Subtotal", sale.Subtotal);

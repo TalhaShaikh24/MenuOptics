@@ -5,6 +5,7 @@ namespace MenuOptics.Models
     public class PrivateVendor
     {
         public int PrivateVendorId { get; set; }
+        public int RestaurantId { get; set; }
         public string Name { get; set; } = string.Empty;
         public DateTime CreatedOn { get; set; }
         public long CreatedBy { get; set; }

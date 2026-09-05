@@ -41,7 +41,7 @@ $(document).ready(function () {
                 return false;
             }
 
-            addIngredientByUserId(ingredientData);
+            addIngredient(ingredientData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
         }
@@ -341,7 +341,7 @@ function refreshIngredientsTable() {
 
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
-function addIngredientByUserId(ingredientData) {
+function addIngredient(ingredientData) {
     ajaxRequest({
         url: '/api/IngredientApi/CreateIngredient',
         method: 'POST',

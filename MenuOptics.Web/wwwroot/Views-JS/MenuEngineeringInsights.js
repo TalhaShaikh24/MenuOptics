@@ -22,17 +22,13 @@ $(document).ready(function () {
 
     $('#dateRange').customRangeFilter({
         onApplyFilter: function (filterType, selectedDates) {
-
             startDate = DateFormatter.formatDashUS(selectedDates.startDate);
             endDate = DateFormatter.formatDashUS(selectedDates.endDate);
-            console.log('Filter 1 Applied:', filterType, selectedDates);
-
             refreshMenuEngineeringInsightsTable(startDate, endDate);
         },
         initialFilter: "Last 30 Days"
     });
 
-    // Ensure DataTable is loaded before proceeding.
     if (typeof $.fn.DataTable === 'undefined') {
         console.error('jQuery DataTable library is not loaded. Please check the CDN or script inclusion.');
         showNotification('DataTable library failed to load.', 'error');
@@ -41,7 +37,6 @@ $(document).ready(function () {
 
     const today = new Date();
     const last30Days = new Date();
-
     last30Days.setDate(today.getDate() - 29);
 
     startDate = DateFormatter.formatDashUS(last30Days);
@@ -49,14 +44,11 @@ $(document).ready(function () {
     currentEndDate = endDate;
 
     refreshMenuEngineeringInsightsTable(startDate, endDate);
-
 });
 
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
-    const requestData = {};
-
     let url = `/api/MenuEngineeringInsightsApi/GetAllMenuEngineeringInsightsByUserId?`;
 
     if (startDate) {
@@ -75,7 +67,6 @@ function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
         onSuccess: function (response) {
             const insights = response.data || [];
 
-            // If already initialized, destroy BEFORE touching the DOM
             if ($.fn.DataTable.isDataTable('.menu-engineering-table')) {
                 table.destroy();
             }
@@ -87,7 +78,6 @@ function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
                 tbody.append(buildInsightRow(insight));
             });
 
-            // Initialize DataTable AFTER rows are present
             initDataTable();
         },
         onError: function (xhr, status, error) {
@@ -97,7 +87,6 @@ function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
     });
 }
 
-// Function to toggle menu item active status
 function toggleMenuItemActive(id) {
     if (confirm('Are you sure you want to toggle the active status of this menu item?')) {
         ajaxRequest({
@@ -115,7 +104,6 @@ function toggleMenuItemActive(id) {
     }
 }
 
-// Delete menu item
 function deleteMenuItem(id) {
     ajaxRequest({
         url: `/api/MenuApi/DeleteMenuItem/${id}`,
@@ -134,7 +122,6 @@ function deleteMenuItem(id) {
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
 function initDataTable() {
-    // Custom order: Star < Plowhorse < Puzzle < Dog
     $.fn.dataTable.ext.type.order['quadrant-pre'] = function (d) {
         const text = $(d).attr('data-quadrant') || $(d).data('quadrant') || $(d).text() || d;
         switch (text) {
@@ -152,9 +139,9 @@ function initDataTable() {
         ordering: false,
         orderable: false,
         columnDefs: [
-            { type: 'quadrant', targets: 8 }, // Apply custom type to Quadrant column
-            { searchable: false }, // Disable sorting/searching for non-data columns
-            { targets: [1, 2, 3, 4, 5, 6, 7], className: 'dt-body-left' } // Right-align numeric columns
+            { type: 'quadrant', targets: 8 },
+            { searchable: false },
+            { targets: [1, 2, 3, 4, 5, 6, 7], className: 'dt-body-left' }
         ],
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
@@ -169,7 +156,7 @@ function initDataTable() {
                 text: '<i class="fas fa-file-csv"></i> Export CSV',
                 className: 'btn btn-outline',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8], // Export only specified columns
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
                     format: {
                         body: formatExportCell
                     }
@@ -183,7 +170,7 @@ function initDataTable() {
                 pageSize: 'A4',
                 title: 'Menu Engineering Insights Report',
                 exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8], // Export only specified columns
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
                     format: {
                         body: formatExportCell
                     }
@@ -192,44 +179,36 @@ function initDataTable() {
         ]
     });
 
-    // Move export buttons to custom container
     if (table.buttons && $('#exportButtons').length) {
         table.buttons().container().appendTo('#exportButtons');
     }
 
-    // Custom search
     $('#menuItemSearch').on('keyup', function () {
         table.search(this.value).draw();
     });
 
-    // Quadrant filter
     $('.quadrant-filter').on('click', function () {
         const quadrant = $(this).data('quadrant');
         table.column(8).search(quadrant).draw();
     });
 
-    // Clear filter
     $('#clear-filter').on('click', function () {
         table.column(8).search('').draw();
         $('#menuItemSearch').val('').trigger('keyup');
     });
 }
 
-// Shared CSV/PDF cell formatter (same output as before refactoring)
 function formatExportCell(data, row, column, node) {
-    if (column === 8) { // Quadrant column
+    if (column === 8) {
         return $(data).attr('data-quadrant') || data || 'N/A';
     }
-    if (column === 0) { // Insight name (strip HTML)
+    if (column === 0) {
         return $(data).find('.insight-name').text() || data;
     }
-    return data; // Return other columns as is
+    return data;
 }
 
-// Builds a single insight table row (same markup as before refactoring)
 function buildInsightRow(insight) {
-
-    // Clean numerics for sorting
     const sellingPrice = Number(insight.sellingPrice || 0);
     const cost = Number(insight.cost || 0);
     const costPct = sellingPrice ? (cost / sellingPrice) * 100 : 0;
@@ -237,71 +216,58 @@ function buildInsightRow(insight) {
     const cm = Number(insight.contributionMargin || 0);
     const prof = Number(insight.profitabilityScore || 0);
     const popShare = Number(insight.popularityShare || 0);
-    const quadrantTooltips = insight.menuQuadrant === "";
     const quadrant = insight.menuQuadrant || 'N/A';
 
     return `
-                    <tr>
-                        <td>
-                            <div class="insight-info">
-                                <img class="table-image" src="${imageBaseUrl+insight.featuredImage}"/>
-                                <p class="insight-name">${insight.name || ''}</p>
-                            </div>
-                        </td>
+        <tr>
+            <td>
+                <div class="insight-info">
+                    <img class="table-image" src="${imageBaseUrl + insight.featuredImage}"/>
+                    <p class="insight-name">${insight.name || ''}</p>
+                </div>
+            </td>
 
-                        <td data-order="${sellingPrice}">$${sellingPrice.toFixed(2)}</td>
-                        <td data-order="${cost}">$${cost.toFixed(2)}</td>
-                        <td data-order="${costPct.toFixed(2)}">${costPct.toFixed(2)}%</td>
-                        <td data-order="${unitsSold}">${unitsSold}</td>
-                        <td data-order="${cm}">$${cm.toFixed(2)}</td>
-                        <td data-order="${prof}">$${prof.toFixed(2)}</td>
-                        <td data-order="${popShare.toFixed(2)}">${popShare.toFixed(2)}%</td>
+            <td data-order="${sellingPrice}">$${sellingPrice.toFixed(2)}</td>
+            <td data-order="${cost}">$${cost.toFixed(2)}</td>
+            <td data-order="${costPct.toFixed(2)}">${costPct.toFixed(2)}%</td>
+            <td data-order="${unitsSold}">${unitsSold}</td>
+            <td data-order="${cm}">$${cm.toFixed(2)}</td>
+            <td data-order="${prof}">$${prof.toFixed(2)}</td>
+            <td data-order="${popShare.toFixed(2)}">${popShare.toFixed(2)}%</td>
 
-                        <!-- Quadrant icon; the span carries data-quadrant for custom sort -->
-                        <td>
-                            <span class="quadrant-icon tooltip-icon" data-quadrant="${quadrant}"data-tooltip="${getQuadrantTooltipText(quadrant) }">
-                                ${getQuadrantIcon(quadrant)}
-                            </span>
-                        </td>
+            <td>
+                <span class="quadrant-icon tooltip-icon" data-quadrant="${quadrant}" data-tooltip="${getQuadrantTooltipText(quadrant)}">
+                    ${getQuadrantIcon(quadrant)}
+                </span>
+            </td>
 
-                        <td class="hidden">
-                            <span class="status-badge ${insight.isActive ? 'good' : 'critical'}">
-                                ${insight.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                        </td>
-
-                        
-                    </tr>
-                `;
+            <td class="hidden">
+                <span class="status-badge ${insight.isActive ? 'good' : 'critical'}">
+                    ${insight.isActive ? 'Active' : 'Inactive'}
+                </span>
+            </td>
+        </tr>
+    `;
 }
 
 /* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
 function getQuadrantIcon(quadrant) {
     switch (quadrant) {
-        case 'Star':
-            return '⭐';
-        case 'Plowhorse':
-            return '🐴';
-        case 'Puzzle':
-            return '🧩';
-        case 'Dog':
-            return '🐶';
-        default:
-            return '❓';
+        case 'Star': return '⭐';
+        case 'Plowhorse': return '🐴';
+        case 'Puzzle': return '🧩';
+        case 'Dog': return '🐶';
+        default: return '❓';
     }
 }
+
 function getQuadrantTooltipText(quadrant) {
     switch (quadrant) {
-        case 'Star':
-            return 'High Popularity + High Profitability';
-        case 'Plowhorse':
-            return 'High Popularity + Low Profitability';
-        case 'Puzzle':
-            return 'Low Popularity + High Profitability';
-        case 'Dog':
-            return 'Low Popularity + Low Profitability';
-        default:
-            return '';
+        case 'Star': return 'High Popularity + High Profitability';
+        case 'Plowhorse': return 'High Popularity + Low Profitability';
+        case 'Puzzle': return 'Low Popularity + High Profitability';
+        case 'Dog': return 'Low Popularity + Low Profitability';
+        default: return '';
     }
 }

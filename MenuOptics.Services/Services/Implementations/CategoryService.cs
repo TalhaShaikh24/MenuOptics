@@ -90,8 +90,11 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
+
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@CreatedBy", actualUserId);
+                parameters.Add("@IsActive", true);
                 parameters.Add("@Action", "INSERT");
 
                 int categoryId = await connection.ExecuteScalarAsync<int>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
@@ -157,7 +160,7 @@ namespace MenuOptics.Services
 
                 parameters = new DynamicParameters();
                 parameters.Add("@CategoryId", id);
-                parameters.Add("@ModifiedBy", actualUserId);
+                parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
                 var result = await connection.QueryFirstAsync("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);

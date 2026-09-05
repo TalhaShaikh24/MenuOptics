@@ -9,7 +9,6 @@ namespace MenuOptics.Services
     public class RecipeService : IRecipeService
     {
         private readonly DapperContext _context;
-
         public RecipeService(DapperContext context)
         {
             _context = context;
@@ -36,7 +35,7 @@ namespace MenuOptics.Services
                 }
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Cost", 0);
@@ -52,13 +51,13 @@ namespace MenuOptics.Services
                     {
                         var priceParams = new DynamicParameters();
                         priceParams.Add("@IngredientId", ing.IngredientId);
-                        priceParams.Add("@UserId", currentUserId);
+                        priceParams.Add("@RestaurantId", currentUserId);
 
                         var ingDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(
                             @"SELECT COALESCE(vip.Price, i.Price) AS Price
                               FROM Ingredients i
                               LEFT JOIN VendorIngredientRestaurantPrices vip
-                                ON i.IngredientId = vip.VendorIngredientId AND vip.RestaurantId = @UserId
+                                ON i.IngredientId = vip.VendorIngredientId AND vip.RestaurantId = @RestaurantId
                               WHERE i.IngredientId = @IngredientId",
                             priceParams);
 
@@ -83,7 +82,7 @@ namespace MenuOptics.Services
                 // Update total price
                 var updateParams = new DynamicParameters();
                 updateParams.Add("@RecipeId", recipeId);
-                updateParams.Add("@UserId", currentUserId);
+                updateParams.Add("@RestaurantId", currentUserId);
                 updateParams.Add("@Cost", model.Cost);
                 updateParams.Add("@Action", "UPDATE");
                 await connection.ExecuteAsync("sp_RecipeCRUD", updateParams, commandType: CommandType.StoredProcedure);
@@ -134,7 +133,6 @@ namespace MenuOptics.Services
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@RecipeId", model.RecipeId);
-                parameters.Add("@UserId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Cost", model.Cost);
@@ -160,24 +158,6 @@ namespace MenuOptics.Services
                 {
                     foreach (var ing in model.Ingredients)
                     {
-                        var priceParams = new DynamicParameters();
-                        priceParams.Add("@IngredientId", ing.IngredientId);
-                        priceParams.Add("@UserId", currentUserId);
-
-                        var ingDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(
-                            @"SELECT COALESCE(vip.Price, i.Price) AS Price
-                              FROM Ingredients i
-                              LEFT JOIN VendorIngredientRestaurantPrices vip
-                                ON i.IngredientId = vip.VendorIngredientId AND vip.RestaurantId = @UserId
-                              WHERE i.IngredientId = @IngredientId",
-                            priceParams);
-
-                        if (ingDetails == null)
-                        {
-                            throw new Exception($"Ingredient {ing.IngredientId} not found.");
-                        }
-
-
                         var ingParams = new DynamicParameters();
                         ingParams.Add("@RecipeId", model.RecipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
@@ -188,15 +168,6 @@ namespace MenuOptics.Services
                         await connection.ExecuteAsync("sp_RecipeIngredientsCRUD", ingParams, commandType: CommandType.StoredProcedure);
                     }
                 }
-
-                // Update recipe price
-                var updateParams = new DynamicParameters();
-                updateParams.Add("@RecipeId", model.RecipeId);
-                updateParams.Add("@UserId", currentUserId);
-                updateParams.Add("@Cost", model.Cost);
-                parameters.Add("@Description", model.Description);
-                updateParams.Add("@Action", "UPDATE");
-                await connection.ExecuteAsync("sp_RecipeCRUD", updateParams, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Recipe updated successfully.";
@@ -225,8 +196,10 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@RecipeId", id);
                 parameters.Add("@Action", "SELECT");
-                var recipe = await connection.QueryFirstOrDefaultAsync<Recipe>(
+                var multi = await connection.QueryMultipleAsync(
                     "sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                var recipe = await multi.ReadFirstOrDefaultAsync<Recipe>();
 
                 if (recipe == null)
                 {
@@ -235,14 +208,8 @@ namespace MenuOptics.Services
                     return ResponseDto;
                 }
 
-                var ingredients = await connection.QueryAsync<RecipeIngredient>(
-                    @"SELECT ri.RecipeId, ri.IngredientId, i.Name AS IngredientName, ri.Uom, ri.Quantity
-                      FROM RecipeIngredients ri
-                      INNER JOIN Ingredients i ON i.IngredientId = ri.IngredientId
-                      WHERE ri.RecipeId = @RecipeId",
-                    new { RecipeId = id });
+                recipe.Ingredients = (await multi.ReadAsync<RecipeIngredient>()).ToList();
 
-                recipe.Ingredients = ingredients.ToList();
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Recipe retrieved successfully.";
                 ResponseDto.Data = recipe;
@@ -268,7 +235,7 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Action", "SELECT_ALL");
 
                 var recipes = await connection.QueryAsync<Recipe, string, Recipe>(

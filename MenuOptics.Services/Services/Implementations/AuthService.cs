@@ -479,10 +479,12 @@ namespace MenuOptics.Services
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username),
+                // CurrentUserId is the ID of the user whose data is being accessed, which may be different from effectiveUserId if the user is a child account.
                 new Claim(ClaimTypes.NameIdentifier, effectiveUserId.ToString()),
                 new Claim(ClaimTypes.Role, user.Roles ?? ""),
                 new Claim("FirstName", user.FirstName ?? ""),
                 new Claim("LastName", user.LastName ?? ""),
+                // ActualUserId is the ID of the user who logged in, which may be different from effectiveUserId if the user is a child account.
                 new Claim("ActualUserId", user.UserId.ToString()),
                 new Claim("IsParent", isParent.ToString().ToLower()),
                 new Claim("StripeSubscriptionId", stripeSubscriptionId.ToString().ToLower()),

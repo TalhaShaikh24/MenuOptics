@@ -6,7 +6,7 @@ namespace MenuOptics.Models
     public class Recipe
     {
         public int RecipeId { get; set; }
-        public int UserId { get; set; }
+        public int RestaurantId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Unit { get; set; } = string.Empty;
         public double Cost { get; set; }

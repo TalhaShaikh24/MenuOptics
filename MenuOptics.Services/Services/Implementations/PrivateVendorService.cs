@@ -92,6 +92,7 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@IsActive", true);
@@ -160,7 +161,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@PrivateVendorId", id);
-                parameters.Add("@ModifiedBy", actualUserId);
+                parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
                 var result = await connection.QueryFirstAsync("sp_PrivateVendorCRUD", parameters, commandType: CommandType.StoredProcedure);

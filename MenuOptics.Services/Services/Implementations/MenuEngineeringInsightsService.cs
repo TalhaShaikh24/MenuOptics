@@ -24,7 +24,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@StartDate", startDate);
                 parameters.Add("@EndDate", endDate);
-                parameters.Add("@UserId", currentUserId);
+                parameters.Add("@RestaurantId", currentUserId);
 
                 var insights = await connection.QueryAsync<MenuEngineeringInsightsDto>("sp_GetMenuEngineeringInsights", parameters, commandType: CommandType.StoredProcedure);
 

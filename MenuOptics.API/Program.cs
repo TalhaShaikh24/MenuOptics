@@ -60,6 +60,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPrivateVendorService, PrivateVendorService>();
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IMenuAiAnalysisService, MenuAiAnalysisService>();
 
 
 
