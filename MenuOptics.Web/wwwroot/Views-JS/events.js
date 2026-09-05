@@ -245,8 +245,6 @@ function applyGlobalMode(mode) {
 /* ── PDF export ───────────────────────────────────────────────────────── */
 
 function exportSingleEventPDF(eventId) {
-
-    debugger
     if ($('#customerFacing').is(':checked')) {
         $('#exportEventId').val(eventId);
 
@@ -795,7 +793,7 @@ function updateAllCosts() {
     // Total Revenue = (guests x price per guest) + Event-Only items cost
     const totalRevenue = baseRevenue + eventOnlyCost;
     // Total Cost = Menu items only
-    const totalCost = menuFoodCost;
+    const totalCost = menuFoodCost + eventOnlyCost;
 
     $('#totalRevenue').text(`$${totalRevenue.toFixed(2)}`);
     $('#totalFoodCost').text(`$${totalCost.toFixed(2)}`);

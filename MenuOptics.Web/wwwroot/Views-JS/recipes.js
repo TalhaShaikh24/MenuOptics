@@ -131,7 +131,7 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
             $(selectId).select2({
                 tags: false,
                 data: ingredientsWithPrices,
-                placeholder: 'Select or add ingredients',
+                placeholder: 'Select ingredients',
                 width: '100%',
                 dropdownParent: $(modalId),
                 matcher: function (param, data) {
@@ -145,9 +145,17 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
                     var text = (data.text || '').toLowerCase();
                     var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
 
-                    if (text.includes(searchText) || vendorProductId.includes(searchText)) {
+                    var searchWords = searchText.split(/\s+/);
+                    var nameMatches = searchWords.every(function (word) {
+                        return text.includes(word);
+                    });
+
+                    // VendorProductId: search using the ENTIRE search text 
+                    var vendorProductIdMatches = vendorProductId.includes(searchText);
+                    if (nameMatches || vendorProductIdMatches) {
                         return data;
                     }
+
                     return null;
                 }
 
@@ -326,8 +334,10 @@ function addRecipe(formData) {
         processData: false,
         onSuccess: function (response) {
             refreshRecipesTable();
-            closeModal('addRecipeModal');
+            $('#addRecipeForm')[0].reset();
+            $('#ingredientsSelect').val(null).trigger('change');
             showNotification('Recipe added successfully!', 'success');
+            closeModal('addRecipeModal');
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add recipe:', error);

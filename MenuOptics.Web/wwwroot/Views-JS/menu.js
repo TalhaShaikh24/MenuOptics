@@ -47,9 +47,13 @@ $(document).ready(function () {
     // Search filter
     $('#menuSearch').on('input', function () {
         const searchTerm = $(this).val().toLowerCase();
+        const searchWords = searchTerm.split(/\s+/).filter(word => word !== '');
+
         $('.menu-item-card').each(function () {
             const name = $(this).find('.item-info h3').text().toLowerCase();
-            $(this).toggle(name.includes(searchTerm));
+            // Every search word must exist in the item name 
+            const matches = searchWords.every(word => name.includes(word));
+            $(this).toggle(matches);
         });
     });
 
@@ -136,9 +140,17 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
                     var text = (data.text || '').toLowerCase();
                     var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
 
-                    if (text.includes(searchText) || vendorProductId.includes(searchText)) {
+                    var searchWords = searchText.split(/\s+/);
+                    var nameMatches = searchWords.every(function (word) {
+                        return text.includes(word);
+                    });
+
+                    // VendorProductId: search using the ENTIRE search text 
+                    var vendorProductIdMatches = vendorProductId.includes(searchText);
+                    if (nameMatches || vendorProductIdMatches) {
                         return data;
                     }
+
                     return null;
                 }
             });
@@ -1207,4 +1219,4 @@ function showMenuCostBreakdown(menuItemId) {
     openModal('menuCostBreakdownModal');
 }
 
-window.showMenuCostBreakdown = showMenuCostBreakdown;
+window.showMenuCostBreakdown = showMenuCostBreakdown;
