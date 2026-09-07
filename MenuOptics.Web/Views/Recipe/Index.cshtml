@@ -58,7 +58,7 @@
                     <tr>
                         <th>Name</th>
                         <th>Direction</th>
-                        <th>Unit</th>
+                        <th>Size</th>
                         <th>Cost</th>
                         <th>Ingredients</th>
                         <th>Status</th>
@@ -84,7 +84,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Name <span style="color:red">*</span></label>
-                        <input type="text" id="recipeName" name="name" required>
+                        <input type="text" id="recipeName" name="name" required placeholder="Enter Recipe Name">
                     </div>
                 </div>
                 <div class="form-group">
@@ -124,18 +124,19 @@
                             <option value="tb">TB - Tube</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Size<span style="color:red">*</span></label>
+                        <input type="number" step="1" id="recipeSize" name="size" required placeholder="Enter Size">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Ingredients <span style="color:red">*</span></label>
                     <select id="ingredientsSelect" name="ingredients[]" multiple="multiple" style="width:100%" required></select>
                     <div id="ingredientsDetails" class="ingredientsDetails"></div>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Cost ($) <span style="color:red">*</span></label>
-                        <input type="number" step="1" id="recipeCost" name="cost">
-                    </div>
+                <div class="form-group">
+                    <label>Cost ($) <span style="color:red">*</span></label>
+                    <input type="number" step="1" id="recipeCost" name="cost" placeholder="Enter Cost">
                 </div>
             </form>
         </div>
@@ -159,7 +160,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Name <span style="color:red">*</span></label>
-                        <input type="text" id="editRecipeName" name="name" required>
+                        <input type="text" id="editRecipeName" name="name" required placeholder="Enter Recipe Name">
                     </div>
                 </div>
                 <div class="form-group">
@@ -199,17 +200,19 @@
                             <option value="tb">TB - Tube</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Size<span style="color:red">*</span></label>
+                        <input type="number" step="1" id="editRecipeSize" name="size" required placeholder="Enter Size">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Ingredients <span style="color:red">*</span></label>
                     <select id="editIngredientsSelect" name="ingredients[]" multiple="multiple" style="width:100%" required></select>
                     <div id="editIngredientsDetails" class="ingredientsDetails"></div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Cost ($) <span style="color:red">*</span></label>
-                        <input type="number" step="1" id="editRecipeCost" name="cost">
-                    </div>
+                <div class="form-group">
+                    <label>Cost ($) <span style="color:red">*</span></label>
+                    <input type="number" step="1" id="editRecipeCost" name="cost" placeholder="Enter Cost">
                 </div>
             </form>
         </div>

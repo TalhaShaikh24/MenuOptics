@@ -63,7 +63,7 @@ namespace MenuOptics.Services
                         var ingredientParams = new DynamicParameters();
                         ingredientParams.Add("@MenuItemId", menuItemId);
                         ingredientParams.Add("@IngredientId", ingredient.IngredientId);
-                        ingredientParams.Add("@Uom", ingredient.Uom);
+                        ingredientParams.Add("@UOM", ingredient.UOM);
                         ingredientParams.Add("@Quantity", ingredient.Quantity);
                         ingredientParams.Add("@Action", "INSERT");
                         await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);
@@ -164,7 +164,7 @@ namespace MenuOptics.Services
                         var ingredientParams = new DynamicParameters();
                         ingredientParams.Add("@MenuItemId", model.MenuItemId);
                         ingredientParams.Add("@IngredientId", ingredient.IngredientId);
-                        ingredientParams.Add("@Uom", ingredient.Uom);
+                        ingredientParams.Add("@UOM", ingredient.UOM);
                         ingredientParams.Add("@Quantity", ingredient.Quantity);
                         ingredientParams.Add("@Action", "INSERT");
                         await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);

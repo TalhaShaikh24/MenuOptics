@@ -66,6 +66,7 @@ namespace MenuOptics.Models
         public decimal CurrentMargin { get; set; }
         public decimal ProjectedMargin { get; set; }
         public decimal EstimatedMonthlyProfitIncrease { get; set; }
+        public string? PricingPrinciple { get; set; }
         public string? Rationale { get; set; }
     }
 
@@ -74,6 +75,7 @@ namespace MenuOptics.Models
         public int MenuItemId { get; set; }
         public string? CurrentTitle { get; set; }
         public string? SuggestedTitle { get; set; }
+        public string? TrendVerbiageUsed { get; set; }
         public string? Reasoning { get; set; }
     }
 

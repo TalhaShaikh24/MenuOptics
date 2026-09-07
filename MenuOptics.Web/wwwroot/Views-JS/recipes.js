@@ -378,6 +378,7 @@ function getRecipeById(id) {
             $('#editRecipeName').val(recipe.name);
             $('#editRecipeUnit').val(recipe.unit);
             $('#editRecipeCost').val(recipe.cost);
+            $('#editRecipeSize').val(recipe.size);
             $('#editRecipeDescription').val(recipe.description);
 
             $('#editIngredientsSelect').val(recipe.ingredients.map(ing => ing.ingredientId)).trigger('change');
@@ -506,7 +507,11 @@ function refreshRecipesTable() {
                         <td>
                             <span class="recipeDescription" style="cursor:pointer;" onclick="showRecipeDescription(${item.recipeId})">${item.description}</span>
                         </td>
-                        <td>${item.unit}</td>
+                        <td>
+                          <span class="${item.size != null ? 'category-badge-size' : ''}">
+                            ${item.size ? `${item.size} ${(item.unit || '').toUpperCase()}` : ''}
+                          </span>
+                        </td>
                         <td>
                          ${
                                 cost == currentCost

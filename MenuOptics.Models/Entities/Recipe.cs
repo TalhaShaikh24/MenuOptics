@@ -11,6 +11,7 @@ namespace MenuOptics.Models
         public string Unit { get; set; } = string.Empty;
         public double Cost { get; set; }
         public double CurrentCost { get; set; }
+        public decimal Size { get; set; }
         public string? Description { get; set; }
         public List<RecipeIngredient> Ingredients { get; set; } = new();
         public DateTime CreatedOn { get; set; }
@@ -25,7 +26,7 @@ namespace MenuOptics.Models
         public int IngredientId { get; set; }
         public decimal Quantity { get; set; }
         public string Unit { get; set; } = string.Empty;
-        public string Uom { get; set; } = string.Empty;
+        public string UOM { get; set; } = string.Empty;
         public string IngredientName { get; set; } = string.Empty;
 
         public decimal CurrentPrice { get; set; }

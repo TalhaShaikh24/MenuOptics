@@ -29,7 +29,7 @@ namespace MenuOptics.Services
                         IngredientId = i.IngredientId,
                         Quantity = i.Quantity,
                         Unit = i.Unit,
-                        Uom = i.Uom,
+                        UOM = i.UOM,
                         IngredientName = null
                     }).ToList();
                 }
@@ -39,6 +39,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Cost", 0);
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
@@ -71,7 +72,7 @@ namespace MenuOptics.Services
                         var ingParams = new DynamicParameters();
                         ingParams.Add("@RecipeId", recipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
-                        ingParams.Add("@Uom", ing.Uom);
+                        ingParams.Add("@UOM", ing.UOM);
                         ingParams.Add("@Quantity", ing.Quantity);
                         ingParams.Add("@Action", "INSERT");
 
@@ -125,7 +126,7 @@ namespace MenuOptics.Services
                     {
                         IngredientId = i.IngredientId,
                         Quantity = i.Quantity,
-                        Uom = i.Uom,
+                        UOM = i.UOM,
                         Unit = i.Unit,
                         IngredientName = null
                     }).ToList();
@@ -136,6 +137,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Cost", model.Cost);
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "UPDATE");
@@ -161,7 +163,7 @@ namespace MenuOptics.Services
                         var ingParams = new DynamicParameters();
                         ingParams.Add("@RecipeId", model.RecipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
-                        ingParams.Add("@Uom", ing.Uom);
+                        ingParams.Add("@UOM", ing.UOM);
                         ingParams.Add("@Quantity", ing.Quantity);
                         ingParams.Add("@Action", "INSERT");
 

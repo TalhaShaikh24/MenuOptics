@@ -161,6 +161,10 @@
                             <i class="fas fa-chevron-down nav-group-arrow"></i>
                         </button>
                         <div class="nav-group-items" id="menu-management">
+                            <a href="@Url.Action("Index", "Supplier")" class="nav-item nav-child @Html.IsActive("Supplier", "Index")">
+                                <i class="fas fa-truck"></i>
+                                <span>Suppliers</span>
+                            </a>
                             <a href="@Url.Action("Index", "Ingredient")" class="nav-item nav-child @Html.IsActive("Ingredient", "Index")">
                                 <i class="fas fa-box"></i>
                                 <span>Ingredients</span>
@@ -172,10 +176,6 @@
                             <a href="@Url.Action("Index", "Category")" class="nav-item nav-child @Html.IsActive("Category", "Index")">
                                 <i class="fas fa-tags"></i>
                                 <span>Menu Categories</span>
-                            </a>
-                            <a href="@Url.Action("Index", "Supplier")" class="nav-item nav-child @Html.IsActive("Supplier", "Index")">
-                                <i class="fas fa-truck"></i>
-                                <span>Suppliers</span>
                             </a>
                             <a href="@Url.Action("Index", "Menu")" class="nav-item nav-child @Html.IsActive("Menu", "Index")">
                                 <i class="fas fa-list"></i>

@@ -57,21 +57,18 @@ namespace MenuOptics.Services.VendorApi
                 connection.Open();
 
                 decimal basePrice = 0;
-                decimal size = 0;
 
                 // When PackSize given. Means it is a packed item.
                 // Price is calculated as per item. For example a cotton of 10 pepsi cans (300ml). The price here will be per one can (300ml)
                 if (model.PackSize != null && model.PackSize > 0)
                 {
                     basePrice = model.BasePrice / model.PackSize.Value;
-                    size = model.Size;
                 }
                 // When Weight given. Means it is a catch weight item.
                 // Price is calculated as per unit. For example meet is sold per kg. So the price here will be price per kg.
                 else if (model.Weight != null && model.Weight > 0)
                 {
                     basePrice = model.BasePrice;
-                    size = 1;
                 }
                 else
                 {
@@ -88,7 +85,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", basePrice);
                 parameters.Add("@Unit", model.Unit);
-                parameters.Add("@Size", size);
+                parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@ClassificationId", model.ClassificationId);
                 parameters.Add("@ClassificationDescriptor", model.ClassificationDescriptor);
@@ -339,49 +336,13 @@ namespace MenuOptics.Services.VendorApi
 
             try
             {
-                Ingredient? ingredient = (Ingredient?)((ResponseDto)(await _mainIngredientService.GetIngredientAsync(model.IngredientId)).Body).Data;
-
-                if (ingredient == null)
-                {
-                    ResponseDto.Status = 400;
-                    ResponseDto.ResponseMsg = "Ingredient not found.";
-                    await _activityLog.LogAsync(
-                        currentUserId,
-                        requestId,
-                        "PATCH /api/IngredientApi/PatchIngredientDetails",
-                        payload,
-                        System.Text.Json.JsonSerializer.Serialize(ResponseDto),
-                        "Warning"
-                    );
-                    // Original controller returned NotFound(ResponseDto) while Status stayed 400.
-                    return (404, ResponseDto);
-                }
-
-                decimal price = 0;
-                decimal size = 0;
-
-                // When PackSize given
-                if (model.Size != null)
-                {
-                    if (ingredient.PackSize != null)
-                    {
-                        price = (ingredient.Price / ingredient.Size) * model.Size.Value;
-                        size = model.Size.Value;
-                    }
-                    else
-                    {
-                        size = 1;
-                    }
-                }
-
                 // Merge: use incoming value if provided, otherwise keep existing
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@VendorId", currentUserId);
-                parameters.Add("@Name", model.Name ?? ingredient.Name);
-                parameters.Add("@Unit", model.Unit ?? ingredient.Unit);
-                parameters.Add("@IsActive", model.IsActive ?? ingredient.IsActive);
-                parameters.Add("@Price", price);
+                parameters.Add("@Name", model.Name);
+                parameters.Add("@Unit", model.Unit);
+                parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@ClassificationId", model.ClassificationId);
                 parameters.Add("@ClassificationDescriptor", model.ClassificationDescriptor);

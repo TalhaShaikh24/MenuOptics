@@ -168,7 +168,7 @@ function toggleSizePackSizeByType(typeValue, sizeSelector, packSizeSelector) {
         $packSizeRequired.show();
     } else if (typeValue === 'catchWeight') {
         $packSize.prop('disabled', true).prop('required', false).val('');
-        $size.prop('disabled', true).prop('required', false).val(1);
+        $size.prop('required', true);
         $packSizeRequired.hide();
     } else {
         $size.prop('disabled', false).prop('required', true);
@@ -248,7 +248,9 @@ function initIngredientsTable() {
             },
             {
                 data: 'price',
-                render: val => `$${val}`
+                render: function (val, type, row) {
+                    return `<span">${row.packSize==null ? (row.price + ' / ' + row.unit) : (row.price +' / Item')}</span>`;
+                }
             },
             {
                 // Supplier

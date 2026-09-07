@@ -187,7 +187,8 @@ function initializeRecipesSelect(selectId, modalId, detailsId, costInputId) {
                 id: recipe.recipeId,
                 text: recipe.name,
                 cost: recipe.cost,
-                unit: recipe.unit
+                unit: recipe.unit,
+                size: recipe.size
             }));
 
             $(selectId).select2({
@@ -275,7 +276,7 @@ function updateRecipePrice($quantityInput, detailsId, costInputId) {
     const recipeData = recipesWithPrices.find(rec => rec.id == recipeId);
 
     if (recipeData && quantity > 0) {
-        const cost = (recipeData.cost * quantity).toFixed(2);
+        const cost = (recipeData.cost * quantity / recipeData.size).toFixed(2);
         row.find('.recipe-price').text(`Cost: $${cost}`);
     } else {
         row.find('.recipe-price').text(`Cost: $0.00`);
@@ -442,7 +443,7 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
         html += `
             <div class="recipe-detail-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                 <span class="recipe_name" style="min-width:120px;" title="${recipeData.text}">${recipeData.text}</span>
-                <span class="recipe_unit" style="min-width:80px;">${recipeData.unit}</span>
+                <span class="recipe_unit" style="min-width:80px;">${recipeData.unit.toUpperCase()}</span>
                 <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="1" value="${savedQuantity}">
                 <span class="recipe-price" style="min-width:100px;">Cost: $${displayPrice}</span>
             </div>
@@ -486,7 +487,7 @@ function updateTotalCost(detailsId, costInputId) {
         const recipeData = recipesWithPrices.find(rec => rec.id == recipeId);
 
         if (recipeData && quantity > 0) {
-            totalCost += recipeData.cost * quantity;
+            totalCost += (recipeData.cost / recipeData.size) * quantity;
         }
     });
 
@@ -840,6 +841,9 @@ function refreshMenuGrid() {
                     const costPercentage = ((item.cost / item.sellingPrice) * 100).toFixed(2);
                     const currentCostPercentage = ((item.currentCost / item.sellingPrice) * 100).toFixed(2);
 
+
+                    const hasPriceChanged = item.cost != item.currentCost && item.ingredients?.some(i => i.oldPrice != null && i.oldPrice != i.currentPrice);
+                    
                     const row = `
                     <div class="menu-item-card" data-category="${item.categoryId}">
                         <div class="menu-item-image">
@@ -860,9 +864,9 @@ function refreshMenuGrid() {
                                         <span class="category-tag">${item.categoryName}</span>
                                         <span class="prep-time">
                                         <strong>Food Cost Percentage: </strong>
-                                        ${item.cost == item.currentCost
-                            ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Food Cost % at the time this item was created/updated">i</span></span>`
-                            : `
+                                        ${!hasPriceChanged
+                                            ? `<span>${currentCostPercentage}%<span class="tooltip-icon" data-tooltip="Food Cost % at the time this item was created/updated.">i</span></span>`
+                                            : `
                                                 <span>
                                                     <span class="text-highlight danger" title="Food Cost % at the time this item was created/updated">${costPercentage}%</span>
                                                     <span class="text-highlight" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">${currentCostPercentage}% <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i></span>
@@ -887,10 +891,11 @@ function refreshMenuGrid() {
                             <div class="item-details">
                                 <div class="pricing">
                                     <span class="price">$${item.sellingPrice.toFixed(2)}</span>
-                                    ${item.cost == item.currentCost 
+                                    ${!hasPriceChanged 
                                         ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
                                             : `<div class="clickable-cost-breakdown" style="display:inline-flex; align-items:center; gap:4px;">
-                                            Cost: <span class="cost text-highlight danger" title="Cost at the time this item was created/updated.">$${item.cost.toFixed(2)}</span> 
+                                            Cost:
+                                            <span class="cost text-highlight danger" title="Cost at the time this item was created/updated.">$${item.cost.toFixed(2)}</span> 
                                             <span class="cost text-highlight success" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">$${item.currentCost.toFixed(2)} <i class="fas fa-info-circle" style="font-size:12px; opacity:0.7; margin-left:2px;"></i></span>
                                            </div>`
                                     }
@@ -914,16 +919,9 @@ function refreshMenuGrid() {
                 debugger
                 // Compute the average once, after all items have been summed
                 const avgCostPercentage = activeItemCount > 0 ? (totalCostPercentage / activeItemCount).toFixed(2) : "0.00";
-                const avgCurrentCostPercentage = activeItemCount > 0 ? (totalCurrentCostPercentage / activeItemCount).toFixed(2) : "0.00";
 
-                if (avgCostPercentage === avgCurrentCostPercentage) {
-                    $('#avgFoodCost').html(`${avgCurrentCostPercentage}%<span class="tooltip-icon" data-tooltip="Average Food Cost % at the time menu items were created/updated.">i</span>`);
-                } else {
-                    $('#avgFoodCost').html(`
-                        <span class="text-highlight danger">${avgCostPercentage}%<span class="tooltip-icon danger" data-tooltip="Average Food Cost % at the time menu items were created/updated.">i</span></span>
-                        <span class="text-highlight">${avgCurrentCostPercentage}%<span class="tooltip-icon success" data-tooltip="Average Food Cost % according to the current prices.">i</span></span>
-                    `);
-                }
+                $('#avgFoodCost').html(`${avgCostPercentage}%`);
+               
             }
             else {
                 grid.append(`<h2>No Menu Items Added</h2>`);

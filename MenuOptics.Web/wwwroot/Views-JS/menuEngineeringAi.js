@@ -119,6 +119,7 @@ function renderFullAiReport(data) {
                 <tr>
                     <td><span style="color:#6b7280; text-decoration:line-through; font-weight:500;">${t.currentTitle || ''}</span></td>
                     <td><strong style="color:#7e22ce; font-size:14px;"><i class="fas fa-magic" style="color:#f08d11; margin-right:4px;"></i> ${t.suggestedTitle || ''}</strong></td>
+                    <td><span class="badge-pill" style="background:#f3e8ff; color:#6b21a8; font-size:11px;"><i class="fas fa-tag"></i> ${t.trendVerbiageUsed || 'Modern Culinary'}</span></td>
                     <td style="font-size:12px; color:#374151;">${t.reasoning || ''}</td>
                 </tr>
             `);
@@ -128,12 +129,12 @@ function renderFullAiReport(data) {
         $titleSection.hide();
     }
 
-    // Section 2: Pricing Optimization Table
+    // Section 2: Researched Pricing Optimization Table
     const $priceTbody = $('#aiPricingTable tbody');
     $priceTbody.empty();
     const pricing = data.pricingOptimizations || [];
     if (pricing.length === 0) {
-        $priceTbody.append(`<tr><td colspan="7" style="text-align:center; color:#6b7280; padding:16px;">Current pricing is aligned across major categories.</td></tr>`);
+        $priceTbody.append(`<tr><td colspan="6" style="text-align:center; color:#6b7280; padding:16px;">Current pricing is aligned across major categories.</td></tr>`);
     } else {
         pricing.forEach(p => {
             $priceTbody.append(`
@@ -141,10 +142,14 @@ function renderFullAiReport(data) {
                     <td><strong>${p.name || 'Item'}</strong></td>
                     <td>$${(p.currentPrice || 0).toFixed(2)}</td>
                     <td style="color:#059669; font-weight:700; font-size:14px;">$${(p.recommendedPrice || 0).toFixed(2)}</td>
-                    <td>$${(p.currentMargin || 0).toFixed(2)}</td>
-                    <td style="font-weight:600;">$${(p.projectedMargin || 0).toFixed(2)}</td>
+                    <td>
+                        <div style="font-size:12px; color:#374151;">$${(p.currentMargin || 0).toFixed(2)} &rarr; <strong style="color:#059669;">$${(p.projectedMargin || 0).toFixed(2)}</strong></div>
+                    </td>
                     <td style="color:#059669; font-weight:700;">+$${(p.estimatedMonthlyProfitIncrease || 0).toFixed(2)}/mo</td>
-                    <td style="font-size:12px; color:#374151;">${p.rationale || ''}</td>
+                    <td>
+                        <div style="margin-bottom:3px;"><span class="badge-pill" style="background:#ecfdf5; color:#065f46; font-size:10.5px;"><i class="fas fa-balance-scale"></i> ${p.pricingPrinciple || 'Psychological Charm Pricing'}</span></div>
+                        <div style="font-size:12px; color:#4b5563;">${p.rationale || ''}</div>
+                    </td>
                 </tr>
             `);
         });
@@ -188,7 +193,7 @@ function closeCenteredModal(modalId) {
 
 /* ── 3. Full Menu AI PDF Export ─────────────────────────────────────────── */
 
-function exportAiInsightsPdf(reportData) {
+async function exportAiInsightsPdf(reportData) {
     if (!reportData) {
         showNotification('Report data unavailable for PDF export.', 'error');
         return;
@@ -201,14 +206,21 @@ function exportAiInsightsPdf(reportData) {
     const pricing = reportData.pricingOptimizations || [];
     const plan = reportData.actionPlan || [];
 
+    let logoBase64 = null;
+    try {
+        logoBase64 = await getImageAsPngBase64('/images/menu optics_logo.png');
+    } catch (e) {
+        console.warn('Menu Optics logo load failed for PDF', e);
+    }
+
     const docDefinition = {
         pageSize: 'A4',
         pageOrientation: 'portrait',
         pageMargins: [36, 36, 36, 36],
         styles: {
-            reportTitle: { fontSize: 17, bold: true, color: '#f08d11', margin: [0, 0, 0, 3] },
-            reportSubtitle: { fontSize: 10, color: '#4b5563', margin: [0, 0, 0, 10] },
-            sectionHeader: { fontSize: 12, bold: true, color: '#111827', margin: [0, 10, 0, 5] },
+            reportTitle: { fontSize: 16, bold: true, color: '#f08d11', margin: [0, 0, 0, 3] },
+            reportSubtitle: { fontSize: 9.5, color: '#4b5563', margin: [0, 0, 0, 4] },
+            sectionHeader: { fontSize: 11.5, bold: true, color: '#111827', margin: [0, 10, 0, 5] },
             tableHeader: { fontSize: 8.5, bold: true, color: '#ffffff', fillColor: '#374151', alignment: 'left' },
             tableCell: { fontSize: 8, color: '#374151', margin: [0, 2, 0, 2] },
             calloutBox: { fontSize: 8.5, color: '#1f2937', lineHeight: 1.3 }
@@ -217,13 +229,23 @@ function exportAiInsightsPdf(reportData) {
         content: [
             {
                 columns: [
-                    { text: 'MENU OPTICS — AI STRATEGIC REPORT', style: 'reportTitle' },
-                    { text: `Generated: ${reportData.generatedDate || new Date().toLocaleDateString()}`, alignment: 'right', fontSize: 8, color: '#6b7280' }
-                ]
-            },
-            {
-                text: `Restaurant: ${reportData.restaurantName || 'Menu Optics'} | Location: ${reportData.location || 'Local Trade Area'} | Range: ${reportData.dateRange || 'Last 30 Days'} | Engine: ${reportData.sourceModel || 'MenuOptics AI'}`,
-                style: 'reportSubtitle'
+                    {
+                        stack: [
+                            { text: 'MENU OPTICS — AI STRATEGIC REPORT', style: 'reportTitle' },
+                            {
+                                text: `Restaurant: ${reportData.restaurantName || 'Menu Optics'} | Location: ${reportData.location || 'Local Trade Area'} | Range: ${reportData.dateRange || 'Last 30 Days'}`,
+                                style: 'reportSubtitle'
+                            },
+                            {
+                                text: `Generated: ${reportData.generatedDate || new Date().toLocaleDateString()} | Engine: ${reportData.sourceModel || 'MenuOptics AI'}`,
+                                fontSize: 8,
+                                color: '#6b7280'
+                            }
+                        ]
+                    },
+                    logoBase64 ? { image: logoBase64, width: 85, alignment: 'right', margin: [0, 0, 0, 5] } : { text: '' }
+                ],
+                margin: [0, 0, 0, 8]
             },
             { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 523, y2: 0, lineWidth: 1.5, lineColor: '#f08d11' }] },
             { text: '', margin: [0, 4, 0, 0] },
@@ -341,19 +363,21 @@ function exportAiInsightsPdf(reportData) {
 
             // 4. Strategic Menu Title & Naming Enhancements (If present)
             ...(titles.length > 0 ? [
-                { text: '4. STRATEGIC MENU TITLE & NAMING ENHANCEMENTS', style: 'sectionHeader' },
+                { text: '4. TREND CULINARY VERBIAGE & TITLE ENHANCEMENTS', style: 'sectionHeader' },
                 {
                     table: {
-                        widths: ['25%', '30%', '45%'],
+                        widths: ['22%', '28%', '22%', '28%'],
                         body: [
                             [
                                 { text: 'Current Title', style: 'tableHeader' },
-                                { text: 'Suggested High-Converting Title', style: 'tableHeader' },
+                                { text: 'Suggested Trend Title', style: 'tableHeader' },
+                                { text: 'Trend Verbiage', style: 'tableHeader' },
                                 { text: 'Competitor & Appetite Rationale', style: 'tableHeader' }
                             ],
                             ...titles.map(t => [
                                 { text: t.currentTitle || '', style: 'tableCell', color: '#6b7280' },
                                 { text: t.suggestedTitle || '', bold: true, color: '#6d28d9', style: 'tableCell' },
+                                { text: t.trendVerbiageUsed || 'Modern Culinary', style: 'tableCell', color: '#6b21a8' },
                                 { text: t.reasoning || '', style: 'tableCell', fontSize: 7.5 }
                             ])
                         ]
@@ -362,10 +386,10 @@ function exportAiInsightsPdf(reportData) {
                 }
             ] : []),
 
-            { text: '5. TACTICAL PRICING & MARGIN OPTIMIZATION', style: 'sectionHeader' },
+            { text: '5. RESEARCHED MENU ENGINEERING PRICING & MARGIN OPTIMIZATION', style: 'sectionHeader' },
             {
                 table: {
-                    widths: ['22%', '12%', '14%', '13%', '14%', '25%'],
+                    widths: ['20%', '11%', '13%', '12%', '14%', '30%'],
                     body: [
                         [
                             { text: 'Menu Item', style: 'tableHeader' },
@@ -373,7 +397,7 @@ function exportAiInsightsPdf(reportData) {
                             { text: 'Recommended', style: 'tableHeader' },
                             { text: 'Proj. Margin', style: 'tableHeader' },
                             { text: 'Est. Gain', style: 'tableHeader' },
-                            { text: 'Rationale', style: 'tableHeader' }
+                            { text: 'Pricing Principle & Rationale', style: 'tableHeader' }
                         ],
                         ...(pricing.length > 0 ? pricing.map(p => [
                             { text: p.name || '', bold: true, style: 'tableCell' },
@@ -381,14 +405,14 @@ function exportAiInsightsPdf(reportData) {
                             { text: `$${(p.recommendedPrice || 0).toFixed(2)}`, bold: true, color: '#059669', style: 'tableCell' },
                             { text: `$${(p.projectedMargin || 0).toFixed(2)}`, style: 'tableCell' },
                             { text: `+$${(p.estimatedMonthlyProfitIncrease || 0).toFixed(2)}/mo`, bold: true, color: '#059669', style: 'tableCell' },
-                            { text: p.rationale || '', style: 'tableCell', fontSize: 7.5 }
+                            { text: `[${p.pricingPrinciple || 'Charm Pricing'}]: ${p.rationale || ''}`, style: 'tableCell', fontSize: 7.5 }
                         ]) : [[{ text: 'All prices currently aligned with margin targets.', colSpan: 6, alignment: 'center', style: 'tableCell' }, {}, {}, {}, {}, {}]])
                     ]
                 },
                 layout: 'lightHorizontalLines'
             },
 
-            { text: '6. 30-60-90 DAY IMPLEMENTATION ROADMAP', style: 'sectionHeader' },
+            { text: '6. MENU ADJUSTMENT PLAN', style: 'sectionHeader' },
             {
                 stack: plan.map(act => ({
                     margin: [0, 2, 0, 5],
@@ -405,4 +429,23 @@ function exportAiInsightsPdf(reportData) {
     const fileName = `Menu_Engineering_AI_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
     pdfMake.createPdf(docDefinition).download(fileName);
     showNotification('AI Menu Engineering Report PDF downloaded successfully!', 'success');
+}
+
+async function getImageAsPngBase64(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.onload = function () {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = function (e) {
+            reject(e);
+        };
+        img.src = url;
+    });
 }
