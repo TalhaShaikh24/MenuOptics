@@ -19,8 +19,7 @@ namespace MenuOptics.Services
         {
             _context = context;
             _configuration = configuration;
-            var stripeKey = _configuration["Stripe:SecretKey"] 
-                ?? "sk_test_51M9O4qKR3yBF1l8fZJ5Ll6Q7x0V0ec9i8rgqi8FMKtHTqSx3WYMvdCeOpuOdpImJ6OmhTiq6DDUhB83zumFikT2700QEmhSeSP";
+            var stripeKey = _configuration["Stripe:SecretKey"];
             StripeConfiguration.ApiKey = stripeKey;
         }
 

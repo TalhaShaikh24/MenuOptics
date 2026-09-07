@@ -147,14 +147,13 @@ namespace MenuOptics.Services
             return ResponseDto;
         }
 
-        public string CreateCheckoutSession(string? plan, int userId)
+        public (string SessionId, string? Url) CreateCheckoutSession(string? plan, int userId)
         {
-            var stripeKey = _configuration["Stripe:SecretKey"]
-                ?? "sk_test_51M9O4qKR3yBF1l8fZJ5Ll6Q7x0V0ec9i8rgqi8FMKtHTqSx3WYMvdCeOpuOdpImJ6OmhTiq6DDUhB83zumFikT2700QEmhSeSP";
+            var stripeKey = _configuration["Stripe:SecretKey"];
             StripeConfiguration.ApiKey = stripeKey;
 
-            var starterPrice = _configuration["Stripe:StarterPriceId"] ?? "price_1Rt2KhKR3yBF1l8fWC1Q2J6T";
-            var proPrice = _configuration["Stripe:ProfessionalPriceId"] ?? "price_1Rt2LNKR3yBF1l8f4ww3GlNh";
+            var starterPrice = _configuration["Stripe:StarterPriceId"];
+            var proPrice = _configuration["Stripe:ProfessionalPriceId"];
 
             var priceId = (plan?.ToLower()) switch
             {
@@ -201,7 +200,7 @@ namespace MenuOptics.Services
             var service = new SessionService();
             var session = service.Create(options);
 
-            return session.Id;
+            return (session.Id, session.Url);
         }
 
         public async Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model)

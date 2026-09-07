@@ -107,8 +107,8 @@ function renderSubscription(data) {
         $('#statAmountText').text(`$${parseFloat(data.amount).toFixed(2)} ${currency}`);
         $('#pkgPriceDisplay').html(`$${parseFloat(data.amount).toFixed(2)} <span>/${(data.interval || 'year')}</span>`);
     } else {
-        $('#statAmountText').text('$65 / mo');
-        $('#pkgPriceDisplay').html('$65 <span>/month</span>');
+        $('#statAmountText').text('$75 / mo');
+        $('#pkgPriceDisplay').html('$75 <span>/month</span>');
     }
 
     // Right Box Account Details

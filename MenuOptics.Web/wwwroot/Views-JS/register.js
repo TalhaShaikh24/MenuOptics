@@ -11,7 +11,6 @@
 /* ── 1. Constants ─────────────────────────────────────────────────────── */
 
 const totalSteps = 4;
-const stripe = Stripe('pk_test_51M9O4qKR3yBF1l8fXy3z9Vvtnn8A5e4frQt5lJgfpPOBcBMx6ZZFG93mpFCWgN0EjYXL0l7ioxvtSA07AJzUUOJX00XWJkik2w');
 
 /* ── 2. State ─────────────────────────────────────────────────────────── */
 
@@ -133,14 +132,20 @@ $('input, select, textarea').on('input change', function () {
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function initiateStripeCheckout(plan, userId) {
-
     $.ajax({
         url: '/api/UserApi/CreateCheckoutSession',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({ plan: plan, userId: userId }),
         success: function (response) {
-            stripe.redirectToCheckout({ sessionId: response.sessionId });
+            if (response && response.url) {
+                window.location.href = response.url;
+            } else if (response && response.sessionId) {
+                window.location.href = `https://checkout.stripe.com/c/pay/${response.sessionId}`;
+            } else {
+                showNotification('Payment session could not be created.', 'error');
+                resetSubmitButton();
+            }
         },
         error: function () {
             showNotification('Payment session could not be created.', 'error');

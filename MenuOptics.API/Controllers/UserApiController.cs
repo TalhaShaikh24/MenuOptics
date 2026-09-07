@@ -198,8 +198,8 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("CreateCheckoutSession")]
         public IActionResult CreateCheckoutSession([FromBody] PlanRequest request)
         {
-            var sessionId = _authService.CreateCheckoutSession(request.Plan, request.UserId);
-            return Ok(new { sessionId });
+            var (sessionId, url) = _authService.CreateCheckoutSession(request.Plan, request.UserId);
+            return Ok(new { sessionId, url });
         }
 
         [AllowAnonymous]

@@ -1,4 +1,4 @@
-﻿@using MenuOptics.Models.Enums
+@using MenuOptics.Models.Enums
 @{
     Layout = "_AuthLayout";
     ViewData["Title"] = "Signup";
@@ -221,7 +221,7 @@
                                 <div class="popular-badge">Most Popular</div>
                                 <div class="plan-header">
                                     <h4>Yearly</h4>
-                                    <div class="plan-price">$65<span>/month</span></div>
+                                    <div class="plan-price">$75<span>/month</span></div>
                                 </div>
                                 <ul class="plan-features">
                                     <li><i class="fas fa-check"></i> Advanced analytics</li>
@@ -270,9 +270,6 @@
 
 
 @section Scripts {
-    @* <script src="~/views-js/register.js"></script> *@
-    <script src="https://js.stripe.com/v3/"></script>
     <script src="~/js/globalajax.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/views-js/register.js?v=@DateTime.Now.Ticks"></script>
-
 }

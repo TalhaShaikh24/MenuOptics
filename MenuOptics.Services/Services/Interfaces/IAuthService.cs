@@ -1,4 +1,5 @@
 using MenuOptics.Models;
+using System.Threading.Tasks;
 
 namespace MenuOptics.Services
 {
@@ -6,7 +7,7 @@ namespace MenuOptics.Services
     {
         Task<ResponseDto> LoginAsync(LoginDto model, string requestId);
         Task<ResponseDto> LogoutAsync();
-        string CreateCheckoutSession(string? plan, int userId);
+        (string SessionId, string? Url) CreateCheckoutSession(string? plan, int userId);
         Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model);
         Task<ResponseDto> RevokeTokenAsync(RefreshTokenRequestDto model);
         Task<ResponseDto> CheckEmailAsync(CheckEmailDto model);
