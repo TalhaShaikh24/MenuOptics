@@ -56,34 +56,20 @@ namespace MenuOptics.Services.VendorApi
                 using var connection = _context.CreateConnection();
                 connection.Open();
 
-                decimal basePrice = 0;
-
-                // When PackSize given. Means it is a packed item.
-                // Price is calculated as per item. For example a cotton of 10 pepsi cans (300ml). The price here will be per one can (300ml)
-                if (model.PackSize != null && model.PackSize > 0)
-                {
-                    basePrice = model.BasePrice / model.PackSize.Value;
-                }
-                // When Weight given. Means it is a catch weight item.
-                // Price is calculated as per unit. For example meet is sold per kg. So the price here will be price per kg.
-                else if (model.Weight != null && model.Weight > 0)
-                {
-                    basePrice = model.BasePrice;
-                }
-                else
+                if ((model.Weight == null || model.Weight <= 0) && (model.PackSize == null || model.PackSize <= 0))
                 {
                     ResponseDto.Status = 400;
                     ResponseDto.ResponseMsg = "Either PackSize or Weight must be provided and greater than zero.";
                     await _activityLog.LogAsync(currentUserId, requestId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
                         System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
                     return (400, ResponseDto);
-                } 
+                }
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Price", basePrice);
+                parameters.Add("@Price", model.BasePrice);
                 parameters.Add("@Unit", model.Unit);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
@@ -99,9 +85,7 @@ namespace MenuOptics.Services.VendorApi
                         .GroupBy(r => r.RestaurantId)
                         .ToDictionary(
                             g => g.Key.ToString(),
-                            g => model.PackSize != null && model.PackSize > 0
-                                ? g.Last().Price / model.PackSize.Value
-                                : g.Last().Price
+                            g => g.Last().Price
                         );
 
                     parameters.Add("@RestaurantIds", string.Join(",", deduped.Keys));
@@ -167,17 +151,7 @@ namespace MenuOptics.Services.VendorApi
                 using var connection = _context.CreateConnection();
                 connection.Open();
 
-                decimal basePrice = 0;
-
-                if (model.PackSize != null && model.PackSize > 0)
-                {
-                    basePrice = model.BasePrice / model.PackSize.Value;
-                }
-                else if (model.Weight != null && model.Weight > 0)
-                {
-                    basePrice = model.BasePrice;
-                }
-                else
+                if ((model.Weight == null || model.Weight <= 0) && (model.PackSize == null || model.PackSize <= 0))
                 {
                     ResponseDto.Status = 400;
                     ResponseDto.ResponseMsg = "Either PackSize or Weight must be provided and greater than zero.";
@@ -188,7 +162,7 @@ namespace MenuOptics.Services.VendorApi
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
-                parameters.Add("@Price", basePrice);
+                parameters.Add("@Price", model.BasePrice);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@ModifiedBy", currentUserId);
@@ -202,9 +176,7 @@ namespace MenuOptics.Services.VendorApi
                             g => g.Key,
                             g => new
                             {
-                                Price = model.PackSize != null && model.PackSize > 0
-                                    ? Math.Abs(g.Last().Price) / model.PackSize.Value
-                                    : Math.Abs(g.Last().Price),
+                                Price = g.Last().Price,
                                 IsActive = g.Last().IsActive
                             }
                         );

@@ -113,8 +113,6 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
                 id: ing.ingredientId,
                 text: ing.name,
                 price: ing.price,
-                cost: ing.price,
-                Cost: ing.price,
                 unit: ing.unit, // Storage unit
                 size: ing.size, // Size
                 packSize: ing.packSize,
@@ -250,9 +248,10 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
         // Convert the quantity entered in the user-selected UOM back to the
         // ingredient's stored unit (pricing is per stored unit).
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-        const rawPrice = parseFloat(ingredientData.price ?? ingredientData.cost ?? ingredientData.Cost) || 0;
-        const packDivisor = (ingredientData.packSize != null && parseFloat(ingredientData.size) > 0) ? parseFloat(ingredientData.size) : 1;
-        const pricePerUnit = rawPrice / packDivisor;
+        const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
+        const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
+        const pricePerUnit = (ingredientData.price / packSize) / size;
+
         const convertedQuantity = (typeof convertUnit === 'function')
             ? convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size)
             : quantity;
@@ -452,24 +451,6 @@ function toggleRecipeActive(id) {
     }
 }
 
-// Delete recipe
-function deleteRecipe(id) {
-    if (confirm('Are you sure you want to delete this recipe?')) {
-        ajaxRequest({
-            url: `/api/RecipeApi/DeleteRecipe/${id}`,
-            method: 'DELETE',
-            showMessage: false,
-            onSuccess: function (response) {
-                refreshRecipesTable();
-                showNotification('Recipe deleted successfully!', 'success');
-            },
-            onError: function (xhr, status, error) {
-                console.error('Failed to delete recipe:', error);
-            }
-        });
-    }
-}
-
 // Refresh table
 function refreshRecipesTable() {
     ajaxRequest({
@@ -496,7 +477,8 @@ function refreshRecipesTable() {
                 const lbl = item.isActive ? 'Active' : 'In Active';
                 const cost = item.cost;
                 const currentCost = item.currentCost;
-
+                const hasPriceChanged = item.cost != item.currentCost && item.ingredients?.some(i => i.oldPrice != null && i.oldPrice != i.currentPrice);
+                
                 const row = `
                     <tr>
                         <td>
@@ -513,15 +495,14 @@ function refreshRecipesTable() {
                           </span>
                         </td>
                         <td>
-                         ${
-                                cost == currentCost
-                                    ? `
+                         ${!hasPriceChanged
+                                ? `
                                   <span>
                                     $${Number(currentCost).toFixed(2)}
                                     <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
                                   </span>
                                 `
-                                                    : `
+                                : `
                                   <div>
                                       <span class="text-highlight danger" title="Cost at the time this recipe was created/updated.">
                                         $${Number(cost).toFixed(2)}
@@ -747,7 +728,9 @@ function getRecipeIngredientExportPrice(ingredient) {
         return 0;
     }
 
-    const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
+    const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
+    const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
+    const pricePerUnit = (ingredientData.price / packSize) / size;
 
     // Quantity from the recipe API is normally already stored in ingredientData.unit.
     // If the API provides only the employee/display UOM, convert it before pricing.

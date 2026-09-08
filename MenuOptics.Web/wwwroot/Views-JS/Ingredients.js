@@ -249,7 +249,7 @@ function initIngredientsTable() {
             {
                 data: 'price',
                 render: function (val, type, row) {
-                    return `<span">${row.packSize==null ? (row.price + ' / ' + row.unit) : (row.price +' / Item')}</span>`;
+                    return `<span">${row.packSize == null ? ('$' + row.price + ' / ' + row.unit) : ('$' + row.price + ' / Case')}</span>`;
                 }
             },
             {

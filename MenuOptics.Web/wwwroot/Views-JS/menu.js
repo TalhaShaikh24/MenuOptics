@@ -252,10 +252,11 @@ function updateIngredientPrice(row, detailsId, costInputId) {
 
     const ingredientData = ingredientsWithPrices.find(ing => ing.id == ingredientId);
 
-
     if (ingredientData && quantity > 0) {
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-        const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
+        const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
+        const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
+        const pricePerUnit = (ingredientData.price / packSize) / size;
 
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
         const price = (pricePerUnit * convertedQuantity).toFixed(2);
@@ -385,7 +386,9 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
         let displayPrice = '0.00';
         if (savedQuantity) {
             const convertedQuantity = convertUnit(parseFloat(savedQuantity), savedUom, ingredientData.unit, ingredientData.size);
-            const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
+            const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
+            const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
+            const pricePerUnit = (ingredientData.price / packSize) / size;
             displayPrice = (pricePerUnit * convertedQuantity).toFixed(2);
         }
 
@@ -475,7 +478,10 @@ function updateTotalCost(detailsId, costInputId) {
         if (ingredientData && quantity > 0) {
             const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
             const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
-            const pricePerUnit = ingredientData.price / (ingredientData.packSize != null ? ingredientData.size : 1);
+            const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
+            const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
+            const pricePerUnit = (ingredientData.price / packSize) / size;
+
             totalCost += pricePerUnit * convertedQuantity;
         }
     });
@@ -744,22 +750,6 @@ function updateMenuItem(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update menu item:', error);
-        }
-    });
-}
-
-// Delete menu item
-function deleteMenuItem(id) {
-    ajaxRequest({
-        url: `/api/MenuApi/DeleteMenuItem/${id}`,
-        method: 'DELETE',
-        showMessage: false,
-        onSuccess: function (response) {
-            refreshMenuGrid();
-            showNotification('Menu item deleted successfully!', 'success');
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to delete menu item:', error);
         }
     });
 }
