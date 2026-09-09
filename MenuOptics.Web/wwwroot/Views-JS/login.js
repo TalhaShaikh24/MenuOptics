@@ -56,7 +56,7 @@ $(document).ready(function () {
         $btn.prop('disabled', true);
 
         ajaxRequest({
-            url: '/api/UserApi/CheckEmail',
+            url: '/api/UserApi/CheckUser',
             method: 'POST',
             data: { Email: identifier },
             showMessage: false,

@@ -35,7 +35,7 @@ builder.Services.AddDataProtection()
 // Infrastructure services
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<ISmtpEmailService, SmtpEmailService>();
 
 // Business services (one per API controller)
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
@@ -52,7 +52,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IMenuEngineeringInsightsService, MenuEngineeringInsightsService>();
 builder.Services.AddScoped<IPolicyService, PolicyService>();
 builder.Services.AddScoped<IRecipeService, RecipeService>();
-builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IInventorySuiteReportService, InventorySuiteReportService>();
 builder.Services.AddScoped<IRestaurantService, RestaurantService>();
 builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddScoped<IStripeWebhookService, StripeWebhookService>();

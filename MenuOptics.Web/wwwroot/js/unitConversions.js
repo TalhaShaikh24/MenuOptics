@@ -3,7 +3,7 @@
  * Exposes: NEW_UNIT_LABELS, ALLOWED_UNIT_OF_MEASURE_LABELS, convertUnit,
  *          getAllowedUomForUnit, buildUomOptionsHtml, normalizeUnit.
  * Load this BEFORE any page script that prices ingredients (recipes, menu,
- * CogsReport). Do not change conversion factors.
+ * InventorySuiteReport). Do not change conversion factors.
  * ==========================================================================*/
 
 // ============================================================================

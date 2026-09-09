@@ -376,7 +376,7 @@ function completeSale() {
         items: currentOrder.map(item => ({
             menuItemId: item.menuItemId,
             quantity: item.quantity,
-            price: item.sellingPrice * item.quantity,
+            sellingPrice: item.sellingPrice * item.quantity,
             cost: item.cost * item.quantity
         }))
     };

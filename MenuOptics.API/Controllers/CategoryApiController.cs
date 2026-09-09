@@ -14,7 +14,6 @@ namespace MenuOptics.Controllers.Api
     public class CategoryApiController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
-
         public CategoryApiController(ICategoryService categoryService)
         {
             _categoryService = categoryService;

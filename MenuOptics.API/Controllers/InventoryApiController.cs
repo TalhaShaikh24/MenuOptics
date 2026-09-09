@@ -18,29 +18,34 @@ namespace MenuOptics.Controllers.Api
         private readonly IInventoryService _inventoryService;
         private readonly IActivityLogService _activityLog;
 
-        public InventoryApiController(IInventoryService inventoryService, IActivityLogService activityLog)
+        public InventoryApiController(IInventoryService inventoryService,IActivityLogService activityLog)
         {
             _inventoryService = inventoryService;
             _activityLog = activityLog;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
-        private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
 
-        [HttpGet("GetInventory/{id}")]
-        public async Task<IActionResult> GetInventory(int id)
+        [HttpPost("AddIngredientStock")]
+        public async Task<IActionResult> AddIngredientStock([FromBody] Inventory model)
         {
-            var responseData = await _inventoryService.GetInventoryAsync(id);
-            return StatusCode(responseData.Status, responseData);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDto
+                {
+                    Status = 400,
+                    ResponseMsg = "Invalid input.",
+                    Data = ModelState
+                });
+            }
+
+            var (statusCode, body) = await _inventoryService.AddIngredientStockAsync(model, CurrentUserId, ActualUserId);
+            return StatusCode(statusCode, body);
         }
 
-        [HttpGet("GetAllInventoryByRestaurant/{restaurantId}")]
-        public async Task<IActionResult> GetAllInventoryByRestaurant(int restaurantId)
-        {
-            var responseData = await _inventoryService.GetAllInventoryByRestaurantAsync(restaurantId, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
+
 
         [HttpPost("UpdateClosingCount")]
         public async Task<IActionResult> UpdateClosingCount([FromBody] ClosingCountUpdateDto model)

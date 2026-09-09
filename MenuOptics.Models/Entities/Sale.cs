@@ -14,16 +14,14 @@ namespace MenuOptics.Models
         public decimal Total { get; set; }
         public List<SaleItem>? Items { get; set; }
         public string? ItemsJson { get; set; } // For JSON serialization in query
-
-        public DateTime? ModifiedOn { get; set; }
-        public int? ModifiedBy { get; set; }
-
-        public DateTime CreatedOn { get; set; }
-        public int? CreatedBy { get; set; }
-        public bool IsActive { get; set; }
         public string? Name { get; set; }
         public int Quantity { get; set; }
-        public decimal Price { get; set; }
+        public decimal SellingPrice { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public int? CreatedBy { get; set; }
+        public DateTime? ModifiedOn { get; set; }
+        public int? ModifiedBy { get; set; }
+        public bool IsActive { get; set; }
     }
 
     public class SaleItem
@@ -33,7 +31,7 @@ namespace MenuOptics.Models
         public string? MenuItemName { get; set; }
         public string? Name { get; set; }
         public int Quantity { get; set; }
-        public decimal Price { get; set; }
+        public decimal SellingPrice { get; set; }
         public decimal Cost { get; set; }
         public DateTime CreatedOn { get; set; }
         public int? CreatedBy { get; set; }

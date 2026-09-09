@@ -465,7 +465,7 @@ $('#saveStockBtn').on('click', function () {
         return;
     }
     ajaxRequest({
-        url: '/api/IngredientApi/AddIngredientStock',
+        url: '/api/InventoryApi/AddIngredientStock',
         method: 'POST',
         data: { ingredientId: ingredientId, stock: stock },
         onSuccess: function () {

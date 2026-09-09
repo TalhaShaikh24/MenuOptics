@@ -21,10 +21,10 @@ namespace MenuOptics.API.Controllers.VendorApi
     {
         private readonly IRestaurantService _restaurantService;
         private readonly IActivityLogService _activityLog;
-        private readonly IEmailService _emailService;
+        private readonly ISmtpEmailService _emailService;
         private readonly IConfiguration _configuration;
 
-        public RestaurantApiController(IRestaurantService restaurantService, IActivityLogService activityLog, IEmailService emailService, IConfiguration configuration)
+        public RestaurantApiController(IRestaurantService restaurantService, IActivityLogService activityLog, ISmtpEmailService emailService, IConfiguration configuration)
         {
             _restaurantService = restaurantService;
             _activityLog = activityLog;

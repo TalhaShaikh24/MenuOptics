@@ -422,6 +422,39 @@ async function exportAiInsightsPdf(reportData) {
                         { text: `Expected Impact: ${act.expectedImpact || ''}`, color: '#059669', bold: true }
                     ]
                 }))
+            },
+
+            // Disclaimer Box (Small Fonts)
+            { text: '', margin: [0, 6, 0, 0] },
+            {
+                table: {
+                    widths: ['100%'],
+                    body: [
+                        [
+                            {
+                                stack: [
+                                    { text: 'Disclaimer: Informational Purposes & Business Discretion', bold: true, fontSize: 7.5, color: '#374151', margin: [0, 0, 0, 2] },
+                                    { text: 'This report was generated using artificial intelligence and data-driven analysis to provide high-level insights into local market trends, competitive benchmarks, and menu pricing suggestions.', fontSize: 6.8, color: '#6b7280', margin: [0, 0, 0, 2] },
+                                    {
+                                        ul: [
+                                            { text: [{ text: 'Guidance, Not Mandate: ', bold: true }, 'All pricing models, financial estimates, and market observations contained in this report are informational suggestions intended solely as strategic guidance. They do not constitute formal financial, operational, or legal advice.'], fontSize: 6.5, color: '#6b7280', margin: [0, 0, 0, 1.5] },
+                                            { text: [{ text: 'Operator Responsibility: ', bold: true }, 'Every hospitality operation carries unique overhead structures, labor costs, supplier agreements, and margin requirements. Final menu pricing, positioning, and implementation decisions rest entirely with the business owner and management.'], fontSize: 6.5, color: '#6b7280', margin: [0, 0, 0, 1.5] },
+                                            { text: [{ text: 'Market Dynamics: ', bold: true }, 'Competitive data and market benchmarks reflect conditions at the time of analysis and are subject to rapid change. We recommend validating these findings against your internal recipe costing, vendor contracts, and target contribution margins before updating your menus.'], fontSize: 6.5, color: '#6b7280' }
+                                        ]
+                                    }
+                                ],
+                                fillColor: '#f9fafb',
+                                margin: [6, 5, 6, 5]
+                            }
+                        ]
+                    ]
+                },
+                layout: {
+                    hLineWidth: function () { return 0.5; },
+                    vLineWidth: function () { return 0.5; },
+                    hLineColor: function () { return '#e5e7eb'; },
+                    vLineColor: function () { return '#e5e7eb'; }
+                }
             }
         ]
     };

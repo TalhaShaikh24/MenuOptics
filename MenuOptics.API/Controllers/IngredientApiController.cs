@@ -45,24 +45,6 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(statusCode, body);
         }
 
-        [HttpPost("AddIngredientStock")]
-        public async Task<IActionResult> AddIngredientStock([FromBody] Inventory model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new ResponseDto
-                {
-                    Status = 400,
-                    ResponseMsg = "Invalid input.",
-                    Data = ModelState
-                });
-            }
-
-            var (statusCode, body) = await _ingredientService.AddIngredientStockAsync(model, CurrentUserId, ActualUserId);
-            return StatusCode(statusCode, body);
-        }
-
-
         [HttpPut("UpdateIngredient")]
         public async Task<IActionResult> UpdateIngredient([FromBody] Ingredient model)
         {

@@ -219,10 +219,10 @@ namespace MenuOptics.Controllers.Api
         }
 
         [AllowAnonymous]
-        [HttpPost("CheckEmail")]
-        public async Task<IActionResult> CheckEmail([FromBody] CheckEmailDto model)
+        [HttpPost("CheckUser")]
+        public async Task<IActionResult> CheckUser([FromBody] CheckUserDto model)
         {
-            var responseData = await _authService.CheckEmailAsync(model);
+            var responseData = await _authService.CheckUserAsync(model);
             return StatusCode(responseData.Status, responseData);
         }
 
