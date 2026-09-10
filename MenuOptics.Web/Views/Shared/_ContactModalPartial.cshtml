@@ -1,0 +1,113 @@
+@using System.Security.Claims
+@{
+    var loggedInFirstName = User?.FindFirst("FirstName")?.Value ?? "";
+    var loggedInLastName = User?.FindFirst("LastName")?.Value ?? "";
+    var loggedInEmail = User?.FindFirst(ClaimTypes.Email)?.Value
+                        ?? User?.FindFirst("Email")?.Value
+                        ?? "";
+}
+
+<!-- ═════════════════════════════════════════════════════════════════
+     Get in Touch (Contact Us) Modal Component
+     ═════════════════════════════════════════════════════════════════ -->
+<div id="contactModalOverlay" class="contact-modal-overlay"
+     data-user-firstname="@loggedInFirstName"
+     data-user-lastname="@loggedInLastName"
+     data-user-email="@loggedInEmail"
+     role="dialog" aria-modal="true" aria-labelledby="contactModalTitle" style="display:none;">
+    <div class="contact-modal-card">
+        <button type="button" class="contact-modal-close" id="contactModalCloseBtn" aria-label="Close contact modal">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div class="contact-modal-header">
+            <h2 id="contactModalTitle" class="contact-modal-title">Get in Touch</h2>
+            <p class="contact-modal-subtitle">Have a question, feedback, or inquiry? Fill out the form below and our team will respond within 24 hours.</p>
+        </div>
+
+        <!-- Alert Notification Box -->
+        <div id="contactModalAlert" class="contact-modal-alert"></div>
+
+        <!-- Contact Form -->
+        <form id="contactInquiryForm" class="contact-form" novalidate>
+            <div class="contact-form-row">
+                <div class="contact-form-group">
+                    <label for="contactFirstName">First Name <span class="req-star">*</span></label>
+                    <input type="text" id="contactFirstName" name="firstName" placeholder="e.g., John" value="@loggedInFirstName" required />
+                </div>
+                <div class="contact-form-group">
+                    <label for="contactLastName">Last Name <span class="req-star">*</span></label>
+                    <input type="text" id="contactLastName" name="lastName" placeholder="e.g., Smith" value="@loggedInLastName" required />
+                </div>
+            </div>
+
+            <div class="contact-form-row">
+                <div class="contact-form-group">
+                    <label for="contactEmail">Email Address <span class="req-star">*</span></label>
+                    <input type="email" id="contactEmail" name="email" placeholder="john.smith@example.com" value="@loggedInEmail" required />
+                </div>
+                <div class="contact-form-group">
+                    <label for="contactPhone">Phone Number <span class="opt-note">(Optional)</span></label>
+                    <input type="tel" id="contactPhone" name="phoneNumber" placeholder="+1 (555) 000-0000" />
+                </div>
+            </div>
+
+            <div class="contact-form-group">
+                <label for="contactReason">Reason for Inquiry <span class="req-star">*</span></label>
+                <select id="contactReason" name="reason" required>
+                    <option value="" disabled selected>Select a topic... (General Inquiry, Sales, Support, Partnership)</option>
+                    <option value="General Inquiry">General Inquiry</option>
+                    <option value="Sales">Sales &amp; Pricing</option>
+                    <option value="Support">Support &amp; Technical Help</option>
+                    <option value="Partnership">Partnership &amp; Integration</option>
+                    <option value="Feedback">Feedback &amp; Suggestions</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="contact-form-group">
+                <label for="contactMessage">Message <span class="req-star">*</span></label>
+                <textarea id="contactMessage" name="message" rows="4" maxlength="1000" placeholder="Please provide details regarding your inquiry, project scope, or questions..." required></textarea>
+                <div class="contact-char-count"><span id="contactCharCount">0</span> / 1,000 characters</div>
+            </div>
+
+            <div class="contact-pref-group">
+                <span class="contact-pref-title">Preferred Contact Method</span>
+                <div class="contact-pref-options">
+                    <label class="contact-pref-option">
+                        <input type="radio" name="preferredContactMethod" value="Email" checked />
+                        <span>Email</span>
+                    </label>
+                    <label class="contact-pref-option">
+                        <input type="radio" name="preferredContactMethod" value="Phone" />
+                        <span>Phone</span>
+                    </label>
+                    <label class="contact-pref-option">
+                        <input type="radio" name="preferredContactMethod" value="No preference" />
+                        <span>No preference</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="contact-submit-wrap">
+                <button type="submit" id="btnContactSubmit" class="btn-contact-submit">
+                    Send Message &rarr;
+                </button>
+            </div>
+        </form>
+
+        <!-- Success Screen -->
+        <div id="contactSuccessCard" class="contact-success-card">
+            <div class="contact-success-icon-wrap">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 class="contact-success-title">Message Sent!</h3>
+            <p class="contact-success-msg">
+                Thank you for reaching out. Our team has received your message and will respond within <strong>24 hours</strong>.
+            </p>
+            <button type="button" id="contactModalDoneBtn" class="btn-contact-done">
+                Done
+            </button>
+        </div>
+    </div>
+</div>

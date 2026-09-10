@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = null;
     ViewData["Title"] = "Access denied";
 }
@@ -12,6 +12,7 @@
     <title>Access Denied - Restaurant Management System</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="~/css/contact-modal.css?v=@DateTime.Now.Ticks">
     <style>
         * {
             margin: 0;
@@ -808,7 +809,7 @@
                     <i class="fas fa-question-circle"></i>
                     Help
                 </a>
-                <a href="/contact" class="header-btn">
+                <a href="javascript:void(0);" class="header-btn open-contact-modal" data-reason="Support">
                     <i class="fas fa-headset"></i>
                     Support
                 </a>
@@ -919,8 +920,8 @@
                         <div class="contact-details">
                             <h5>Email Support</h5>
                             <p>
-                                <a href="mailto:support@@restaurantos.com" class="contact-link">
-                                    support@@restaurantos.com
+                                <a href="javascript:void(0);" class="contact-link open-contact-modal" data-reason="Support">
+                                    support@@menuoptics.com
                                 </a>
                             </p>
                         </div>
@@ -1095,7 +1096,9 @@
                 color: #374151;
             }
         `;
-        document.head.appendChild(style);
     </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="~/js/contact-modal.js?v=@DateTime.Now.Ticks"></script>
+    @await Html.PartialAsync("_ContactModalPartial")
 </body>
 </html>

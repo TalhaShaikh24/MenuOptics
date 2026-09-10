@@ -18,6 +18,7 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="~/css/styles.css?v=@DateTime.Now.Ticks" />
     <link rel="stylesheet" href="~/css/landing.css?v=@DateTime.Now.Ticks" />
+    <link rel="stylesheet" href="~/css/contact-modal.css?v=@DateTime.Now.Ticks" />
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script>
@@ -31,8 +32,11 @@
 
     @RenderBody()
 
+    @await Html.PartialAsync("_ContactModalPartial")
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="~/js/landing.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/contact-modal.js?v=@DateTime.Now.Ticks"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

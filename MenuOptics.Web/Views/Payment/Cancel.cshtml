@@ -77,9 +77,9 @@
                         <i class="fas fa-redo"></i> Try Again / Register
                     </a>
                 }
-                <a href="mailto:admin@menuoptics.com" class="btn-landing-outline btn-landing-lg">
+                <button type="button" class="btn-landing-outline btn-landing-lg open-contact-modal" data-reason="Billing">
                     <i class="fas fa-envelope"></i> Contact Support
-                </a>
+                </button>
                 <a href="@Url.Action("Index", "Home")" class="btn-landing-outline btn-landing-lg">
                     <i class="fas fa-home"></i> Return to Home
                 </a>
@@ -95,7 +95,7 @@
                 <div class="payment-feature-mini-card">
                     <i class="fas fa-headset"></i>
                     <h4>Need Assistance?</h4>
-                    <p>Email us at <a href="mailto:admin@menuoptics.com" class="landing-faq-inline-link">admin@menuoptics.com</a> for personalized support.</p>
+                    <p>Contact us at <a href="javascript:void(0);" class="landing-faq-inline-link open-contact-modal" data-reason="Billing">support@menuoptics.com</a> for personalized support.</p>
                 </div>
             </div>
 

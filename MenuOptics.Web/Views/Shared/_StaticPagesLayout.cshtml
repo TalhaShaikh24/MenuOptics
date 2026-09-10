@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -7,6 +7,7 @@
     <script type="importmap"></script>
     <link rel="icon" type="image/png" href="~/favicon.png" />
     <link rel="stylesheet" href="~/css/styles.css?v=@DateTime.Now.Ticks">
+    <link rel="stylesheet" href="~/css/contact-modal.css?v=@DateTime.Now.Ticks">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -96,7 +97,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
    
     <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
-   
+    <script src="~/js/contact-modal.js?v=@DateTime.Now.Ticks"></script>
+
+    @await Html.PartialAsync("_ContactModalPartial")
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

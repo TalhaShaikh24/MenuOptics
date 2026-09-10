@@ -878,6 +878,178 @@ html {
     }
 }
 
+
+/* ── Comparison Section: Why Operators Switch ─────────────────────── */
+.comparison-section {
+    padding: 80px 0 100px 0;
+    position: relative;
+}
+
+.comparison-header {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 50px auto;
+}
+
+.comparison-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    max-width: 1050px;
+    margin: 0 auto;
+}
+
+    .comparison-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        right: 0;
+        height: 3px;
+        background: var(--primary-gradient);
+    }
+
+.comparison-table {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.comparison-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.25s ease;
+}
+
+    .comparison-row:last-child {
+        border-bottom: none;
+    }
+
+    .comparison-row:not(.comparison-header-row):hover {
+        background: rgba(240, 141, 17, 0.03);
+    }
+
+.comparison-header-row {
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 2px solid var(--border-color);
+}
+
+[data-theme="light"] .comparison-header-row {
+    background: rgba(241, 245, 249, 0.7);
+}
+
+.comparison-col {
+    padding: 24px 36px;
+    display: flex;
+    align-items: center;
+}
+
+    .comparison-col.legacy-col {
+        border-right: 1px solid var(--border-color);
+    }
+
+    .comparison-col.advantage-col {
+        background: rgba(240, 141, 17, 0.04);
+    }
+
+[data-theme="light"] .comparison-col.advantage-col {
+    background: rgba(240, 141, 17, 0.06);
+}
+
+.col-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+    .col-title-wrapper h3 {
+        font-family: var(--font-heading);
+        font-size: 19px;
+        font-weight: 700;
+        margin: 0;
+        color: var(--text-main);
+    }
+
+.advantage-col .col-title-wrapper h3 {
+    color: var(--primary-amber);
+}
+
+.col-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+}
+
+    .col-icon.legacy-icon {
+        color: #ef4444;
+    }
+
+    .col-icon.advantage-icon {
+        color: var(--primary-amber);
+    }
+
+.comparison-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+
+.advantage-col .comparison-item {
+    color: var(--text-main);
+}
+
+    .advantage-col .comparison-item strong {
+        color: #ffffff;
+    }
+
+[data-theme="light"] .advantage-col .comparison-item strong {
+    color: #0f172a;
+}
+
+.item-status-icon {
+    font-size: 15px;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+    .item-status-icon.legacy {
+        color: #f87171;
+        opacity: 0.8;
+    }
+
+    .item-status-icon.advantage {
+        color: var(--primary-amber);
+    }
+
+@media (max-width: 768px) {
+    .comparison-row {
+        grid-template-columns: 1fr;
+    }
+
+    .comparison-col.legacy-col {
+        border-right: none;
+        border-bottom: 1px dashed var(--border-color);
+        padding: 18px 20px;
+    }
+
+    .comparison-col.advantage-col {
+        padding: 18px 20px;
+    }
+
+    .comparison-card::before {
+        left: 0;
+    }
+}
+
 /* ── Section 4: Why Chefs & Owners Trust Grid ───────────────────── */
 .why-us-section {
     padding: 110px 0;

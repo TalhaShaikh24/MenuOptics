@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="~/favicon.png" />
     <link rel="shortcut icon" href="~/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="~/css/styles.css?v=@DateTime.Now.Ticks">
+    <link rel="stylesheet" href="~/css/contact-modal.css?v=@DateTime.Now.Ticks">
     <link rel="stylesheet" href="~/css/image-preview.css?v=@DateTime.Now.Ticks">
     <link rel="stylesheet" href="~/css/auth.css?v=@DateTime.Now.Ticks" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -72,6 +73,9 @@
 
     <script src="~/js/script.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/image-preview.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/contact-modal.js?v=@DateTime.Now.Ticks"></script>
+
+    @await Html.PartialAsync("_ContactModalPartial")
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

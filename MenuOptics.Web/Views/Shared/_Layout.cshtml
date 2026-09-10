@@ -36,6 +36,7 @@
 
 
     <link href="~/css/error-popup.css" rel="stylesheet" />
+    <link href="~/css/contact-modal.css?v=@DateTime.Now.Ticks" rel="stylesheet" />
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
 
@@ -273,6 +274,10 @@
                                 <i class="fas fa-question-circle"></i>
                                 <span>FAQs</span>
                             </a>
+                            <a href="javascript:void(0);" class="nav-item nav-child open-contact-modal" data-reason="Support">
+                                <i class="fas fa-headset"></i>
+                                <span>Contact Support</span>
+                            </a>
                         </div>
                     </div>
                 }
@@ -371,6 +376,8 @@
         </div>
     }
 
+    @await Html.PartialAsync("_ContactModalPartial")
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -400,6 +407,7 @@
     <script src="~/js/globalajax.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/unitconversions.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/error-popup.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/js/contact-modal.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/module-tutorials.js?v=@DateTime.Now.Ticks"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 

@@ -155,7 +155,7 @@ function executeAjaxRequest({
                     message: `
                     <p>Something went wrong on the server.</p>
                     <p>Please try again later or contact support at 
-                        <a href="mailto:support@menuoptics.com " class="support-link">
+                        <a href="javascript:void(0);" class="support-link open-contact-modal" data-reason="Support">
                             support@menuoptics.com
                         </a>
                     </p>`
