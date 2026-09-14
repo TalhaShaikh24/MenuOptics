@@ -7,8 +7,11 @@ using Stripe;
 using Stripe.Checkout;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Security.Claims;
 using MenuOptics.Models.Enums;
+using MenuOptics.Services.EmailTemplates;
+using Microsoft.Extensions.Configuration;
 
 namespace MenuOptics.Services
 {
@@ -22,6 +25,7 @@ namespace MenuOptics.Services
         private readonly ISmtpEmailService _emailService;
         private readonly IFileUploadService _fileService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IConfiguration _configuration;
 
         public UserService(
             DapperContext context,
@@ -31,7 +35,8 @@ namespace MenuOptics.Services
             ITokenService tokenService,
             ISmtpEmailService emailService,
             IFileUploadService fileService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IConfiguration configuration)
         {
             _context = context;
             _environment = environment;
@@ -41,6 +46,7 @@ namespace MenuOptics.Services
             _emailService = emailService;
             _fileService = fileService;
             _httpContextAccessor = httpContextAccessor;
+            _configuration = configuration;
         }
 
         public async Task<ResponseDto> GetUserStatsAsync()
@@ -741,6 +747,19 @@ namespace MenuOptics.Services
                     await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
                 }
 
+                // If this user has an associated Vendor, send onboarding SOP email to the Vendor
+                if (user.VendorId.HasValue && user.VendorId.Value > 0)
+                {
+                    try
+                    {
+                       // await SendVendorOnboardingEmailAsync(connection, user);
+                    }
+                    catch
+                    {
+                        // Ignore or handle silently
+                    }
+                }
+
                 return ResponseDto;
             }
             catch (SqlException sqlEx)
@@ -759,6 +778,75 @@ namespace MenuOptics.Services
             {
                 connection.Close();
             }
+        }
+
+        private async Task SendVendorOnboardingEmailAsync(IDbConnection connection, UserDto user)
+        {
+            if (!user.VendorId.HasValue || user.VendorId.Value <= 0)
+                return;
+
+            // 1. Fetch Vendor details using existing sp_UserCRUD with SELECT action
+            var vendorParams = new DynamicParameters();
+            vendorParams.Add("@UserId", user.VendorId.Value);
+            vendorParams.Add("@Action", "SELECT");
+
+            var vendor = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                "sp_UserCRUD", vendorParams, commandType: CommandType.StoredProcedure);
+
+            if (vendor == null || string.IsNullOrWhiteSpace(vendor.Email))
+            {
+                return;
+            }
+
+            // 2. Prepare email placeholders
+            string businessName = !string.IsNullOrWhiteSpace(user.RestaurantName)
+                ? user.RestaurantName
+                : $"{user.FirstName} {user.LastName}".Trim();
+
+            string customerNumber = !string.IsNullOrWhiteSpace(user.VendorCustomerNumber)
+                ? user.VendorCustomerNumber
+                : "Account on file";
+
+            string vendorFirstName = vendor.FirstName ?? "";
+            string tmName = "Territory Manager";
+            if (!string.IsNullOrWhiteSpace(vendorFirstName))
+            {
+                var cleaned = vendorFirstName.Replace("Admin", "").Trim();
+                tmName = string.IsNullOrWhiteSpace(cleaned) ? "Territory Manager" : $"{cleaned} Territory Manager";
+            }
+
+            var webUrl = _configuration["WebUrl"] ?? "https://menuoptics.com";
+            var subject = VendorOnboardingEmailTemplate.BuildSubject(businessName);
+            var htmlBody = VendorOnboardingEmailTemplate.BuildHtml(tmName, businessName, customerNumber, webUrl);
+
+            // 3. Resolve Attachment Path
+            string attachmentPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Email", "Attachments", "MenuOptics_Onboarding_SOP.pdf");
+            if (!System.IO.File.Exists(attachmentPath))
+            {
+                var candidates = new[]
+                {
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MenuOptics_Onboarding_SOP.pdf"),
+                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Attachments", "MenuOptics_Onboarding_SOP.pdf"),
+                    Path.Combine(_environment?.ContentRootPath ?? "", "Email", "Attachments", "MenuOptics_Onboarding_SOP.pdf"),
+                    Path.Combine(_environment?.ContentRootPath ?? "", "Resources", "Attachments", "MenuOptics_Onboarding_SOP.pdf"),
+                    @"E:\My Projects\Hammad Projects\Asp.net\Restaurant\MenuOptics.Services\Email\Attachments\MenuOptics_Onboarding_SOP.pdf",
+                    @"E:\My Projects\Hammad Projects\Asp.net\Restaurant\MenuOptics.API\Resources\Attachments\MenuOptics_Onboarding_SOP.pdf",
+                    @"E:\My Projects\Hammad Projects\Asp.net\Restaurant\MenuOptics.Web\wwwroot\docs\MenuOptics_Onboarding_SOP.pdf"
+                };
+
+                foreach (var candidate in candidates)
+                {
+                    if (System.IO.File.Exists(candidate))
+                    {
+                        attachmentPath = Path.GetFullPath(candidate);
+                        break;
+                    }
+                }
+            }
+
+            // 4. Send email with attachment
+            await _emailService.SendEmailAsync(vendor.Email, subject, htmlBody, attachmentPath, "MenuOptics_Onboarding_SOP.pdf");
+
         }
     }
 }

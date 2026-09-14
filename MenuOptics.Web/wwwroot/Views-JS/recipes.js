@@ -26,6 +26,21 @@ $(document).ready(function () {
     // Initialize DataTable
     initRecipeTable();
 
+    // ── Unit change: dynamically show selected unit badge on Recipe Size label ──
+    $('#recipeUnit').on('change', function () {
+        updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
+    });
+    $('#editRecipeUnit').on('change', function () {
+        updateRecipeSizeUnitBadge('#editRecipeUnit', '#editRecipeSizeUnitBadge', '#editRecipeSize');
+    });
+    $('#addRecipeBtn').on('click', function () {
+        updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
+    });
+
+    // Initialize unit badges on ready
+    updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
+    updateRecipeSizeUnitBadge('#editRecipeUnit', '#editRecipeSizeUnitBadge', '#editRecipeSize');
+
     // Event handlers
     $('#saveRecipeBtn').on('click', function () {
         const recipeData = getRecipeFormData('#addRecipeForm', '#ingredientsDetails');
@@ -282,7 +297,7 @@ function updateTotalPrice(detailsId, priceInputId) {
 
 // Get form data with proper unit conversion
 function getRecipeFormData(formId, detailsId) {
-    debugger
+
     const formData = new FormData($(formId)[0]);
     const ingredients = [];
 
@@ -334,6 +349,7 @@ function addRecipe(formData) {
         onSuccess: function (response) {
             refreshRecipesTable();
             $('#addRecipeForm')[0].reset();
+            updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
             $('#ingredientsSelect').val(null).trigger('change');
             showNotification('Recipe added successfully!', 'success');
             closeModal('addRecipeModal');
@@ -375,7 +391,20 @@ function getRecipeById(id) {
             const recipe = response.data;
             $('#editRecipeId').val(recipe.recipeId);
             $('#editRecipeName').val(recipe.name);
-            $('#editRecipeUnit').val(recipe.unit);
+            if (recipe.unit) {
+                const targetUnit = recipe.unit.toString().trim().toLowerCase();
+                let matchedVal = null;
+                $('#editRecipeUnit option').each(function () {
+                    if ($(this).val() && ($(this).val().toLowerCase() === targetUnit || $(this).text().toLowerCase().startsWith(targetUnit))) {
+                        matchedVal = $(this).val();
+                        return false;
+                    }
+                });
+                $('#editRecipeUnit').val(matchedVal || recipe.unit);
+            } else {
+                $('#editRecipeUnit').val('');
+            }
+            updateRecipeSizeUnitBadge('#editRecipeUnit', '#editRecipeSizeUnitBadge', '#editRecipeSize');
             $('#editRecipeCost').val(recipe.cost);
             $('#editRecipeSize').val(recipe.size);
             $('#editRecipeDescription').val(recipe.description);
@@ -392,7 +421,7 @@ function getRecipeById(id) {
                         if (uomSelect.length) {
                             const normalizeFn = (typeof normalizeUnit === 'function')
                                 ? normalizeUnit
-                                : (u => (u || '').toString().trim().toUpperCase());
+                                : (u => (u || '').toString().trim());
                             const targetUom = normalizeFn(userUnit);
 
                             // Find the option whose value matches the saved uom (case/format insensitive)
@@ -426,6 +455,7 @@ function getRecipeById(id) {
             }, 300);
 
             openModal('editRecipeModal');
+            updateRecipeSizeUnitBadge('#editRecipeUnit', '#editRecipeSizeUnitBadge', '#editRecipeSize');
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch recipe:', error);
@@ -478,7 +508,7 @@ function refreshRecipesTable() {
                 const cost = item.cost;
                 const currentCost = item.currentCost;
                 const hasPriceChanged = item.cost != item.currentCost && item.ingredients?.some(i => i.oldPrice != null && i.oldPrice != i.currentPrice);
-                
+
                 const row = `
                     <tr>
                         <td>
@@ -491,18 +521,18 @@ function refreshRecipesTable() {
                         </td>
                         <td>
                           <span class="${item.size != null ? 'category-badge-size' : ''}">
-                            ${item.size ? `${item.size} ${(item.unit || '').toUpperCase()}` : ''}
+                            ${item.size ? `${item.size} ${(item.unit || '')}` : ''}
                           </span>
                         </td>
                         <td>
                          ${!hasPriceChanged
-                                ? `
+                        ? `
                                   <span>
                                     $${Number(currentCost).toFixed(2)}
                                     <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
                                   </span>
                                 `
-                                : `
+                        : `
                                   <div>
                                       <span class="text-highlight danger" title="Cost at the time this recipe was created/updated.">
                                         $${Number(cost).toFixed(2)}
@@ -514,7 +544,7 @@ function refreshRecipesTable() {
                                       </span>
                                   </div>
                                 `
-                            }
+                    }
                         </td>
                         <td><span class="status-badge good">${ingredientNames}</span></td>
                         <td><span class="status-badge ${cls}" > ${lbl}</span ></td>
@@ -525,7 +555,7 @@ function refreshRecipesTable() {
                                     <a href="#" onclick="getRecipeById(${item.recipeId})"><i class="fas fa-edit"></i> Edit</a>
                                     <a href = "#" onclick = "toggleRecipeActive(${item.recipeId})" >
                                         <i class="fas fa-ban"></i>
-                                        ${item.isActive ? 'Deactivate' : 'Activate' }
+                                        ${item.isActive ? 'Deactivate' : 'Activate'}
                                    </a>
                                     <a href="#" onclick="exportSingleRecipePDF(${item.recipeId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
                                 </div>
@@ -565,7 +595,7 @@ async function generateRecipePDF(recipeData, filename) {
     const isEmployeeFacing = document.getElementById('employeeFacingRecipe')?.checked || false;
     const logoPath = getRecipeExportLogoPath();
     let logoBase64 = null;
-    debugger
+
     try {
         logoBase64 = await getImageAsPngBase64(logoPath);
     } catch (e) {
@@ -585,21 +615,12 @@ async function generateRecipePDF(recipeData, filename) {
             columns: [
                 {
                     stack: [
-                        { text: (recipe.name || 'Recipe').toUpperCase(), style: 'itemTitle' },
-                        { text: `Unit: ${recipe.unit || 'N/A'}`, margin: [0, 2, 0, 0] }
+                        { text: (recipe.name || 'Recipe').toUpperCase(), style: 'itemTitle' }
                     ]
                 },
                 logoBase64 ? { image: logoBase64, width: 60, alignment: 'right' } : { text: '' }
             ],
             margin: [0, 0, 0, 15]
-        });
-
-        content.push({ text: 'Direction', style: 'sectionHeader' });
-        content.push({
-            text: wrapPdfText(recipe.description || 'No Direction'),
-            fontSize: 10,
-            lineHeight: 1.2,
-            margin: [0, 5, 0, isEmployeeFacing ? 20 : 12]
         });
 
         if (!isEmployeeFacing) {
@@ -612,8 +633,24 @@ async function generateRecipePDF(recipeData, filename) {
                             { text: 'Cost', style: 'tableHeader' }
                         ],
                         [
-                            recipe.unit || 'N/A',
-                            formatCurrency(recipe.price)
+                            (recipe.unit || 'N/A'),
+                            formatCurrency(recipe.cost ?? 0)
+                        ]
+                    ]
+                },
+                layout: 'lightHorizontalLines',
+                margin: [0, 0, 0, 20]
+            });
+        } else {
+            content.push({
+                table: {
+                    widths: ['*'],
+                    body: [
+                        [
+                            { text: 'Unit', style: 'tableHeader' }
+                        ],
+                        [
+                            (recipe.unit || 'N/A')
                         ]
                     ]
                 },
@@ -622,34 +659,46 @@ async function generateRecipePDF(recipeData, filename) {
             });
         }
 
+
+        content.push({
+            table: {
+                widths: ['*'],
+                body: [
+                    [
+                        { text: 'Direction', style: 'tableHeader' }
+                    ],
+                    [
+                        {
+                            text: wrapPdfText(recipe.description || 'No Direction'),
+                            fontSize: 10,
+                            lineHeight: 1.2
+                        }
+                    ]
+                ]
+            },
+            layout: 'lightHorizontalLines',
+            margin: [0, 0, 0, 12]
+        });
+
         if (recipe.ingredients && recipe.ingredients.length > 0) {
             content.push({ text: 'Detailed Ingredients List', style: 'sectionHeader' });
 
             const ingredientRows = recipe.ingredients.map(ingredient => {
-                const row = [
-                    ingredient.ingredientName || ingredient.name || '---',
-                    `${formatQuantity(ingredient.quantity)} ${ingredient.uom || ingredient.Uom || ingredient.unit || ''}`
+                return [
+                    ingredient.ingredientName || '---',
+                    `${convertUnit(ingredient.quantity, ingredient.unit, ingredient.uom).toFixed(2) + " " + ingredient.uom}`
                 ];
-
-                if (!isEmployeeFacing) {
-                    row.push(formatCurrency(getRecipeIngredientExportPrice(ingredient)));
-                }
-
-                return row;
             });
-
+            
             const headerRow = [
                 { text: 'Ingredient Name', bold: true, fillColor: '#eeeeee' },
                 { text: 'Quantity', bold: true, fillColor: '#eeeeee' }
             ];
 
-            if (!isEmployeeFacing) {
-                headerRow.push({ text: 'Cost', bold: true, fillColor: '#eeeeee' });
-            }
-
+            
             content.push({
                 table: {
-                    widths: isEmployeeFacing ? ['*', 'auto'] : ['*', 'auto', 'auto'],
+                    widths: ['*', 'auto'],
                     body: [headerRow, ...ingredientRows]
                 },
                 margin: [0, 5, 0, 15]
@@ -703,27 +752,24 @@ async function getImageAsPngBase64(url) {
     });
 }
 
-function formatCurrency(value) {
-    const number = parseFloat(value);
-    return Number.isFinite(number) ? `$${number.toFixed(2)}` : '$0.00';
-}
+
 
 function getRecipeIngredientExportPrice(ingredient) {
     // Prefer any price/cost returned by the API when present.
-    const directPrice = parseFloat(ingredient.price ?? ingredient.cost ?? ingredient.totalPrice ?? ingredient.totalCost);
+    const directPrice = parseFloat(ingredient.currentCost);
     if (Number.isFinite(directPrice) && directPrice > 0) {
         return directPrice;
     }
 
     // GetRecipe/GetAllRecipes usually returns only ingredientId + quantity.
     // Recalculate the line price from the globally loaded ingredient master data.
-    const ingredientId = ingredient.ingredientId ?? ingredient.IngredientId ?? ingredient.id;
+    const ingredientId = ingredient.ingredientId;
     const ingredientData = ingredientsWithPrices.find(item => item.id == ingredientId);
     if (!ingredientData) {
         return 0;
     }
 
-    const quantity = parseFloat(ingredient.quantity ?? ingredient.Quantity) || 0;
+    const quantity = parseFloat(ingredient.quantity) || 0;
     if (quantity <= 0) {
         return 0;
     }
@@ -734,7 +780,7 @@ function getRecipeIngredientExportPrice(ingredient) {
 
     // Quantity from the recipe API is normally already stored in ingredientData.unit.
     // If the API provides only the employee/display UOM, convert it before pricing.
-    const apiUnit = ingredient.uom || ingredient.Uom || ingredient.unitOfMeasure || ingredient.unit;
+    const apiUnit = ingredient.uom;
     const storedUnit = ingredientData.unit;
     const quantityInStoredUnit = apiUnit && storedUnit && typeof convertUnit === 'function'
         ? convertUnit(quantity, apiUnit, storedUnit, ingredientData ? ingredientData.size : 1)
@@ -743,17 +789,59 @@ function getRecipeIngredientExportPrice(ingredient) {
     return pricePerUnit * quantityInStoredUnit;
 }
 
-function formatQuantity(value) {
-    const number = parseFloat(value);
-    return Number.isFinite(number) ? number.toFixed(2) : '0.00';
-}
-
 function sanitizePdfFileName(value) {
     return (value || 'Recipe_Report').toString().replace(/[^a-z0-9_\-]+/gi, '_').replace(/^_+|_+$/g, '');
 }
 
 function wrapPdfText(value) {
     return (value || '').toString().replace(/([^\s]{45})(?=[^\s])/g, '$1\u200B');
+}
+
+// ── Helper to open Add Recipe modal and ensure badge is displayed ───────────
+function openAddRecipeModal() {
+    updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
+    openModal('addRecipeModal');
+    updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
+}
+
+// ── Update selected unit badge next to Recipe Size label ─────────────────────
+function updateRecipeSizeUnitBadge(unitSelectSelector, badgeSelector, inputSelector) {
+    const $select = $(unitSelectSelector);
+    const $badge = $(badgeSelector);
+    const $input = $(inputSelector);
+    const val = $select.val();
+
+    const selectedOption = $select.find('option:selected');
+    const optionText = (selectedOption.length && selectedOption.val()) ? selectedOption.text().trim() : '';
+
+    if (!val || String(val).trim() === '' || !optionText) {
+        $badge.html('<i class="fas fa-balance-scale"></i> (Unit)').attr('title', 'Select a unit').show();
+        if ($input && $input.length) {
+            $input.attr('placeholder', 'Enter Size');
+        }
+        return;
+    }
+
+    let unitCode = '';
+    let unitName = '';
+    if (optionText.includes(' - ')) {
+        const parts = optionText.split(' - ');
+        unitCode = parts[0].trim().toUpperCase();
+        unitName = parts.slice(1).join(' - ').trim();
+    } else {
+        unitCode = String(val || optionText).toUpperCase();
+        unitName = optionText || unitCode;
+    }
+
+    const badgeHtml = unitName && unitName.toUpperCase() !== unitCode
+        ? `in <span class="unit-code">${unitCode}</span> - <span class="unit-name">${unitName}</span>`
+        : `in <span class="unit-code">${unitCode}</span>`;
+
+    $badge.html(badgeHtml).attr('title', `Selected Unit: ${optionText || unitCode}`).show();
+
+    if ($input && $input.length) {
+        $input.attr('placeholder', `Enter Size in ${unitCode}`);
+    }
 }
 
 // Show recipe cost breakdown modal (uses data already received in GetAllRecipes)

@@ -61,7 +61,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.BasePrice);
-                parameters.Add("@Unit", model.Unit);
+                parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@ClassificationId", model.ClassificationId);
@@ -272,7 +272,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Unit", model.Unit);
+                parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@ClassificationId", model.ClassificationId);

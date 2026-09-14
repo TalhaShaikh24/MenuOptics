@@ -46,7 +46,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
-                parameters.Add("@Unit", model.Unit.ToLower());
+                parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@PrivateVendorId", model.PrivateVendorId);
@@ -57,24 +57,9 @@ namespace MenuOptics.Services
                     "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure
                 );
 
-                var parameters2 = new DynamicParameters();
-                if (ingredientId > 0 && model.Stock != 0)
-                {
-                    parameters2.Add("@RestaurantId", currentUserId);
-                    parameters2.Add("@IngredientId", ingredientId);
-                    parameters2.Add("@Stock", model.Stock);
-                    parameters2.Add("@Price", (model.Stock * model.Price));
-                    parameters2.Add("@CreatedBy", actualUserId);
-                    parameters2.Add("@Action", "INSERT");
-                }
-
-                int inventoryId = await connection.ExecuteScalarAsync<int>(
-                    "sp_InventoryCRUD", parameters2, commandType: CommandType.StoredProcedure
-                );
-
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Ingredient created successfully.";
-                ResponseDto.Data = new { IngredientId = ingredientId, InventoryId = inventoryId };
+                ResponseDto.Data = new { IngredientId = ingredientId};
 
                 return (200, ResponseDto);
             }
@@ -109,7 +94,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
-                parameters.Add("@Unit", model.Unit.ToLower());
+                parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@ModifiedBy", actualUserId);

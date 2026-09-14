@@ -537,7 +537,7 @@ function populateSettingsForm(settings) {
 function formatCurrency(amount) {
     return new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "CAD",
+        currency: "USD",
     }).format(amount)
 }
 

@@ -112,7 +112,7 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-            debugger;
+            
             ingredientsWithPrices = response.data.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
@@ -446,7 +446,7 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
         html += `
             <div class="recipe-detail-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                 <span class="recipe_name" style="min-width:120px;" title="${recipeData.text}">${recipeData.text}</span>
-                <span class="recipe_unit" style="min-width:80px;">${recipeData.unit.toUpperCase()}</span>
+                <span class="recipe_unit" style="min-width:80px;">${recipeData.unit}</span>
                 <input type="number" name="recipe_quantity_${recipeId}" placeholder="Enter Qty" style="width:150px;" min="0" step="1" value="${savedQuantity}">
                 <span class="recipe-price" style="min-width:100px;">Cost: $${displayPrice}</span>
             </div>
@@ -685,7 +685,7 @@ function getMenuItemById(id) {
                         if (uomSelect.length) {
                             const normalizeFn = (typeof normalizeUnit === 'function')
                                 ? normalizeUnit
-                                : (u => (u || '').toString().trim().toUpperCase());
+                                : (u => (u || '').toString().trim());
                             const targetUom = normalizeFn(userUnit);
 
                             // Find the option whose value matches the saved uom (case/format insensitive)
@@ -906,7 +906,7 @@ function refreshMenuGrid() {
                 `;
                     grid.append(row);
                 });
-                debugger
+                
                 // Compute the average once, after all items have been summed
                 const avgCostPercentage = activeItemCount > 0 ? (totalCostPercentage / activeItemCount).toFixed(2) : "0.00";
 
@@ -982,7 +982,7 @@ $('#exportMenuPdfBtn').on('click', function () {
 async function generateMenuPDF(menuData, filename) {
     const value = localStorage.getItem("profilePic");
     const profilePic = value && value !== null ? $('#imageBaseUrl').val() + value : '/images/menu optics_logo.png';
-    debugger
+    
     isStaffFacing = document.getElementById('staffFacing').checked;
     let logoBase64 = null;
     try {
@@ -1081,11 +1081,15 @@ async function generateMenuPDF(menuData, filename) {
         }
         // Ingredients Breakdown
         if (item.ingredients && item.ingredients.length > 0) {
+            debugger;
             content.push({ text: 'Detailed Ingredients List', style: 'sectionHeader' });
-            const ingRows = item.ingredients.map(ing => [
-                ing.ingredientName || `---`,
-                `${ing.quantity.toFixed(2)} ${ing.unit || ''}`
-            ]);
+
+            const ingRows = item.ingredients
+                .filter(i => i.source == "Ingredient" || i.source == null)
+                .map(ing => [
+                    ing.ingredientName || `---`,
+                    `${convertUnit(ing.quantity, ing.unit, ing.uom).toFixed(2) + " " + ing.uom} `
+                ]);
 
             content.push({
                 table: {

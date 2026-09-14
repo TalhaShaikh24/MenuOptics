@@ -1,6 +1,6 @@
 /* ============================================================================
  * Ingredients.js — Restaurant ingredients page (Views/Ingredient/Ingredients.cshtml)
- * Server-side DataTable, CRUD modals, stock entry
+ * Server-side DataTable, CRUD modals
  *
  * Project convention — every Views-JS file follows this section order:
  *   1. Constants  2. State  3. Initialization  4. Event bindings
@@ -22,13 +22,34 @@ $(document).ready(function () {
         toggleSizePackSizeByType($(this).val(), '#editIngredientSize', '#editIngredientPackSize');
     });
 
+    // ── Unit change: dynamically show selected unit badge on Size label & Price Per Unit label ───────
+    $('#ingredientUnit').on('change', function () {
+        updateSizeUnitBadge('#ingredientUnit', '#ingredientSizeUnitBadge', '#ingredientSize');
+        if ($('#ingredientType').val() === 'catchWeight') {
+            updatePriceLabelByType('catchWeight', false);
+        }
+    });
+    $('#editIngredientUnit').on('change', function () {
+        updateSizeUnitBadge('#editIngredientUnit', '#editIngredientSizeUnitBadge', '#editIngredientSize');
+        if ($('#editIngredientType').val() === 'catchWeight') {
+            updatePriceLabelByType('catchWeight', true);
+        }
+    });
+    $('#addIngredientBtn').on('click', function () {
+        updateSizeUnitBadge('#ingredientUnit', '#ingredientSizeUnitBadge', '#ingredientSize');
+        updatePriceLabelByType($('#ingredientType').val() || 'packItem', false);
+    });
+
+    // Initialize unit badges on ready
+    updateSizeUnitBadge('#ingredientUnit', '#ingredientSizeUnitBadge', '#ingredientSize');
+    updateSizeUnitBadge('#editIngredientUnit', '#editIngredientSizeUnitBadge', '#editIngredientSize');
+
     // ── Save new ingredient ───────────────────────────────────────────────────
     $('#addIngredientBtn2').on('click', function () {
         const ingredientData = {
             name: $('#ingredientName').val(),
             unit: $('#ingredientUnit').val(),
             price: parseFloat($('#ingredientPrice').val()) || 0,
-            stock: $('#ingredientStock').val() || 0,
             ingredientType: $('#ingredientType').val(),
             size: $('#ingredientSize').val(),
             packSize: $('#ingredientPackSize').prop('disabled') ? null : Number($('#ingredientPackSize').val()),
@@ -161,19 +182,93 @@ function toggleSizePackSizeByType(typeValue, sizeSelector, packSizeSelector) {
     const $size = $(sizeSelector);
     const $packSize = $(packSizeSelector);
     const $packSizeRequired = $(packSizeSelector + 'Required');
+    const isEdit = sizeSelector.indexOf('edit') !== -1;
 
     if (typeValue === 'packItem') {
         $size.prop('disabled', false).prop('required', true);
         $packSize.prop('disabled', false).prop('required', true);
         $packSizeRequired.show();
+        updatePriceLabelByType('packItem', isEdit);
     } else if (typeValue === 'catchWeight') {
         $packSize.prop('disabled', true).prop('required', false).val('');
         $size.prop('required', true);
         $packSizeRequired.hide();
+        updatePriceLabelByType('catchWeight', isEdit);
     } else {
         $size.prop('disabled', false).prop('required', true);
         $packSize.prop('disabled', false).prop('required', false);
         $packSizeRequired.hide();
+        updatePriceLabelByType('packItem', isEdit);
+    }
+}
+
+// ── Update Price Per Case / Price Per [Unit] label and placeholder ───────────
+function updatePriceLabelByType(typeValue, isEditModal) {
+    const labelSelector = isEditModal ? '#editTypeLabel' : '#typeLabel';
+    const inputSelector = isEditModal ? '#editIngredientPrice' : '#ingredientPrice';
+    const unitSelector = isEditModal ? '#editIngredientUnit' : '#ingredientUnit';
+
+    if (typeValue === 'catchWeight') {
+        const $unit = $(unitSelector);
+        const val = $unit.val();
+        const selectedOption = $unit.find('option:selected');
+        const optionText = selectedOption.text().trim();
+
+        let unitCode = '';
+        if (optionText && optionText.includes(' - ')) {
+            unitCode = optionText.split(' - ')[0].trim().toUpperCase();
+        } else if (val) {
+            unitCode = String(val).toUpperCase();
+        }
+
+        const unitDisplay = unitCode ? `<span class="price-unit-highlight" title="${optionText || unitCode}">${unitCode}</span>` : 'Unit';
+        const placeholderUnit = unitCode || 'Unit';
+
+        $(labelSelector).html(`Price Per ${unitDisplay} <span style="color:red">*</span>`);
+        $(inputSelector).attr('placeholder', `Enter Price Per ${placeholderUnit}`);
+    } else {
+        $(labelSelector).html('Price Per Case <span style="color:red">*</span>');
+        $(inputSelector).attr('placeholder', 'Enter Price Per Case');
+    }
+}
+
+// ── Update selected unit badge next to Size label ─────────────────────────────
+function updateSizeUnitBadge(unitSelectSelector, badgeSelector, inputSelector) {
+    const $select = $(unitSelectSelector);
+    const $badge = $(badgeSelector);
+    const $input = $(inputSelector);
+    const val = $select.val();
+
+    const selectedOption = $select.find('option:selected');
+    const optionText = (selectedOption.length && selectedOption.val()) ? selectedOption.text().trim() : '';
+
+    if (!val || String(val).trim() === '' || !optionText) {
+        $badge.html('<i class="fas fa-balance-scale"></i> (Unit)').attr('title', 'Select a unit').show();
+        if ($input && $input.length) {
+            $input.attr('placeholder', 'Enter Size');
+        }
+        return;
+    }
+
+    let unitCode = '';
+    let unitName = '';
+    if (optionText.includes(' - ')) {
+        const parts = optionText.split(' - ');
+        unitCode = parts[0].trim().toUpperCase();
+        unitName = parts.slice(1).join(' - ').trim();
+    } else {
+        unitCode = String(val || optionText).toUpperCase();
+        unitName = optionText || unitCode;
+    }
+
+    const badgeHtml = unitName && unitName.toUpperCase() !== unitCode
+        ? `<i class="fas fa-balance-scale"></i> (in <span class="unit-code">${unitCode}</span> - <span class="unit-name">${unitName}</span>)`
+        : `<i class="fas fa-balance-scale"></i> (in <span class="unit-code">${unitCode}</span>)`;
+
+    $badge.html(badgeHtml).attr('title', `Selected Unit: ${optionText || unitCode}`).show();
+
+    if ($input && $input.length) {
+        $input.attr('placeholder', `Enter Size (in ${unitCode})`);
     }
 }
 
@@ -271,11 +366,6 @@ function initIngredientsTable() {
 
                 data: null,
                 render: function (data, type, row) {
-                    const addStock = (!row.vendorId || row.vendorId <= 0)
-                        ? `<a href="#" onclick="addStock(${row.ingredientId})">
-                               <i class="fas fa-box"></i> Add Stock
-                           </a>`
-                        : '';
 
                     const toggleLink = (!row.vendorId || row.vendorId <= 0)
                         ? `<a href="#" onclick="toggleIngredientActive(${row.ingredientId})">
@@ -290,7 +380,6 @@ function initIngredientsTable() {
                                     <i class="fas fa-ellipsis-h"></i>
                                 </button>
                                 <div class="dropdown-menu">
-                                    ${addStock}
                                     <a href="#" onclick="editIngredient(${row.ingredientId})">
                                         <i class="fas fa-edit"></i> Edit Details
                                     </a>
@@ -353,12 +442,12 @@ function addIngredient(ingredientData) {
             Unit: ingredientData.unit,
             Size: ingredientData.size,
             PackSize: ingredientData.packSize,
-            Stock: ingredientData.stock,
             PrivateVendorId: ingredientData.privateVendorId
         },
         onSuccess: function () {
             refreshIngredientsTable();
             $('#addIngredientForm')[0].reset();
+            updateSizeUnitBadge('#ingredientUnit', '#ingredientSizeUnitBadge', '#ingredientSize');
             toggleSizePackSizeByType('', '#ingredientSize', '#ingredientPackSize');
             closeModal('addIngredientModal');
         }
@@ -367,7 +456,6 @@ function addIngredient(ingredientData) {
 }
 
 function getIngredientById(id) {
-    $('.form-group.editIngredientStock').hide();
     ajaxRequest({
         url: `/api/IngredientApi/GetIngredient/${id}`,
         method: 'GET',
@@ -376,7 +464,20 @@ function getIngredientById(id) {
             const ingredient = response.data;
             $('#editIngredientId').val(ingredient.ingredientId);
             $('#editIngredientName').val(ingredient.name);
-            $('#editIngredientUnit').val(ingredient.unit);
+            if (ingredient.unit) {
+                const targetUnit = ingredient.unit.toString().trim().toLowerCase();
+                let matchedVal = null;
+                $('#editIngredientUnit option').each(function () {
+                    if ($(this).val() && ($(this).val().toLowerCase() === targetUnit || $(this).text().toLowerCase().startsWith(targetUnit))) {
+                        matchedVal = $(this).val();
+                        return false;
+                    }
+                });
+                $('#editIngredientUnit').val(matchedVal || ingredient.unit);
+            } else {
+                $('#editIngredientUnit').val('');
+            }
+            updateSizeUnitBadge('#editIngredientUnit', '#editIngredientSizeUnitBadge', '#editIngredientSize');
             $('#editIngredientPrice').val(ingredient.price);
             $('#editIngredientSize').val(ingredient.size);
             $('#editIngredientPackSize').val(ingredient.packSize);
@@ -450,33 +551,7 @@ function editIngredient(id) {
     getIngredientById(id);
 }
 
-// ── Add Stock ─────────────────────────────────────────────────────────────────
-function addStock(ingredientId) {
-    $('#addStockIngredientId').val(ingredientId);
-    $('#addStock').val('');
-    openModal('addStockModal');
-}
 
-$('#saveStockBtn').on('click', function () {
-    const ingredientId = $('#addStockIngredientId').val();
-    const stock = parseFloat($('#addStock').val());
-    if (!stock || stock <= 0) {
-        showNotification('Please enter a valid stock.', 'error');
-        return;
-    }
-    ajaxRequest({
-        url: '/api/InventoryApi/AddIngredientStock',
-        method: 'POST',
-        data: { ingredientId: ingredientId, stock: stock },
-        onSuccess: function () {
-            closeModal('addStockModal');
-            refreshIngredientsTable();
-        },
-        onError: function () {
-            console.error('Failed to add stock.');
-        }
-    });
-});
 
 // ─── Private Vendor (Supplier) dropdown ───────────────────────────────────────
 

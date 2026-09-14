@@ -30,6 +30,8 @@ $(document).ready(function () {
     }
 
     function resetToEmail() {
+        $('#checkEmailBtn').attr('disabled',false);
+        $('#checkEmailBtn').text('Continue');
         $('#loginIdentifier').val('');
         $('#password').val('');
         $('#resolvedUsername').val('');

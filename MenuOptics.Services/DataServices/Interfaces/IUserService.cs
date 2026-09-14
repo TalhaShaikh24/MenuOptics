@@ -19,6 +19,5 @@ namespace MenuOptics.Services
         Task<ResponseDto> UpdateRestaurantMemberAsync(UpdateRestaurantMemberDto model, int currentUserId, string requestBaseUrl);
         Task<ResponseDto> ToggleMemberActiveAsync(int id, int currentUserId);
         Task<ResponseDto> CompleteRegistrationAsync(CompleteRegistrationDto model, string requestBaseUrl);
-
     }
 }

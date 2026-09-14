@@ -23,7 +23,6 @@ namespace MenuOptics.Models
         public DateTime? ModifiedOn { get; set; }
         public int? ModifiedBy { get; set; }
         public bool IsActive { get; set; } = true;
-        public decimal? Stock { get; set; }
         public int TotalCount { get; set; }
         public Ingredient? VendorIngredient { get; set; }
         public User? Restaurant { get; set; }

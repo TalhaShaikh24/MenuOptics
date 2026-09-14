@@ -33,6 +33,7 @@ namespace MenuOptics.Models
         public int IngredientId { get; set; }
         public string IngredientName { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
+        public string Unit { get; set; } = string.Empty;
         public string UOM { get; set; } = string.Empty;
         public string? Source { get; set; }
         public decimal CurrentPrice { get; set; }
@@ -44,6 +45,6 @@ namespace MenuOptics.Models
         public int RecipeId { get; set; }
         public string RecipeName { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
-        public string UOM { get; set; } = string.Empty;
+        public string Unit { get; set; } = string.Empty;
     }
 }

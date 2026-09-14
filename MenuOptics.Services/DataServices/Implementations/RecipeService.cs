@@ -38,7 +38,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Unit", model.Unit);
+                parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Cost", 0);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@Description", model.Description);
@@ -71,7 +71,7 @@ namespace MenuOptics.Services
                         var ingParams = new DynamicParameters();
                         ingParams.Add("@RecipeId", recipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
-                        ingParams.Add("@UOM", ing.UOM);
+                        ingParams.Add("@UOM", ing.UOM.ToUpper());
                         ingParams.Add("@Quantity", ing.Quantity);
                         ingParams.Add("@Action", "INSERT");
 
@@ -133,7 +133,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@RecipeId", model.RecipeId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Unit", model.Unit);
+                parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Cost", model.Cost);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@Description", model.Description);
@@ -155,7 +155,7 @@ namespace MenuOptics.Services
                         var ingParams = new DynamicParameters();
                         ingParams.Add("@RecipeId", model.RecipeId);
                         ingParams.Add("@IngredientId", ing.IngredientId);
-                        ingParams.Add("@UOM", ing.UOM);
+                        ingParams.Add("@UOM", ing.UOM.ToUpper());
                         ingParams.Add("@Quantity", ing.Quantity);
                         ingParams.Add("@Action", "INSERT");
 

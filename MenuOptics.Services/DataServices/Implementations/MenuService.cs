@@ -65,7 +65,7 @@ namespace MenuOptics.Services
                         var ingredientParams = new DynamicParameters();
                         ingredientParams.Add("@MenuItemId", menuItemId);
                         ingredientParams.Add("@IngredientId", ingredient.IngredientId);
-                        ingredientParams.Add("@UOM", ingredient.UOM);
+                        ingredientParams.Add("@UOM", ingredient.UOM.ToUpper());
                         ingredientParams.Add("@Quantity", ingredient.Quantity);
                         ingredientParams.Add("@Action", "INSERT");
                         await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);
@@ -161,7 +161,7 @@ namespace MenuOptics.Services
                         var ingredientParams = new DynamicParameters();
                         ingredientParams.Add("@MenuItemId", model.MenuItemId);
                         ingredientParams.Add("@IngredientId", ingredient.IngredientId);
-                        ingredientParams.Add("@UOM", ingredient.UOM);
+                        ingredientParams.Add("@UOM", ingredient.UOM.ToUpper());
                         ingredientParams.Add("@Quantity", ingredient.Quantity);
                         ingredientParams.Add("@Action", "INSERT");
                         await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);
@@ -273,17 +273,21 @@ namespace MenuOptics.Services
                 parameters.Add("@IsActive", isActive);
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var menuItems = await connection.QueryAsync<Menu, string, Menu>(
+                var menuItems = await connection.QueryAsync<Menu, string, string, Menu>(
                  "sp_MenuCRUD",
-                 (menu, ingredientsJson) =>
+                 (menu, ingredientsJson, recipesJson) =>
                  {
                      menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
                          ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
                          : new List<MenuItemIngredient>();
+
+                     menu.Recipes = !string.IsNullOrEmpty(recipesJson)
+                         ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemRecipe>>(recipesJson)
+                         : new List<MenuItemRecipe>();
                      return menu;
                  },
                  parameters,
-                 splitOn: "Ingredients",
+                 splitOn: "Ingredients,Recipes",
                  commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
