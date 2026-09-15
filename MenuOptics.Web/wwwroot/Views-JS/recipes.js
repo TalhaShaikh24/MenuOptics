@@ -505,8 +505,6 @@ function refreshRecipesTable() {
 
                 const cls = item.isActive ? 'good' : 'critical';
                 const lbl = item.isActive ? 'Active' : 'In Active';
-                const cost = item.cost;
-                const currentCost = item.currentCost;
                 const hasPriceChanged = item.cost != item.currentCost && item.ingredients?.some(i => i.oldPrice != null && i.oldPrice != i.currentPrice);
 
                 const row = `
@@ -528,18 +526,18 @@ function refreshRecipesTable() {
                          ${!hasPriceChanged
                         ? `
                                   <span>
-                                    $${Number(currentCost).toFixed(2)}
+                                    $${item.cost.toFixed(2)}
                                     <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
                                   </span>
                                 `
                         : `
                                   <div>
                                       <span class="text-highlight danger" title="Cost at the time this recipe was created/updated.">
-                                        $${Number(cost).toFixed(2)}
+                                        $${item.cost.toFixed(2)}
                                       </span>
                                       <br>
                                       <span class="text-highlight success" style="cursor:pointer;" onclick="showRecipeCostBreakdown(${item.recipeId})" title="Click to view ingredient cost breakdown">
-                                        $${Number(currentCost).toFixed(2)}
+                                        $${item.currentCost.toFixed(2)}
                                         <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i>
                                       </span>
                                   </div>

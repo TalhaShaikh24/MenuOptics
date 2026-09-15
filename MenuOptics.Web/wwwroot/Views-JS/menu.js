@@ -882,7 +882,7 @@ function refreshMenuGrid() {
                                 <div class="pricing">
                                     <span class="price">$${item.sellingPrice.toFixed(2)}</span>
                                     ${!hasPriceChanged 
-                                        ? `<span class="cost">Cost: $${item.currentCost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
+                                        ? `<span class="cost">Cost: $${item.cost.toFixed(2)}<span class="tooltip-icon" data-tooltip="Cost at the time this item was created/updated.">i</span></span>`
                                             : `<div class="clickable-cost-breakdown" style="display:inline-flex; align-items:center; gap:4px;">
                                             Cost:
                                             <span class="cost text-highlight danger" title="Cost at the time this item was created/updated.">$${item.cost.toFixed(2)}</span> 
