@@ -28,8 +28,15 @@ namespace MenuOptics.Services.VendorApi
             {
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = "At least one item is required.";
-                await _activityLog.LogAsync(null, requestId, "POST /api/InventoryApi/InvoiceInventory",
-                    payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
+
+                await _activityLog.LogAsync(
+                    null,
+                    requestId,
+                    "POST /api/InventoryApi/InvoiceInventory",
+                    payload,
+                    System.Text.Json.JsonSerializer.Serialize(ResponseDto),
+                    "Warning");
+
                 return ResponseDto;
             }
 
@@ -38,25 +45,36 @@ namespace MenuOptics.Services.VendorApi
                 using var connection = _context.CreateConnection();
                 connection.Open();
 
+                decimal subtotal = 0;
+                decimal tax = 0;
+                decimal total = 0;
+
                 var createdItems = new List<object>();
                 var failedItems = new List<object>();
+
+
+                var table = new DataTable();
+
+                table.Columns.Add("InventoryInvoideId", typeof(int));
+                table.Columns.Add("IngredientId", typeof(int));
+                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("PackSize", typeof(int));
+                table.Columns.Add("Price", typeof(decimal));
 
                 foreach (var item in model.Items)
                 {
                     try
                     {
-                        var parameters = new DynamicParameters();
-
-                        decimal stock = 0;
+                        decimal quantity = 0;
 
                         if (item.Weight != null && item.Weight != 0)
                         {
-                            stock = item.Weight.Value;
+                            quantity = item.Weight.Value;
                         }
                         else if (item.Quantity != null && item.Quantity != 0
                             && item.PackSize != null && item.PackSize > 0)
                         {
-                            stock = item.Quantity.Value * item.PackSize.Value;
+                            quantity = item.Quantity.Value;
                         }
                         else
                         {
@@ -65,32 +83,78 @@ namespace MenuOptics.Services.VendorApi
                                 item.IngredientId,
                                 Error = "Invalid weight or quantity/pack size."
                             });
+
                             continue;
                         }
 
-                        parameters.Add("@RestaurantId", model.RestaurantId);
-                        parameters.Add("@VendorId", currentUserId);
-                        parameters.Add("@IngredientId", item.IngredientId);
-                        parameters.Add("@Stock", stock);
-                        parameters.Add("@Price", item.Price);
-                        parameters.Add("@InvoiceId", model.InvoiceId);
-                        parameters.Add("@CreatedBy", currentUserId);
-                        parameters.Add("@Action", "INSERT");
+                        // Calculate subtotal from quantity × price
+                        subtotal += quantity * item.Price;
 
-                        int inventoryId = await connection.ExecuteScalarAsync<int>(
-                            "sp_InventoryCRUD", parameters, commandType: CommandType.StoredProcedure
+                        table.Rows.Add(
+                            item.InventoryInvoiceId,
+                            item.IngredientId,
+                            quantity,
+                            item.PackSize,
+                            item.Price
                         );
-
-                        createdItems.Add(new { item.IngredientId, InventoryId = inventoryId });
                     }
                     catch (SqlException sqlEx)
                     {
-                        failedItems.Add(new { item.IngredientId, Error = sqlEx.Message });
+                        failedItems.Add(new
+                        {
+                            item.IngredientId,
+                            Error = sqlEx.Message
+                        });
                     }
                     catch (Exception ex)
                     {
-                        failedItems.Add(new { item.IngredientId, Error = ex.Message });
+                        failedItems.Add(new
+                        {
+                            item.IngredientId,
+                            Error = ex.Message
+                        });
                     }
+                }
+
+                if (table.Rows.Count > 0)
+                {
+
+                    tax = 0;
+                    total = subtotal + tax;
+
+                    var parameters = new DynamicParameters();
+
+                    parameters.Add("@RestaurantId", model.RestaurantId);
+                    parameters.Add("@VendorId", currentUserId);
+                    parameters.Add("@InvoiceId", model.InvoiceId);
+                    parameters.Add("@CreatedBy", currentUserId);
+
+                    parameters.Add("@Subtotal", subtotal);
+                    parameters.Add("@Tax", tax);
+                    parameters.Add("@Total", total);
+                    parameters.Add("@Action", "INSERT");
+
+                    parameters.Add(
+                        "@InventoryInvoiceItems",
+                        table.AsTableValuedParameter(
+                            "dbo.InventoryInvoiceItemsType"
+                        )
+                    );
+
+                    var inventoryInvoiceId = await connection.QueryAsync<int>(
+                        "sp_InventoryInvoiceCRUD",
+                        parameters,
+                        commandType: CommandType.StoredProcedure
+                    );
+
+                    foreach (var id in inventoryInvoiceId)
+                    {
+                        createdItems.Add(new
+                        {
+                            InventoryInvoiceId = id
+                        });
+                    }
+
                 }
 
                 ResponseDto.Status = failedItems.Any()
@@ -98,13 +162,24 @@ namespace MenuOptics.Services.VendorApi
                     : 200;
 
                 ResponseDto.ResponseMsg = failedItems.Any()
-                    ? (createdItems.Any() ? "Inventory invoice recorded successfully." : "Inventory invoice recording failed.")
+                    ? (createdItems.Any()
+                        ? "Inventory invoice recorded successfully."
+                        : "Inventory invoice recording failed.")
                     : "Inventory invoice recorded successfully.";
 
-                ResponseDto.Data = new { Errors = failedItems };
+                ResponseDto.Data = new
+                {
+                    CreatedItems = createdItems,
+                    Errors = failedItems
+                };
 
-                await _activityLog.LogAsync(currentUserId, requestId, "POST /api/InventoryApi/InvoiceInventory",
-                    payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), failedItems.Any() ? "Warning" : "Success");
+                await _activityLog.LogAsync(
+                    currentUserId,
+                    requestId,
+                    "POST /api/InventoryApi/InvoiceInventory",
+                    payload,
+                    System.Text.Json.JsonSerializer.Serialize(ResponseDto),
+                    failedItems.Any() ? "Warning" : "Success");
 
                 return ResponseDto;
             }
@@ -112,8 +187,15 @@ namespace MenuOptics.Services.VendorApi
             {
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = $"{ex.Message}";
-                await _activityLog.LogAsync(null, requestId, "POST /api/InventoryApi/InvoiceInventory",
-                    payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
+
+                await _activityLog.LogAsync(
+                    null,
+                    requestId,
+                    "POST /api/InventoryApi/InvoiceInventory",
+                    payload,
+                    System.Text.Json.JsonSerializer.Serialize(ResponseDto),
+                    "Error");
+
                 return ResponseDto;
             }
         }

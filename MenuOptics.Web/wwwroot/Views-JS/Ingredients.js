@@ -262,8 +262,8 @@ function updateSizeUnitBadge(unitSelectSelector, badgeSelector, inputSelector) {
     }
 
     const badgeHtml = unitName && unitName.toUpperCase() !== unitCode
-        ? `<i class="fas fa-balance-scale"></i> (in <span class="unit-code">${unitCode}</span> - <span class="unit-name">${unitName}</span>)`
-        : `<i class="fas fa-balance-scale"></i> (in <span class="unit-code">${unitCode}</span>)`;
+        ? `in <span class="unit-code">${unitCode}</span> - <span class="unit-name">${unitName}</span>`
+        : `in <span class="unit-code">${unitCode}</span>`;
 
     $badge.html(badgeHtml).attr('title', `Selected Unit: ${optionText || unitCode}`).show();
 
@@ -349,7 +349,7 @@ function initIngredientsTable() {
             },
             {
                 // Supplier
-                data: 'fullName',
+                data: 'vendorName',
                 render: val => val || 'N/A'
             },
             {

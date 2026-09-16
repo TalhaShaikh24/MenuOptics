@@ -88,7 +88,7 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-        public async Task<ResponseDto> GetAllSalesAsync()
+        public async Task<ResponseDto> GetAllSalesAsync(int CurrentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -96,6 +96,7 @@ namespace MenuOptics.Services
             try
             {
                 var parameters = new DynamicParameters();
+                parameters.Add("@RestaurantId", CurrentUserId);
                 parameters.Add("@Action", "SELECT_ALL");
 
                 var sales = await connection.QueryAsync<Sale>(

@@ -25,27 +25,6 @@ namespace MenuOptics.Controllers.Api
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
-
-
-        [HttpPost("AddIngredientStock")]
-        public async Task<IActionResult> AddIngredientStock([FromBody] Inventory model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new ResponseDto
-                {
-                    Status = 400,
-                    ResponseMsg = "Invalid input.",
-                    Data = ModelState
-                });
-            }
-
-            var (statusCode, body) = await _inventoryService.AddIngredientStockAsync(model, CurrentUserId, ActualUserId);
-            return StatusCode(statusCode, body);
-        }
-
-
 
         [HttpPost("UpdateClosingCount")]
         public async Task<IActionResult> UpdateClosingCount([FromBody] ClosingCountUpdateDto model)
@@ -60,6 +39,13 @@ namespace MenuOptics.Controllers.Api
             }
 
             var responseData = await _inventoryService.UpdateClosingCountAsync(model, CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
+        [HttpGet("GetInventoryInvoices")]
+        public async Task<IActionResult> GetInventoryInvoices()
+        {
+            var responseData = await _inventoryService.GetInventoryInvoicesAsync(CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

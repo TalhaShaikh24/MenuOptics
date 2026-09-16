@@ -10,12 +10,11 @@ namespace MenuOptics.Models
         public int? PrivateVendorId { get; set; }
         public string? VendorProductId { get; set; }
         public string Name { get; set; } = string.Empty;
-        public string? FullName { get; set; }
+        public string? VendorName { get; set; }
         public decimal Price { get; set; }
         public string Unit { get; set; } = string.Empty; // e.g., kg, liters, units
         public decimal Size { get; set; } 
         public int? PackSize { get; set; }
-        public string? PrivateVendorName { get; set; }
         public int ClassificationId { get; set; }
         public string? ClassificationDescriptor { get; set; }
         public DateTime CreatedOn { get; set; }

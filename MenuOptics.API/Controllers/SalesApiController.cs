@@ -34,7 +34,7 @@ namespace MenuOptics.Controllers.Api
         [Authorize]
         public async Task<IActionResult> GetAllSales()
         {
-            var responseData = await _salesService.GetAllSalesAsync();
+            var responseData = await _salesService.GetAllSalesAsync(CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
