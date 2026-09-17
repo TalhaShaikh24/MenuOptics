@@ -9,7 +9,7 @@ using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize(Roles = "Restaurant")]
     [Route("api/[controller]")]
     [SubscriptionRequired]
     [ApiController]
@@ -46,6 +46,38 @@ namespace MenuOptics.Controllers.Api
         public async Task<IActionResult> GetInventoryInvoices()
         {
             var responseData = await _inventoryService.GetInventoryInvoicesAsync(CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
+        [HttpPost("CreateInvoice")]
+        public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceRequestDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDto
+                {
+                    Status = 400,
+                    ResponseMsg = "Invalid input."
+                });
+            }
+
+            var responseData = await _inventoryService.CreateInvoiceAsync(model, CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
+        [HttpPut("UpdateInvoice")]
+        public async Task<IActionResult> UpdateInvoice([FromBody] UpdateInvoiceRequestDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDto
+                {
+                    Status = 400,
+                    ResponseMsg = "Invalid input."
+                });
+            }
+
+            var responseData = await _inventoryService.UpdateInvoiceAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

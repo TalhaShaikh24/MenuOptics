@@ -207,7 +207,7 @@ function updatePriceLabelByType(typeValue, isEditModal) {
     const labelSelector = isEditModal ? '#editTypeLabel' : '#typeLabel';
     const inputSelector = isEditModal ? '#editIngredientPrice' : '#ingredientPrice';
     const unitSelector = isEditModal ? '#editIngredientUnit' : '#ingredientUnit';
-
+    debugger
     if (typeValue === 'catchWeight') {
         const $unit = $(unitSelector);
         const val = $unit.val();
@@ -268,7 +268,7 @@ function updateSizeUnitBadge(unitSelectSelector, badgeSelector, inputSelector) {
     $badge.html(badgeHtml).attr('title', `Selected Unit: ${optionText || unitCode}`).show();
 
     if ($input && $input.length) {
-        $input.attr('placeholder', `Enter Size (in ${unitCode})`);
+        $input.attr('placeholder', `Enter Size in ${unitCode}`);
     }
 }
 

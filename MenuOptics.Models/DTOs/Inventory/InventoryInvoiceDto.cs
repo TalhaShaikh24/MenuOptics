@@ -20,9 +20,11 @@ namespace MenuOptics.Models
 
     public class InventoryInvoiceItemDetailDto
     {
+        public int? IngredientId { get; set; }
         public string? IngredientName { get; set; }
         public decimal Quantity { get; set; }
         public int? PackSize { get; set; }
+        public decimal? Weight { get; set; }
         public decimal Price { get; set; }
         public decimal TotalPrice => Quantity * Price;
     }

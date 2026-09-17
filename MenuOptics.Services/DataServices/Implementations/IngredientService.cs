@@ -348,7 +348,10 @@ namespace MenuOptics.Services
                     var ResponseDto = new ResponseDto();
                     var parameters = new DynamicParameters();
                     parameters.Add("@RestaurantId", currentUserId);
-                    parameters.Add("@VendorId", vendorId);
+                    if (isPrivate)
+                        parameters.Add("@PrivateVendorId", vendorId);
+                    else
+                        parameters.Add("@VendorId", vendorId);
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 

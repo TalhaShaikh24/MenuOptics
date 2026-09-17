@@ -123,5 +123,202 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
+        public async Task<ResponseDto> CreateInvoiceAsync(CreateInvoiceRequestDto model, int currentUserId)
+        {
+            var responseDto = new ResponseDto();
+
+            if (model.Items == null || !model.Items.Any())
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = "At least one item is required.";
+                return responseDto;
+            }
+
+            using var connection = _context.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                decimal subtotal = 0;
+                decimal tax = 0;
+                decimal total = 0;
+
+                var table = new DataTable();
+                table.Columns.Add("IngredientId", typeof(int));
+                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("PackSize", typeof(int));
+                table.Columns.Add("Price", typeof(decimal));
+
+                foreach (var item in model.Items)
+                {
+                    decimal quantity = 0;
+
+                    if (item.Weight != null && item.Weight != 0)
+                    {
+                        quantity = item.Weight.Value;
+                    }
+                    else if (item.Quantity != null && item.Quantity != 0)
+                    {
+                        quantity = item.Quantity.Value;
+                    }
+                    else
+                    {
+                        quantity = 1;
+                    }
+
+                    subtotal += quantity * item.Price;
+
+                    table.Rows.Add(
+                        item.IngredientId,
+                        quantity,
+                        item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
+                        item.Price
+                    );
+                }
+
+                tax = 0;
+                total = subtotal + tax;
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@RestaurantId", currentUserId);
+                parameters.Add("@PrivateVendorId", model.PrivateVendorId);
+                parameters.Add("@InvoiceId", model.InvoiceId);
+                parameters.Add("@CreatedBy", currentUserId);
+                parameters.Add("@Subtotal", subtotal);
+                parameters.Add("@Tax", tax);
+                parameters.Add("@Total", total);
+                parameters.Add("@Action", "INSERT");
+                parameters.Add(
+                    "@InventoryInvoiceItems",
+                    table.AsTableValuedParameter("dbo.InventoryInvoiceItemsType")
+                );
+
+                var invoiceIds = await connection.QueryAsync<int>(
+                    "sp_InventoryInvoiceCRUD",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                int newId = invoiceIds.FirstOrDefault();
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "Invoice created successfully.";
+                responseDto.Data = new { InventoryInvoiceId = newId };
+                return responseDto;
+            }
+            catch (SqlException sqlEx)
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = sqlEx.Message;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = ex.Message;
+                return responseDto;
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+
+        public async Task<ResponseDto> UpdateInvoiceAsync(UpdateInvoiceRequestDto model, int currentUserId)
+        {
+            var responseDto = new ResponseDto();
+
+            if (model.Items == null || !model.Items.Any())
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = "At least one item is required.";
+                return responseDto;
+            }
+
+            using var connection = _context.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                decimal subtotal = 0;
+                decimal tax = 0;
+                decimal total = 0;
+
+                var table = new DataTable();
+                table.Columns.Add("IngredientId", typeof(int));
+                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("PackSize", typeof(int));
+                table.Columns.Add("Price", typeof(decimal));
+
+                foreach (var item in model.Items)
+                {
+                    decimal quantity = 0;
+
+                    if (item.Weight != null && item.Weight != 0)
+                    {
+                        quantity = item.Weight.Value;
+                    }
+                    else if (item.Quantity != null && item.Quantity != 0)
+                    {
+                        quantity = item.Quantity.Value;
+                    }
+                    else
+                    {
+                        quantity = 1;
+                    }
+
+                    subtotal += quantity * item.Price;
+
+                    table.Rows.Add(
+                        item.IngredientId,
+                        quantity,
+                        item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
+                        item.Price
+                    );
+                }
+
+                tax = 0;
+                total = subtotal + tax;
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@InventoryInvoiceId", model.InventoryInvoiceId);
+                parameters.Add("@Subtotal", subtotal);
+                parameters.Add("@Tax", tax);
+                parameters.Add("@Total", total);
+                parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@Action", "UPDATE");
+                parameters.Add(
+                    "@InventoryInvoiceItems",
+                    table.AsTableValuedParameter("dbo.InventoryInvoiceItemsType")
+                );
+
+                await connection.ExecuteAsync(
+                    "sp_InventoryInvoiceCRUD",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "Invoice updated successfully.";
+                responseDto.Data = new { InventoryInvoiceId = model.InventoryInvoiceId };
+                return responseDto;
+            }
+            catch (SqlException sqlEx)
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = sqlEx.Message;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = ex.Message;
+                return responseDto;
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
     }
 }
