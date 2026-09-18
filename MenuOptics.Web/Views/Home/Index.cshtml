@@ -112,11 +112,11 @@
                         <div class="partner-promo-container">
                             <div class="partner-promo-details">
                                 <span class="partner-promo-label">REDEMPTION PROMO CODE</span>
-                                <span class="partner-promo-code">FLANOPTIC300</span>
+                                <span class="partner-promo-code" id="partnerPromoCode">FLANOPTIC300</span>
                             </div>
-                            <div class="partner-verified-tag">
-                                <i class="fas fa-check-circle"></i> Verified Partner
-                            </div>
+                            <button type="button" class="partner-copy-btn" id="copyPromoCodeBtn" onclick="copyPartnerPromoCode()" title="Copy Promo Code">
+                                <i class="fas fa-copy" id="copyPromoIcon"></i> <span id="copyPromoText">Copy Code</span>
+                            </button>
                         </div>
 
                         <ul class="partner-features-checklist">
@@ -139,7 +139,7 @@
                         </ul>
 
                         <a href="@Url.Action("Register", "User", new { promo = "FLANOPTIC300" })" class="partner-cta-button">
-                            Lock In Flanagan Operator Pricing
+                            Sign Up
                         </a>
                     </div>
                 </div>
@@ -147,6 +147,53 @@
             </div>
         </div>
     </section>
+
+    <script>
+        function copyPartnerPromoCode() {
+            var code = "FLANOPTIC300";
+            var btn = document.getElementById('copyPromoCodeBtn');
+            var icon = document.getElementById('copyPromoIcon');
+            var text = document.getElementById('copyPromoText');
+
+            function setSuccess() {
+                if (!btn) return;
+                btn.classList.add('copied');
+                if (icon) icon.className = 'fas fa-check';
+                if (text) text.innerText = 'Copied!';
+                setTimeout(function () {
+                    btn.classList.remove('copied');
+                    if (icon) icon.className = 'fas fa-copy';
+                    if (text) text.innerText = 'Copy Code';
+                }, 2000);
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(code).then(setSuccess).catch(function () {
+                    fallbackCopy(code, setSuccess);
+                });
+            } else {
+                fallbackCopy(code, setSuccess);
+            }
+
+            function fallbackCopy(val, cb) {
+                var ta = document.createElement("textarea");
+                ta.value = val;
+                ta.style.position = "fixed";
+                ta.style.left = "-999999px";
+                ta.style.top = "-999999px";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    cb();
+                } catch (e) {
+                    console.error('Failed to copy', e);
+                }
+                document.body.removeChild(ta);
+            }
+        }
+    </script>
 }
 else
 {

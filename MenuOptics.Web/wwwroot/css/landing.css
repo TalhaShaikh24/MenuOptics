@@ -2350,7 +2350,7 @@ html {
 
 .partner-offer-badge {
     display: inline-block;
-    background: #059669;
+    background: #00703C;
     color: #ffffff;
     font-size: 11px;
     font-weight: 800;
@@ -2401,7 +2401,7 @@ html {
 }
 
 .partner-savings-callout {
-    color: #10b981;
+    color: #7AC143;
     font-size: 14px;
     font-weight: 600;
     margin-bottom: 22px;
@@ -2437,21 +2437,49 @@ html {
     font-family: monospace, sans-serif;
 }
 
-.partner-verified-tag {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #cbd5e1;
+.partner-verified-tag,
+.partner-copy-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #e2e8f0;
     font-size: 11px;
     font-weight: 600;
-    padding: 5px 12px;
+    padding: 6px 13px;
     border-radius: 6px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    outline: none;
 }
 
-.partner-verified-tag i {
-    color: #10b981;
+.partner-copy-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.partner-copy-btn:active {
+    transform: translateY(0);
+}
+
+.partner-copy-btn i {
+    color: #ff782d;
+    font-size: 11px;
+    transition: all 0.2s ease;
+}
+
+.partner-copy-btn.copied {
+    background: rgba(16, 185, 129, 0.18);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+
+.partner-copy-btn.copied i {
+    color: #34d399;
 }
 
 .partner-features-checklist {
@@ -2482,7 +2510,7 @@ html {
     display: block;
     width: 100%;
     text-align: center;
-    background: linear-gradient(135deg, #ff782d 0%, #ea580c 100%);
+    background: var(--primary-gradient);
     color: #ffffff !important;
     font-size: 15px;
     font-weight: 700;
@@ -2492,7 +2520,6 @@ html {
     border: none;
     cursor: pointer;
     transition: all 0.25s ease;
-    box-shadow: 0 8px 25px -4px rgba(234, 88, 12, 0.45);
 }
 
 .partner-cta-button:hover {

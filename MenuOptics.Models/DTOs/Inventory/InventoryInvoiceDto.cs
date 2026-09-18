@@ -14,6 +14,7 @@ namespace MenuOptics.Models
         public decimal? Subtotal { get; set; }
         public decimal? Tax { get; set; }
         public decimal? Total { get; set; }
+        public DateTime? CreatedOn { get; set; }
         public string? ItemsJson { get; set; }
         public List<InventoryInvoiceItemDetailDto> Items { get; set; } = new List<InventoryInvoiceItemDetailDto>();
     }
@@ -22,6 +23,8 @@ namespace MenuOptics.Models
     {
         public int? IngredientId { get; set; }
         public string? IngredientName { get; set; }
+        public string? VendorProductId { get; set; }
+        public string? Unit { get; set; }
         public decimal Quantity { get; set; }
         public int? PackSize { get; set; }
         public decimal? Weight { get; set; }

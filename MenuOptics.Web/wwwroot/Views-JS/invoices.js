@@ -205,9 +205,15 @@ function loadEditIngredientsByVendor(vendorId) {
 function submitAddInvoice() {
     const vendorId = parseInt($('#newInvoiceVendor').val());
     const invoiceId = $('#newInvoiceId').val().trim();
+    const invoiceDate = $('#newInvoiceDate').val();
 
     if (!invoiceId) {
         showNotification('Please enter the invoice number.', 'error');
+        return;
+    }
+
+    if (!invoiceDate) {
+        showNotification('Please select the invoice date.', 'error');
         return;
     }
 
@@ -231,6 +237,7 @@ function submitAddInvoice() {
     const payload = {
         privateVendorId: vendorId,
         invoiceId: invoiceId,
+        invoiceDate: invoiceDate,
         items: invoiceItems.map(item => ({
             ingredientId: item.ingredientId,
             quantity: item.quantity ? parseInt(item.quantity) : null,
@@ -266,9 +273,15 @@ function submitEditInvoice() {
         vendorId = parseInt($('#editInventoryInvoiceId').data('vendorId'));
     }
     const invoiceId = $('#editInvoiceId').val().trim();
+    const invoiceDate = $('#editInvoiceDate').val();
 
     if (!invoiceId) {
         showNotification('Please enter the invoice number.', 'error');
+        return;
+    }
+
+    if (!invoiceDate) {
+        showNotification('Please select the invoice date.', 'error');
         return;
     }
 
@@ -293,6 +306,7 @@ function submitEditInvoice() {
         inventoryInvoiceId: inventoryInvoiceId,
         privateVendorId: vendorId,
         invoiceId: invoiceId,
+        invoiceDate: invoiceDate,
         items: editInvoiceItems.map(item => ({
             ingredientId: item.ingredientId,
             quantity: item.quantity ? parseInt(item.quantity) : null,
@@ -371,6 +385,7 @@ function buildInvoiceRow(invoice) {
     const itemsCount = items.length;
     const vendorName = invoice.vendorName || 'N/A';
     const invoiceNum = invoice.invoiceId || ('INV-' + invoice.inventoryInvoiceId);
+    const invoiceDate = invoice.createdOn ? formatInvoiceDate(invoice.createdOn) : '-';
 
     const hasVendorId = invoice.vendorId != null && invoice.vendorId !== 0 && invoice.vendorId !== '';
 
@@ -385,6 +400,7 @@ function buildInvoiceRow(invoice) {
                                 <p class="category-name">${invoiceNum}</p>
                             </div>
                         </td>
+                        <td><i class="fas fa-calendar-alt" style="color: #6b7280; margin-right: 5px;"></i> ${invoiceDate}</td>
                         <td><i class="fas fa-truck"></i> ${vendorName}</td>
                         <td class="text-right">${formatCurrency(invoice.total)}</td>
                         <td class="text-center"><span class="status-badge good">${itemsCount}</span></td>
@@ -414,6 +430,7 @@ function viewInvoiceDetails(inventoryInvoiceId) {
     $('#modalInvoiceTitle').text(`Invoice #${invoiceNum}`);
     $('#modalInvoiceSubtitle').text(`Supplier: ${vendorName}`);
     $('#modalInvoiceId').text(invoiceNum);
+    $('#modalInvoiceDate').text(invoice.createdOn ? formatInvoiceDate(invoice.createdOn) : '-');
     $('#modalVendorName').text(vendorName);
     $('#modalTotal').text(formatCurrency(invoice.total));
 
@@ -433,14 +450,35 @@ function viewInvoiceDetails(inventoryInvoiceId) {
         `);
     } else {
         items.forEach(item => {
+            const isPack = (item.packSize != null && Number(item.packSize) > 0);
+            const typeHtml = isPack
+                ? `<p class="ingredient-meta text-highlight"><i class="fas fa-cubes"></i> Pack Item</p>`
+                : `<p class="ingredient-meta text-highlight danger"><i class="fas fa-weight-hanging"></i> Catch Weight Item</p>`;
+
+            const vendorProductHtml = item.vendorProductId
+                ? `<span class="category-badge"> ${item.vendorProductId}</span>`
+                : '';
+
+            const unit = item.unit || item.Unit;
+            const unitLabel = unit ? ` ${unit}` : '';
+            const qtyDisplay = isPack
+                ? `${Number(item.quantity)} Case(s)`
+                : `${Number(item.quantity).toFixed(2)}${unitLabel}`;
+
             $modalTbody.append(`
                 <tr>
                     <td style="font-weight: 600; color: #1f2937;">
-                        <i class="fas fa-box" style="color: #f08d11; margin-right: 6px; font-size: 11px;"></i>
-                        ${item.ingredientName}
+                        <div style="display: flex; align-items: center;">
+                            <i class="fas fa-box" style="color: #f08d11; margin-right: 6px; font-size: 11px;"></i>
+                            <span>${item.ingredientName}</span>
+                        </div>
+                        <div style="font-size: 11px; color: #6b7280; font-weight: normal; margin-top: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            ${typeHtml}
+                            ${vendorProductHtml}
+                        </div>
                     </td>
                     <td class="text-center">${item.packSize ?? '-'}</td>
-                    <td class="text-right">${item.quantity.toFixed(2)}</td>
+                    <td class="text-right" style="font-weight: 600;">${qtyDisplay}</td>
                     <td class="text-right" style="font-weight: 700; color: #0f172a;">${formatCurrency(item.price)}</td>
                 </tr>
             `);
@@ -454,6 +492,14 @@ function viewInvoiceDetails(inventoryInvoiceId) {
 function openAddInvoiceModal() {
     invoiceItems = [];
     $('#newInvoiceId').val('');
+
+    // Default invoice date to today
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    $('#newInvoiceDate').val(`${yyyy}-${mm}-${dd}`);
+
     $('#invoiceItemsBody').empty();
     syncInvoiceItemsView();
 
@@ -504,6 +550,21 @@ function editInvoice(inventoryInvoiceId) {
 
         $('#editInventoryInvoiceId').val(invoice.inventoryInvoiceId);
         $('#editInvoiceId').val(invoice.invoiceId || '');
+
+        if (invoice.createdOn) {
+            debugger
+            const d = new Date(invoice.createdOn);
+            if (!isNaN(d.getTime())) {
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                $('#editInvoiceDate').val(`${yyyy}-${mm}-${dd}`);
+            } else {
+                $('#editInvoiceDate').val('');
+            }
+        } else {
+            $('#editInvoiceDate').val('');
+        }
 
         let vendorId = invoice.privateVendorId || invoice.vendorId || '';
         const vendorName = (invoice.vendorName || '').trim();
@@ -600,7 +661,7 @@ function renderEditInvoiceItems() {
                     <i class="fas fa-box" style="color: #f08d11; margin-right: 6px; font-size: 11px;"></i>
                     ${item.ingredientName}
                     <div style="font-size: 11px; color: #6b7280; font-weight: normal; margin-top: 2px;">
-                        ${isPack ? '<span style="color: #2563eb;"><i class="fas fa-cubes"></i> Pack Item</span>' : '<span style="color: #059669;"><i class="fas fa-weight-hanging"></i> Catch Weight Item</span>'}
+                        ${isPack ? '<p class="ingredient-meta text-highlight"><i class="fas fa-cubes"></i> Pack Item</p>' : '<p class="ingredient-meta text-highlight"><i class="fas fa-weight-hanging"></i> Pack Item</p>'}
                     </div>
                 </td>
                 <td style="padding: 6px 4px;">
@@ -717,7 +778,7 @@ function renderInvoiceItems() {
                     <i class="fas fa-box" style="color: #f08d11; margin-right: 6px; font-size: 11px;"></i>
                     ${item.ingredientName}
                     <div style="font-size: 11px; color: #6b7280; font-weight: normal; margin-top: 2px;">
-                        ${isPack ? '<span style="color: #2563eb;"><i class="fas fa-cubes"></i> Pack Item</span>' : '<span style="color: #059669;"><i class="fas fa-weight-hanging"></i> Catch Weight Item</span>'}
+                        ${isPack ? '<p class="ingredient-meta text-highlight"><i class="fas fa-cubes"></i> Pack Item</p>' : '<p class="ingredient-meta text-highlight"><i class="fas fa-weight-hanging"></i> Catch Weight Item</p>'}
                     </div>
                 </td>
                 <td style="padding: 6px 4px;">
@@ -825,5 +886,17 @@ function parseItems(itemsJson) {
         return typeof itemsJson === 'string' ? JSON.parse(itemsJson) : itemsJson;
     } catch {
         return [];
+    }
+}
+
+// Formats invoice date into readable format (e.g. Oct 24, 2024)
+function formatInvoiceDate(dateStr) {
+    if (!dateStr) return '-';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    } catch (e) {
+        return dateStr;
     }
 }

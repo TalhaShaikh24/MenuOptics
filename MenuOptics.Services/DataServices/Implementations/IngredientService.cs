@@ -50,6 +50,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
                 parameters.Add("@PrivateVendorId", model.PrivateVendorId);
+                parameters.Add("@VendorProductId", model.VendorProductId);
                 parameters.Add("@CreatedBy", actualUserId);
                 parameters.Add("@Action", "INSERT");
 
@@ -97,6 +98,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@PackSize", model.PackSize);
+                parameters.Add("@VendorProductId", model.VendorProductId);
                 parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@IsActive", 1);
                 parameters.Add("@Action", "UPDATE");

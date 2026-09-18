@@ -183,6 +183,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@PrivateVendorId", model.PrivateVendorId);
                 parameters.Add("@InvoiceId", model.InvoiceId);
+                parameters.Add("@CreatedOn", model.InvoiceDate);
                 parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Subtotal", subtotal);
                 parameters.Add("@Tax", tax);

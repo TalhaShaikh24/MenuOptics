@@ -55,6 +55,7 @@
                 <thead>
                     <tr>
                         <th>Invoice #</th>
+                        <th>Invoice Date</th>
                         <th>Supplier</th>
                         <th class="text-right">Total</th>
                         <th class="text-center">Items</th>
@@ -91,6 +92,10 @@
                     <span class="value" id="modalInvoiceId">-</span>
                 </div>
                 <div class="invoice-summary-item">
+                    <span class="label">Invoice Date</span>
+                    <span class="value" id="modalInvoiceDate">-</span>
+                </div>
+                <div class="invoice-summary-item">
                     <span class="label">Supplier</span>
                     <span class="value" id="modalVendorName">-</span>
                 </div>
@@ -110,7 +115,7 @@
                         <tr style="background: #f8fafc;">
                             <th>Ingredient</th>
                             <th class="text-center">Pack Size</th>
-                            <th class="text-right">Quantity/Weight</th>
+                            <th class="text-right">Qty</th>
                             <th class="text-right">Total Price</th>
                         </tr>
                     </thead>
@@ -145,11 +150,15 @@
         </div>
         <div class="modal-body">
 
-            <!-- Row 1: Invoice # and Vendor -->
+            <!-- Row 1: Invoice #, Invoice Date, and Vendor -->
             <div class="form-row">
                 <div class="form-group">
                     <label>Invoice # <span style="color: #ef4444;">*</span></label>
                     <input type="text" id="newInvoiceId" placeholder="e.g. INV-2024-001">
+                </div>
+                <div class="form-group">
+                    <label>Invoice Date <span style="color: #ef4444;">*</span></label>
+                    <input type="date" id="newInvoiceDate">
                 </div>
                 <div class="form-group">
                     <label>Supplier <span style="color: #ef4444;">*</span></label>
@@ -181,7 +190,7 @@
                             <tr style="background: #f8fafc; border-bottom: 1px solid #e5e7eb;">
                                 <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Ingredient</th>
                                 <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 130px;">Pack Size</th>
-                                <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 100px;">Qty/Weight</th>
+                                <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 100px;">Qty</th>
                                 <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 120px;">Price</th>
                                 <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 36px;"></th>
                             </tr>
@@ -225,11 +234,15 @@
         <div class="modal-body">
             <input type="hidden" id="editInventoryInvoiceId">
 
-            <!-- Row 1: Invoice # and Vendor -->
+            <!-- Row 1: Invoice #, Invoice Date, and Vendor -->
             <div class="form-row">
                 <div class="form-group">
                     <label>Invoice # <span style="color: #ef4444;">*</span></label>
-                    <input type="text" id="editInvoiceId" placeholder="e.g. INV-2024-001">
+                    <input type="text" id="editInvoiceId" placeholder="e.g. INV-2024-001" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Invoice Date <span style="color: #ef4444;">*</span></label>
+                    <input type="date" id="editInvoiceDate" disabled>
                 </div>
                 <div class="form-group">
                     <label>Supplier <span style="color: #ef4444;">*</span></label>
@@ -260,8 +273,8 @@
                         <thead>
                             <tr style="background: #f8fafc; border-bottom: 1px solid #e5e7eb;">
                                 <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: #374151;">Ingredient</th>
-                                <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 100px;">Qty/Weight</th>
                                 <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 130px;">Pack Size</th>
+                                <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 100px;">Qty</th>
                                 <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 120px;">Price</th>
                                 <th style="padding: 10px 8px; text-align: center; font-weight: 600; color: #374151; width: 36px;"></th>
                             </tr>

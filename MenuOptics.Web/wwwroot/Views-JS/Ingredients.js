@@ -53,7 +53,8 @@ $(document).ready(function () {
             ingredientType: $('#ingredientType').val(),
             size: $('#ingredientSize').val(),
             packSize: $('#ingredientPackSize').prop('disabled') ? null : Number($('#ingredientPackSize').val()),
-            privateVendorId: parseInt($('#ingredientPrivateVendorId').val()) || null
+            privateVendorId: parseInt($('#ingredientPrivateVendorId').val()) || null,
+            vendorProductId: $('#ingredientVendorProductId').val()?.trim() || null
         };
         if (isFormValid('#addIngredientForm')) {
 
@@ -78,7 +79,8 @@ $(document).ready(function () {
             ingredientType: $('#editIngredientType').val(),
             size: parseFloat($('#editIngredientSize').val()),
             packSize: $('#editIngredientPackSize').prop('disabled') ? null : Number($('#editIngredientPackSize').val()),
-            privateVendorId: parseInt($('#editIngredientPrivateVendorId').val()) || null
+            privateVendorId: parseInt($('#editIngredientPrivateVendorId').val()) || null,
+            vendorProductId: $('#editIngredientVendorProductId').val()?.trim() || null
         };
         if (isFormValid('#editIngredientForm')) {
 
@@ -442,7 +444,8 @@ function addIngredient(ingredientData) {
             Unit: ingredientData.unit,
             Size: ingredientData.size,
             PackSize: ingredientData.packSize,
-            PrivateVendorId: ingredientData.privateVendorId
+            PrivateVendorId: ingredientData.privateVendorId,
+            VendorProductId: ingredientData.vendorProductId
         },
         onSuccess: function () {
             refreshIngredientsTable();
@@ -481,6 +484,7 @@ function getIngredientById(id) {
             $('#editIngredientPrice').val(ingredient.price);
             $('#editIngredientSize').val(ingredient.size);
             $('#editIngredientPackSize').val(ingredient.packSize);
+            $('#editIngredientVendorProductId').val(ingredient.vendorProductId || '');
             // No Type column from API — derive it from packSize instead
             const ingredientType = (ingredient.packSize != null) ? 'packItem' : 'catchWeight';
             $('#editIngredientType').val(ingredientType).prop("disabled", true);
@@ -519,7 +523,8 @@ function updateIngredient(ingredientData) {
             Unit: ingredientData.unit,
             Size: ingredientData.size,
             PackSize: ingredientData.packSize,
-            PrivateVendorId: ingredientData.privateVendorId
+            PrivateVendorId: ingredientData.privateVendorId,
+            VendorProductId: ingredientData.vendorProductId
         },
         onSuccess: function () {
             refreshIngredientsTable();
