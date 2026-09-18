@@ -433,21 +433,15 @@ function viewInvoiceDetails(inventoryInvoiceId) {
         `);
     } else {
         items.forEach(item => {
-            const qty = Number(item.quantity || 0);
-            const price = Number(item.price || 0);
-            const packSize = item.packSize ?? '-';
-            const ingredientName = item.ingredientName || 'Unknown Ingredient';
-            const itemTotal = qty * price;
-
             $modalTbody.append(`
                 <tr>
                     <td style="font-weight: 600; color: #1f2937;">
                         <i class="fas fa-box" style="color: #f08d11; margin-right: 6px; font-size: 11px;"></i>
-                        ${ingredientName}
+                        ${item.ingredientName}
                     </td>
-                    <td class="text-center">${packSize}</td>
-                    <td class="text-right">${qty.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td class="text-right" style="font-weight: 700; color: #0f172a;">${formatCurrency(itemTotal)}</td>
+                    <td class="text-center">${item.packSize ?? '-'}</td>
+                    <td class="text-right">${item.quantity.toFixed(2)}</td>
+                    <td class="text-right" style="font-weight: 700; color: #0f172a;">${formatCurrency(item.price)}</td>
                 </tr>
             `);
         });
