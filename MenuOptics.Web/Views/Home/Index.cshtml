@@ -3,6 +3,8 @@
     ViewData["Title"] = "Home - Live Food Costing & AI Menu Engineering";
     bool isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
     string dashboardUrl = (User?.IsInRole("Restaurant") ?? false) ? (Url.Action("Index", "Menu") ?? "/Menu/Index") : (Url.Action("Index", "User") ?? "/User/Index");
+
+    bool isPepperPartner = Context.Request.Query["source"].ToString().Equals("pepper", StringComparison.OrdinalIgnoreCase);
 }
 
 <!-- ═════════════════════════════════════════════════════════════════
@@ -49,47 +51,147 @@
     </div>
 </header>
 
-<!-- ═════════════════════════════════════════════════════════════════
-     HERO SECTION
-     ═════════════════════════════════════════════════════════════════ -->
-<section class="hero-section">
-    <div class="hero-glow-bg"></div>
-    <div class="landing-container hero-container-relative">
+@if (isPepperPartner)
+{
+    <!-- ═════════════════════════════════════════════════════════════════
+         PARTNER HERO SECTION (Flanagan / Pepper Partner Co-Branding)
+         ═════════════════════════════════════════════════════════════════ -->
+    <section class="partner-hero-section" id="partnerHeroSection">
+        <div class="landing-container">
+            <div class="partner-hero-grid">
+                
+                <!-- Left Column: Branding & Copy -->
+                <div class="partner-hero-left">
+                    <div class="partner-logos-row">
+                        <img src="~/images/flanagan_logo.png" alt="Flanagan Foodservice" class="partner-logo-img flanagan-brand-logo" />
+                        <img src="~/images/menu optics_light_logo.png" alt="Menu Optics" class="partner-logo-img menuoptics-brand-logo" />
+                    </div>
 
-        <div class="hero-content">
-            <div class="hero-logo-wrapper reveal">
-                <img src="~/images/menu optics_light_logo.png" alt="Menu Optics" class="hero-main-logo" />
-            </div>
+                    <h1 class="partner-main-heading">
+                        Two Trusted Partners.<br />
+                        One Unified Solution for<br />
+                        <span class="partner-highlight-orange">Kitchen Profitability</span>.
+                    </h1>
 
-            <h1 class="hero-title reveal">
-                Data Driven Insights....<br />
-                <span class="gradient-amber-text">Simplified</span>
-            </h1>
+                    <p class="partner-sub-heading">
+                        Stop guessing your margins. Start engineering your profits.
+                    </p>
 
-            <p class="hero-subtitle reveal">
-                The hospitality industry moves fast, and static spreadsheets can’t keep up. Menu Optics gives you a live, dynamic view of your menu costing, both before you print and long after, so you can protect your bottom line in real time.
-            </p>
+                    <p class="partner-body-text">
+                        Built exclusively to integrate with Flanagan, Menu Optics transforms raw invoice data into actionable kitchen intelligence.
+                    </p>
 
-            <div class="hero-actions reveal">
-                @if (isAuthenticated)
-                {
-                    <a href="@dashboardUrl" class="btn-landing-primary btn-landing-lg">
-                        <i class="fas fa-chart-line"></i> Open Dashboard
-                    </a>
-                }
-                else
-                {
-                    <a href="@Url.Action("Register", "User")" class="btn-landing-primary btn-landing-lg">
-                        <i class="fas fa-rocket"></i> Get Started
-                    </a>
-                    <a href="@Url.Action("Login", "User")" class="btn-landing-outline btn-landing-lg">
-                        <i class="fas fa-sign-in-alt"></i> Sign In
-                    </a>
-                }
+                    <ul class="partner-bullet-list">
+                        <li><span class="pbullet-dot">•</span> Live Menu Item &amp; Recipe Batch Costing</li>
+                        <li><span class="pbullet-dot">•</span> AI-Powered Menu Engineering</li>
+                        <li><span class="pbullet-dot">•</span> Seamless Invoice-to-Inventory</li>
+                        <li><span class="pbullet-dot">•</span> Live Catering &amp; Event Quotes</li>
+                    </ul>
+                </div>
+
+                <!-- Right Column: Exclusive Operator Offer Card -->
+                <div class="partner-hero-right">
+                    <div class="partner-pricing-card">
+                        
+                        <div class="partner-offer-badge">
+                            EXCLUSIVE OPERATOR OFFER
+                        </div>
+
+                        <div class="partner-rate-label">PARTNER RATE PLAN</div>
+
+                        <div class="partner-price-display">
+                            <span class="partner-price-currency">$50</span>
+                            <span class="partner-price-cycle">/month</span>
+                            <span class="partner-price-original">$75/mo</span>
+                        </div>
+
+                        <div class="partner-savings-callout">
+                            Save $300 every year as a Flanagan operator
+                        </div>
+
+                        <div class="partner-promo-container">
+                            <div class="partner-promo-details">
+                                <span class="partner-promo-label">REDEMPTION PROMO CODE</span>
+                                <span class="partner-promo-code">FLANOPTIC300</span>
+                            </div>
+                            <div class="partner-verified-tag">
+                                <i class="fas fa-check-circle"></i> Verified Partner
+                            </div>
+                        </div>
+
+                        <ul class="partner-features-checklist">
+                            <li>
+                                <i class="fas fa-check"></i>
+                                <span>Live Vendor Price Sync &amp; Recipe Costing</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-check"></i>
+                                <span>Pre &amp; Post-Print AI Menu Engineering</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-check"></i>
+                                <span>Inventory &amp; Variance Management</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-check"></i>
+                                <span>Instant Event &amp; Catering Quoting Engine</span>
+                            </li>
+                        </ul>
+
+                        <a href="@Url.Action("Register", "User", new { promo = "FLANOPTIC300" })" class="partner-cta-button">
+                            Lock In Flanagan Operator Pricing
+                        </a>
+                    </div>
+                </div>
+
             </div>
         </div>
-    </div>
-</section>
+    </section>
+}
+else
+{
+    <!-- ═════════════════════════════════════════════════════════════════
+         STANDARD HERO SECTION
+         ═════════════════════════════════════════════════════════════════ -->
+    <section class="hero-section" id="standardHeroSection">
+        <div class="hero-glow-bg"></div>
+        <div class="landing-container hero-container-relative">
+
+            <div class="hero-content">
+                <div class="hero-logo-wrapper reveal">
+                    <img src="~/images/menu optics_light_logo.png" alt="Menu Optics" class="hero-main-logo" />
+                </div>
+
+                <h1 class="hero-title reveal">
+                    Data Driven Insights....<br />
+                    <span class="gradient-amber-text">Simplified</span>
+                </h1>
+
+                <p class="hero-subtitle reveal">
+                    The hospitality industry moves fast, and static spreadsheets can’t keep up. Menu Optics gives you a live, dynamic view of your menu costing, both before you print and long after, so you can protect your bottom line in real time.
+                </p>
+
+                <div class="hero-actions reveal">
+                    @if (isAuthenticated)
+                    {
+                        <a href="@dashboardUrl" class="btn-landing-primary btn-landing-lg">
+                            <i class="fas fa-chart-line"></i> Open Dashboard
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Register", "User")" class="btn-landing-primary btn-landing-lg">
+                            <i class="fas fa-rocket"></i> Get Started
+                        </a>
+                        <a href="@Url.Action("Login", "User")" class="btn-landing-outline btn-landing-lg">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+}
 
 <!-- ═════════════════════════════════════════════════════════════════
      SECTION 1: Pre- & Post-Print Food Costing

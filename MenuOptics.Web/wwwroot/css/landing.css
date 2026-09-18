@@ -2214,3 +2214,338 @@ html {
         width: 100%;
     }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PARTNER HERO SECTION (Flanagan / Pepper Partner Co-Branding)
+   ══════════════════════════════════════════════════════════════════════════════ */
+.partner-hero-section {
+    position: relative;
+    padding: 150px 0 100px;
+    background: radial-gradient(circle at 80% 20%, rgba(240, 141, 17, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 10% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 40%),
+                linear-gradient(180deg, #090e17 0%, #0c121d 100%);
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.partner-hero-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 48px;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+/* Left Column */
+.partner-hero-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.partner-logos-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+
+.partner-logo-img {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.4));
+    transition: transform 0.25s ease;
+}
+
+.partner-logo-img:hover {
+    transform: scale(1.03);
+}
+
+.flanagan-brand-logo {
+    height: 46px;
+}
+
+.menuoptics-brand-logo {
+    height: 48px;
+}
+
+.partner-main-heading {
+    font-size: 46px;
+    font-weight: 800;
+    line-height: 1.16;
+    color: #ffffff;
+    letter-spacing: -0.9px;
+    margin: 0 0 18px 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.partner-highlight-orange {
+    color: #ff782d;
+    background: linear-gradient(135deg, #ff782d 0%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.partner-sub-heading {
+    font-size: 20px;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0 0 14px 0;
+    line-height: 1.35;
+}
+
+.partner-body-text {
+    font-size: 15px;
+    color: #94a3b8;
+    line-height: 1.65;
+    margin: 0 0 24px 0;
+    max-width: 540px;
+}
+
+.partner-bullet-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.partner-bullet-list li {
+    font-size: 14.5px;
+    color: #f1f5f9;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pbullet-dot {
+    color: #cbd5e1;
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* Right Column: Offer Card */
+.partner-hero-right {
+    display: flex;
+    justify-content: center;
+}
+
+.partner-pricing-card {
+    width: 100%;
+    max-width: 460px;
+    background: #0f1622;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 34px 30px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7),
+                0 0 30px -10px rgba(255, 120, 45, 0.15);
+    position: relative;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.partner-offer-badge {
+    display: inline-block;
+    background: #059669;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 10px rgba(5, 150, 105, 0.35);
+}
+
+.partner-rate-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+}
+
+.partner-price-display {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 6px;
+}
+
+.partner-price-currency {
+    font-size: 54px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.partner-price-cycle {
+    font-size: 15px;
+    color: #94a3b8;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.partner-price-original {
+    font-size: 17px;
+    color: #64748b;
+    text-decoration: line-through;
+    margin-left: 12px;
+    font-weight: 500;
+}
+
+.partner-savings-callout {
+    color: #10b981;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 22px;
+}
+
+.partner-promo-container {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.partner-promo-label {
+    font-size: 10px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    display: block;
+}
+
+.partner-promo-code {
+    font-size: 17px;
+    font-weight: 800;
+    color: #ff782d;
+    letter-spacing: 1.2px;
+    display: block;
+    margin-top: 2px;
+    font-family: monospace, sans-serif;
+}
+
+.partner-verified-tag {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.partner-verified-tag i {
+    color: #10b981;
+}
+
+.partner-features-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 26px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+}
+
+.partner-features-checklist li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.partner-features-checklist i {
+    color: #10b981;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.partner-cta-button {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: linear-gradient(135deg, #ff782d 0%, #ea580c 100%);
+    color: #ffffff !important;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 15px 20px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 8px 25px -4px rgba(234, 88, 12, 0.45);
+}
+
+.partner-cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -4px rgba(234, 88, 12, 0.65);
+    color: #ffffff !important;
+}
+
+@media (max-width: 992px) {
+    .partner-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+    }
+
+    .partner-main-heading {
+        font-size: 38px;
+    }
+
+    .partner-pricing-card {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .partner-hero-section {
+        padding: 120px 0 70px;
+    }
+
+    .partner-main-heading {
+        font-size: 30px;
+    }
+
+    .partner-sub-heading {
+        font-size: 17px;
+    }
+
+    .partner-logos-row {
+        gap: 16px;
+    }
+
+    .flanagan-brand-logo {
+        height: 38px;
+    }
+
+    .menuoptics-brand-logo {
+        height: 40px;
+    }
+
+    .partner-pricing-card {
+        padding: 24px 20px;
+    }
+
+    .partner-price-currency {
+        font-size: 42px;
+    }
+}
