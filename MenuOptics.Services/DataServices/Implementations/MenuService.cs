@@ -44,6 +44,32 @@ namespace MenuOptics.Services
                     featuredImagePath = await _fileService.UploadFileAsync(model.FeaturedImageFile, "menu");
                 }
 
+
+                var ingredientTable = new DataTable();
+                ingredientTable.Columns.Add("IngredientId", typeof(int));
+                ingredientTable.Columns.Add("UOM", typeof(string));
+                ingredientTable.Columns.Add("Quantity", typeof(decimal));
+
+                if (model.Ingredients != null && model.Ingredients.Any())
+                {
+                    foreach (var ingredient in model.Ingredients)
+                    {
+                        ingredientTable.Rows.Add(ingredient.IngredientId, ingredient.UOM.ToUpper(), ingredient.Quantity);
+                    }
+                }
+
+                var recipeTable = new DataTable();
+                recipeTable.Columns.Add("RecipeId", typeof(int));
+                recipeTable.Columns.Add("Quantity", typeof(decimal));
+
+                if (model.Recipes != null && model.Recipes.Any())
+                {
+                    foreach (var recipe in model.Recipes)
+                    {
+                        recipeTable.Rows.Add(recipe.RecipeId, recipe.Quantity);
+                    }
+                }
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
@@ -52,38 +78,12 @@ namespace MenuOptics.Services
                 parameters.Add("@Cost", model.Cost);
                 parameters.Add("@SellingPrice", model.SellingPrice);
                 parameters.Add("@FeaturedImage", featuredImagePath);
-                parameters.Add("@IsAvailable", model.IsAvailable);
                 parameters.Add("@CreatedBy", actualUserId);
+                parameters.Add("@MenuItemIngredients", ingredientTable.AsTableValuedParameter("dbo.MenuItemIngredientsType"));
+                parameters.Add("@MenuItemRecipes", recipeTable.AsTableValuedParameter("dbo.MenuItemRecipesType"));
                 parameters.Add("@Action", "INSERT");
 
                 int menuItemId = await connection.ExecuteScalarAsync<int>("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                if (model.Ingredients != null && model.Ingredients.Any())
-                {
-                    foreach (var ingredient in model.Ingredients)
-                    {
-                        var ingredientParams = new DynamicParameters();
-                        ingredientParams.Add("@MenuItemId", menuItemId);
-                        ingredientParams.Add("@IngredientId", ingredient.IngredientId);
-                        ingredientParams.Add("@UOM", ingredient.UOM.ToUpper());
-                        ingredientParams.Add("@Quantity", ingredient.Quantity);
-                        ingredientParams.Add("@Action", "INSERT");
-                        await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);
-                    }
-                }
-
-                if (model.Recipes != null && model.Recipes.Any())
-                {
-                    foreach (var recipe in model.Recipes)
-                    {
-                        var recipeParams = new DynamicParameters();
-                        recipeParams.Add("@MenuItemId", menuItemId);
-                        recipeParams.Add("@RecipeId", recipe.RecipeId);
-                        recipeParams.Add("@Quantity", recipe.Quantity);
-                        recipeParams.Add("@Action", "INSERT");
-                        await connection.ExecuteAsync("sp_MenuItemRecipesCRUD", recipeParams, commandType: CommandType.StoredProcedure);
-                    }
-                }
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Menu item created successfully.";
@@ -133,6 +133,33 @@ namespace MenuOptics.Services
                     featuredImagePath = await _fileService.UploadFileAsync(model.FeaturedImageFile, "menu");
                 }
 
+
+                var ingredientTable = new DataTable();
+                ingredientTable.Columns.Add("IngredientId", typeof(int));
+                ingredientTable.Columns.Add("UOM", typeof(string));
+                ingredientTable.Columns.Add("Quantity", typeof(decimal));
+
+                if (model.Ingredients != null && model.Ingredients.Any())
+                {
+                    foreach (var ingredient in model.Ingredients)
+                    {
+                        ingredientTable.Rows.Add(ingredient.IngredientId, ingredient.UOM.ToUpper(), ingredient.Quantity);
+                    }
+                }
+
+                var recipeTable = new DataTable();
+                recipeTable.Columns.Add("RecipeId", typeof(int));
+                recipeTable.Columns.Add("Quantity", typeof(decimal));
+
+                if (model.Recipes != null && model.Recipes.Any())
+                {
+                    foreach (var recipe in model.Recipes)
+                    {
+                        recipeTable.Rows.Add(recipe.RecipeId, recipe.Quantity);
+                    }
+                }
+
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@MenuItemId", model.MenuItemId);
                 parameters.Add("@Name", model.Name);
@@ -141,50 +168,13 @@ namespace MenuOptics.Services
                 parameters.Add("@Cost", model.Cost);
                 parameters.Add("@SellingPrice", model.SellingPrice);
                 parameters.Add("@FeaturedImage", featuredImagePath);
-                parameters.Add("@IsAvailable", model.IsAvailable);
                 parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@IsActive", true);
+                parameters.Add("@MenuItemIngredients", ingredientTable.AsTableValuedParameter("dbo.MenuItemIngredientsType"));
+                parameters.Add("@MenuItemRecipes", recipeTable.AsTableValuedParameter("dbo.MenuItemRecipesType"));
                 parameters.Add("@Action", "UPDATE");
 
                 int updatedMenuItemId = await connection.ExecuteAsync("sp_MenuCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-
-                var deleteParams = new DynamicParameters();
-                deleteParams.Add("@MenuItemId", model.MenuItemId);
-                deleteParams.Add("@Action", "DELETE_ALL");
-                await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", deleteParams, commandType: CommandType.StoredProcedure);
-
-                if (model.Ingredients != null && model.Ingredients.Any())
-                {
-                    foreach (var ingredient in model.Ingredients)
-                    {
-                        var ingredientParams = new DynamicParameters();
-                        ingredientParams.Add("@MenuItemId", model.MenuItemId);
-                        ingredientParams.Add("@IngredientId", ingredient.IngredientId);
-                        ingredientParams.Add("@UOM", ingredient.UOM.ToUpper());
-                        ingredientParams.Add("@Quantity", ingredient.Quantity);
-                        ingredientParams.Add("@Action", "INSERT");
-                        await connection.ExecuteAsync("sp_MenuItemIngredientsCRUD", ingredientParams, commandType: CommandType.StoredProcedure);
-                    }
-                }
-
-                var deleteRecipeParams = new DynamicParameters();
-                deleteRecipeParams.Add("@MenuItemId", model.MenuItemId);
-                deleteRecipeParams.Add("@Action", "DELETE_ALL");
-                await connection.ExecuteAsync("sp_MenuItemRecipesCRUD", deleteRecipeParams, commandType: CommandType.StoredProcedure);
-
-                if (model.Recipes != null && model.Recipes.Any())
-                {
-                    foreach (var recipe in model.Recipes)
-                    {
-                        var recipeParams = new DynamicParameters();
-                        recipeParams.Add("@MenuItemId", model.MenuItemId);
-                        recipeParams.Add("@RecipeId", recipe.RecipeId);
-                        recipeParams.Add("@Quantity", recipe.Quantity);
-                        recipeParams.Add("@Action", "INSERT");
-                        await connection.ExecuteAsync("sp_MenuItemRecipesCRUD", recipeParams, commandType: CommandType.StoredProcedure);
-                    }
-                }
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Menu item updated successfully.";

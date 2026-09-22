@@ -1,7 +1,10 @@
+using MenuOptics.Services.EmailTemplates;
+using Microsoft.Extensions.Configuration;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Mail;
-using Microsoft.Extensions.Configuration;
+using System.Reflection;
 
 namespace MenuOptics.Services
 {
@@ -31,7 +34,12 @@ namespace MenuOptics.Services
                 message.Attachments.Add(attachment);
             }
 
-            await client.SendMailAsync(message);
+            var environment = _config["Enviroment"];
+
+            if (!string.Equals(environment, "Sandbox", StringComparison.OrdinalIgnoreCase))
+            {
+                await client.SendMailAsync(message);
+            }
         }
     }
 }

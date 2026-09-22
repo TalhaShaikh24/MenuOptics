@@ -272,7 +272,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Unit", model.Unit.ToUpper());
+                parameters.Add("@Unit", model.Unit != null ? model.Unit.ToUpper() : null);
                 parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@ClassificationId", model.ClassificationId);

@@ -26,8 +26,8 @@ namespace MenuOptics.Controllers.Api
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        [HttpPost("UpdateClosingCount")]
-        public async Task<IActionResult> UpdateClosingCount([FromBody] ClosingCountUpdateDto model)
+        [HttpPost("UpdateInventorySuiteReport")]
+        public async Task<IActionResult> UpdateInventorySuiteReport([FromBody] InventorySuiteUpdateDto model)
         {
             if (!ModelState.IsValid)
             {
@@ -38,7 +38,7 @@ namespace MenuOptics.Controllers.Api
                 });
             }
 
-            var responseData = await _inventoryService.UpdateClosingCountAsync(model, CurrentUserId);
+            var responseData = await _inventoryService.UpdateInventorySuiteReportAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 

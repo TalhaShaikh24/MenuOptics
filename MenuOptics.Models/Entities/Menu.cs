@@ -17,7 +17,6 @@ namespace MenuOptics.Models
         public decimal SellingPrice { get; set; }
         public string? FeaturedImage { get; set; }
         public IFormFile? FeaturedImageFile { get; set; }
-        public bool IsAvailable { get; set; }
         public DateTime CreatedOn { get; set; }
         public int CreatedBy { get; set; }
         public DateTime? ModifiedOn { get; set; }
@@ -34,7 +33,7 @@ namespace MenuOptics.Models
         public string IngredientName { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
         public string Unit { get; set; } = string.Empty;
-        public string UOM { get; set; } = string.Empty;
+        public string UOM { get; set; }
         public string? Source { get; set; }
         public decimal CurrentPrice { get; set; }
         public decimal? OldPrice { get; set; }

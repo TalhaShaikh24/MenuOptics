@@ -55,7 +55,6 @@ namespace MenuOptics.Services.VendorApi
 
                 var table = new DataTable();
 
-                table.Columns.Add("InventoryInvoideId", typeof(int));
                 table.Columns.Add("IngredientId", typeof(int));
                 table.Columns.Add("Quantity", typeof(decimal));
                 table.Columns.Add("PackSize", typeof(int));
@@ -91,7 +90,6 @@ namespace MenuOptics.Services.VendorApi
                         subtotal += quantity * item.Price;
 
                         table.Rows.Add(
-                            item.InventoryInvoiceId,
                             item.IngredientId,
                             quantity,
                             item.PackSize,

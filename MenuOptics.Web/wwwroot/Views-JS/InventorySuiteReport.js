@@ -11,19 +11,450 @@
 
 let table;
 let currentEndDate = null;
+let startDate = null;
+let reportsList = [];
+let pendingClosingCounts = {};
+let currentSelectedReportId = null;
+let pendingTargetReportId = null;
+let isSwitchingProgrammatically = false;
+let lastEndDate = null;
+
+let currentMode = 'UPDATE'; // 'INSERT' (new report draft) or 'UPDATE' (saved report)
+let loadedReportItems = [];
+let newReportClosingCounts = {};
+
+function hasUnsavedChanges() {
+    if (currentMode === 'INSERT') {
+        return Object.keys(newReportClosingCounts).length > 0;
+    }
+    return Object.keys(pendingClosingCounts).length > 0;
+}
 
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
-    $('#dateRange').customRangeFilter({
-        onApplyFilter: function (filterType, selectedDates) {
-            startDate = DateFormatter.formatDashUS(selectedDates.startDate);
-            endDate = DateFormatter.formatDashUS(selectedDates.endDate);
-            currentEndDate = endDate;
+    // Initialize select2 on #reportSelector
+    $('#reportSelector').select2({
+        placeholder: '-- Select Report --',
+        width: '100%',
+        minimumResultsForSearch: 10
+    });
 
-            refreshInventorySuiteReportTable(startDate, endDate);
-        },
-        initialFilter: "Last 30 Days"
+    // Intercept report selection before change if unsaved closing counts exist
+    $('#reportSelector').on('select2:selecting', function (e) {
+        if (isSwitchingProgrammatically) return;
+
+        const targetId = e.params && e.params.args && e.params.args.data ? e.params.args.data.id : null;
+        if (!targetId || targetId === currentSelectedReportId) return;
+
+        if (hasUnsavedChanges()) {
+            e.preventDefault();
+            $('#reportSelector').select2('close');
+            pendingTargetReportId = targetId;
+            openModal('unsavedChangesModal');
+            return false;
+        }
+    });
+
+    $('#reportSelector').on('change', function () {
+        if (isSwitchingProgrammatically) return;
+
+        const selectedId = $(this).val();
+
+        // Fallback safeguard in case change event fired
+        if (hasUnsavedChanges() && selectedId !== currentSelectedReportId) {
+            pendingTargetReportId = selectedId;
+            isSwitchingProgrammatically = true;
+            $(this).val(currentSelectedReportId).trigger('change.select2');
+            isSwitchingProgrammatically = false;
+            openModal('unsavedChangesModal');
+            return;
+        }
+
+        if (selectedId) {
+            currentSelectedReportId = selectedId;
+            const report = reportsList.find(r => r.id === selectedId);
+            if (report) {
+                startDate = report.startDate;
+                currentEndDate = report.endDate;
+                pendingClosingCounts = {};
+                newReportClosingCounts = {};
+
+                if (report.isDraft) {
+                    currentMode = 'INSERT';
+                    $('#insertReportBtn').show().prop('disabled', false);
+                    $('#updateClosingCountBtn').hide().prop('disabled', true);
+                    refreshInventorySuiteReportTable(report.startDate, report.endDate, true);
+                } else {
+                    currentMode = 'UPDATE';
+                    $('#updateClosingCountBtn').show().prop('disabled', true);
+                    $('#insertReportBtn').hide();
+                    refreshInventorySuiteReportTable(report.startDate, report.endDate, false);
+                }
+            }
+        } else {
+            currentSelectedReportId = null;
+            $('#updateClosingCountBtn').hide().prop('disabled', true);
+            $('#insertReportBtn').hide();
+        }
+    });
+
+    // Unsaved changes warning modal handlers
+    $('#cancelSwitchReportBtn').on('click', function () {
+        pendingTargetReportId = null;
+        closeModal('unsavedChangesModal');
+    });
+
+    $('#confirmSwitchReportBtn').on('click', function () {
+        closeModal('unsavedChangesModal');
+
+        // Discard unsaved changes
+        pendingClosingCounts = {};
+        newReportClosingCounts = {};
+        $('.cogs-report-table td.editable-closing').removeClass('modified-count');
+        $('#updateClosingCountBtn').prop('disabled', true);
+
+        // If discarding from a draft, remove the draft item from reportsList
+        reportsList = reportsList.filter(r => !r.isDraft);
+
+        if (pendingTargetReportId === 'add_report_modal') {
+            pendingTargetReportId = null;
+            openAddReportModal();
+            return;
+        }
+
+        if (pendingTargetReportId) {
+            const nextReportId = pendingTargetReportId;
+            pendingTargetReportId = null;
+            currentSelectedReportId = nextReportId;
+
+            populateReportSelector(nextReportId);
+
+            const report = reportsList.find(r => r.id === nextReportId);
+            if (report) {
+                startDate = report.startDate;
+                currentEndDate = report.endDate;
+                currentMode = report.isDraft ? 'INSERT' : 'UPDATE';
+                if (currentMode === 'INSERT') {
+                    $('#insertReportBtn').show().prop('disabled', false);
+                    $('#updateClosingCountBtn').hide();
+                } else {
+                    $('#updateClosingCountBtn').show().prop('disabled', true);
+                    $('#insertReportBtn').hide();
+                }
+                refreshInventorySuiteReportTable(report.startDate, report.endDate, report.isDraft);
+            }
+        }
+    });
+
+    // Add Report modal triggers
+    function openAddReportModal() {
+        const today = new Date();
+        const last30Days = new Date();
+        last30Days.setDate(today.getDate() - 29);
+
+        const formatDateVal = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        const todayStr = formatDateVal(today);
+        const minStartDateStr = formatToDateInputVal(lastEndDate);
+
+        if (minStartDateStr) {
+            // Apply condition: Start Date cannot be before last record's End Date
+            $('#reportStartDate').attr('min', minStartDateStr);
+            $('#reportStartDate').val(minStartDateStr);
+
+            $('#reportEndDate').attr('min', minStartDateStr);
+            if (todayStr >= minStartDateStr) {
+                $('#reportEndDate').val(todayStr);
+            } else {
+                $('#reportEndDate').val(minStartDateStr);
+            }
+
+            $('#startDateMinHintVal').text(safeFormatUS(lastEndDate));
+            $('#startDateMinHint').show();
+        } else {
+            $('#reportStartDate').removeAttr('min');
+            $('#reportEndDate').removeAttr('min');
+            $('#reportStartDate').val(formatDateVal(last30Days));
+            $('#reportEndDate').val(todayStr);
+            $('#startDateMinHint').hide();
+        }
+
+        $('#saveReportBtn').prop('disabled', false).html('Start');
+        openModal('addReportModal');
+    }
+
+    // Keep End Date min synced with chosen Start Date
+    $('#reportStartDate').on('change', function () {
+        const chosenStart = $(this).val();
+        if (chosenStart) {
+            $('#reportEndDate').attr('min', chosenStart);
+            if ($('#reportEndDate').val() && $('#reportEndDate').val() < chosenStart) {
+                $('#reportEndDate').val(chosenStart);
+            }
+        }
+    });
+
+    $('#openAddReportModalBtn').on('click', function () {
+        if ($(this).is(':disabled')) return;
+
+        if (hasUnsavedChanges()) {
+            pendingTargetReportId = 'add_report_modal';
+            openModal('unsavedChangesModal');
+            return;
+        }
+        openAddReportModal();
+    });
+
+    // "Start" button inside Add Report modal
+    // Does NOT call AddInventorySuiteReport directly!
+    // Instead, sets up draft in dropdown, fetches ingredients, renders inputs for closing count, and shows Insert Report button.
+    $('#saveReportBtn').on('click', function () {
+        const sDate = $('#reportStartDate').val();
+        const eDate = $('#reportEndDate').val();
+
+        if (!sDate) {
+            showNotification('Please select a start date.', 'error');
+            return;
+        }
+        if (!eDate) {
+            showNotification('Please select an end date.', 'error');
+            return;
+        }
+
+        const minStartDateStr = formatToDateInputVal(lastEndDate);
+        if (minStartDateStr && sDate < minStartDateStr) {
+            showNotification(`Start date cannot be before last report's end date (${safeFormatUS(lastEndDate)}).`, 'error');
+            return;
+        }
+
+        if (new Date(sDate) > new Date(eDate)) {
+            showNotification('Start date cannot be after end date.', 'error');
+            return;
+        }
+
+        closeModal('addReportModal');
+
+        // Switch to INSERT mode
+        currentMode = 'INSERT';
+        startDate = sDate;
+        currentEndDate = eDate;
+        pendingClosingCounts = {};
+        newReportClosingCounts = {};
+
+        // Remove any previous unconfirmed draft
+        reportsList = reportsList.filter(r => !r.isDraft);
+
+        const draftId = 'draft_' + Date.now();
+        const draftReport = {
+            id: draftId,
+            text: `New Report: ${safeFormatUS(sDate)} - ${safeFormatUS(eDate)} (Draft)`,
+            startDate: safeFormatDash(sDate),
+            endDate: safeFormatDash(eDate),
+            isDraft: true
+        };
+
+        reportsList.unshift(draftReport);
+        populateReportSelector(draftId);
+
+        // Show Insert Report button, hide Update Report button
+        $('#insertReportBtn').show().prop('disabled', false);
+        $('#updateClosingCountBtn').hide().prop('disabled', true);
+
+        // Fetch ingredients for this date range with closing count inputs
+        refreshInventorySuiteReportTable(startDate, currentEndDate, true);
+    });
+
+    // Insert Report button handler (calls AddInventorySuiteReport with all items)
+    $('#insertReportBtn').on('click', function () {
+        if ($(this).is(':disabled')) return;
+
+        if (!startDate || !currentEndDate) {
+            showNotification('Invalid date range for report.', 'error');
+            return;
+        }
+
+        if (!loadedReportItems || loadedReportItems.length === 0) {
+            showNotification('No ingredients found to insert.', 'error');
+            return;
+        }
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+
+        // Ensure any visible inputs currently on screen are captured
+        $('.new-report-closing-input').each(function () {
+            const $inp = $(this);
+            const rawVal = $inp.val();
+            const ingId = parseInt($inp.attr('data-ingredient-id'), 10);
+            const unitPrice = parseFloat($inp.attr('data-unit-price')) || 0;
+            if (rawVal !== '' && !isNaN(ingId) && newReportClosingCounts[ingId] === undefined) {
+                const countVal = parseFloat(rawVal) || 0;
+                newReportClosingCounts[ingId] = {
+                    ingredientId: ingId,
+                    closingCount: countVal,
+                    closingValue: countVal * unitPrice
+                };
+            }
+        });
+
+        // Only send ingredients whose closing count was entered / changed by user
+        const itemsPayload = Object.values(newReportClosingCounts).map(item => ({
+            ingredientId: parseInt(item.ingredientId, 10),
+            closingCount: parseFloat(item.closingCount) || 0,
+            closingValue: parseFloat(item.closingValue) || 0
+        }));
+
+        if (itemsPayload.length === 0) {
+            $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Report');
+            showNotification('Please enter closing count for at least one ingredient.', 'warning');
+            return;
+        }
+
+        const payload = {
+            startDate: startDate,
+            endDate: currentEndDate,
+            items: itemsPayload
+        };
+
+        ajaxRequest({
+            url: '/api/InventorySuiteReportApi/AddInventorySuiteReport',
+            method: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            showMessage: false,
+            onSuccess: function (response) {
+                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Report');
+                showNotification(response.responseMsg || 'Report created successfully.', 'success');
+
+                // Remove draft from list
+                reportsList = reportsList.filter(r => !r.isDraft);
+
+                // Switch back to UPDATE mode for newly created report
+                currentMode = 'UPDATE';
+                $('#insertReportBtn').hide();
+                $('#updateClosingCountBtn').show().prop('disabled', true);
+                newReportClosingCounts = {};
+                pendingClosingCounts = {};
+
+                const newReportId = (response && response.data && response.data.inventorySuiteId)
+                    ? response.data.inventorySuiteId
+                    : null;
+
+                loadInventorySuiteReports(newReportId);
+            },
+            onError: function (xhr) {
+                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Report');
+                console.error('Failed to insert inventory suite report:', xhr);
+                const errorMsg = (xhr.responseJSON && xhr.responseJSON.responseMsg)
+                    ? xhr.responseJSON.responseMsg
+                    : 'Failed to insert report.';
+                showNotification(errorMsg, 'error');
+            }
+        });
+    });
+
+    // Update closing count button handler
+    $('#updateClosingCountBtn').on('click', function () {
+        if ($(this).is(':disabled')) return;
+
+        const suiteId = parseInt(currentSelectedReportId, 10);
+        if (!suiteId || isNaN(suiteId)) {
+            showNotification('Please select a valid report first.', 'error');
+            return;
+        }
+
+        const itemsToUpdate = Object.values(pendingClosingCounts).map(item => ({
+            ingredientId: parseInt(item.ingredientId, 10),
+            closingCount: parseFloat(item.closingCount),
+            closingValue: parseFloat(item.closingValue)
+        }));
+
+        if (itemsToUpdate.length === 0) {
+            showNotification('No modified closing counts found to update.', 'info');
+            return;
+        }
+
+        const payload = {
+            inventorySuiteId: suiteId,
+            items: itemsToUpdate
+        };
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
+
+        ajaxRequest({
+            url: '/api/InventorySuiteReportApi/UpdateInventorySuiteReport',
+            method: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            showMessage: false,
+            onSuccess: function (response) {
+                $btn.html('<i class="fas fa-check-circle"></i> Update Report');
+
+                // Update data-original-count to the new values
+                $('.cogs-report-table td.editable-closing').each(function () {
+                    const val = parseFloat($(this).text().trim().replace(/,/g, '')) || 0;
+                    $(this).attr('data-original-count', val.toFixed(2));
+                    $(this).removeClass('modified-count');
+                });
+
+                // Clear pending tracking and disable button
+                pendingClosingCounts = {};
+                $btn.prop('disabled', true);
+
+                showNotification(response.responseMsg || 'Closing counts updated successfully.', 'success');
+
+                // Refresh table with updated calculations from database
+                refreshInventorySuiteReportTable(startDate, currentEndDate, false);
+            },
+            onError: function (xhr) {
+                $btn.prop('disabled', false).html('<i class="fas fa-check-circle"></i> Update Report');
+                console.error('Failed to update closing counts:', xhr);
+                const errorMsg = (xhr.responseJSON && xhr.responseJSON.responseMsg)
+                    ? xhr.responseJSON.responseMsg
+                    : 'Failed to update closing counts.';
+                showNotification(errorMsg, 'error');
+            }
+        });
+    });
+
+    // Event listener for live typing in New Report closing inputs
+    $(document).off('input change', '.new-report-closing-input');
+    $(document).on('input change', '.new-report-closing-input', function () {
+        const $input = $(this);
+        const ingredientId = parseInt($input.attr('data-ingredient-id'), 10);
+        const unitPrice = parseFloat($input.attr('data-unit-price')) || 0;
+        const rawVal = $input.val();
+        if (rawVal.trim() === '') {
+            delete newReportClosingCounts[ingredientId];
+        } else {
+            const countVal = parseFloat(rawVal) || 0;
+            const closingVal = countVal * unitPrice;
+            newReportClosingCounts[ingredientId] = {
+                ingredientId: ingredientId,
+                closingCount: countVal,
+                closingValue: closingVal
+            };
+        }
+
+        const countVal = parseFloat(rawVal) || 0;
+        const closingVal = countVal * unitPrice;
+
+        const $row = $input.closest('tr');
+        $row.find(`#closingValue_${ingredientId}`).text('$' + closingVal.toFixed(2));
+
+        const openingVal = parseFloat($row.find('td:nth-child(5)').text().replace(/[$,]/g, '')) || 0;
+        const purchasesVal = parseFloat($row.find('td:nth-child(7)').text().replace(/[$,]/g, '')) || 0;
+        const rowCogs = (openingVal + purchasesVal) - closingVal;
+        $row.find('td:nth-child(10)').text('$' + rowCogs.toFixed(2));
+
+        recalculateNewReportSummary();
     });
 
     // Ensure DataTable is loaded before proceeding
@@ -33,32 +464,182 @@ $(document).ready(function () {
         return;
     }
 
-    const today = new Date();
-    const last30Days = new Date();
-
-    last30Days.setDate(today.getDate() - 29);
-
-    startDate = DateFormatter.formatDashUS(last30Days);
-    endDate = DateFormatter.formatDashUS(today);
-    currentEndDate = endDate;
-
-    refreshInventorySuiteReportTable(startDate, endDate);
-
-
-    // Initialize table with a message
-    const tbody = $('.cogs-report-table tbody');
-    tbody.empty();
-    tbody.append('<tr><td colspan="9" class="text-center">Please apply a date filter to view the Inventory report.</td></tr>');
+    // Load reports from API into Select2 dropdown
+    loadInventorySuiteReports();
 });
+
+function safeFormatUS(dateStr) {
+    if (!dateStr) return '';
+    if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            return DateFormatter.formatUS(d) || dateStr;
+        }
+    }
+    return DateFormatter.formatUS(dateStr) || dateStr;
+}
+
+function safeFormatDash(dateStr) {
+    if (!dateStr) return '';
+    if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            return DateFormatter.formatDashUS(d) || dateStr;
+        }
+    }
+    return DateFormatter.formatDashUS(dateStr) || dateStr;
+}
+
+
+function formatToDateInputVal(dateVal) {
+    if (!dateVal) return '';
+    if (typeof dateVal === 'string') {
+        const isoMatch = dateVal.split('T')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(isoMatch)) {
+            return isoMatch;
+        }
+    }
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+function showTableLoading(message = 'Loading inventory report...') {
+    $('#loadingOverlayText').text(message);
+    $('#tableLoadingOverlay').css('display', 'flex');
+}
+
+function hideTableLoading() {
+    $('#tableLoadingOverlay').hide();
+}
+
+function loadInventorySuiteReports(preselectReportId = null) {
+    showTableLoading('Loading reports...');
+    ajaxRequest({
+        url: '/api/InventorySuiteReportApi/GetInventorySuiteReports',
+        method: 'POST',
+        contentType: 'application/json',
+        isQuery: false,
+        showMessage: false,
+        onSuccess: function (response) {
+            const rawReports = (response && response.data) ? response.data : [];
+
+            // Get last record's endDate
+            lastEndDate = (rawReports && rawReports.length > 0)
+                ? (rawReports[rawReports.length - 1].endDate ?? rawReports[rawReports.length - 1].EndDate ?? null)
+                : null;
+
+            // Enable Add Report button now that API response is received
+            $('#openAddReportModalBtn').prop('disabled', false);
+
+            reportsList = rawReports.map(r => {
+                const reportId = (r.inventorySuiteId ?? r.InventorySuiteId ?? '').toString();
+                const rawStart = r.startDate ?? r.StartDate;
+                const rawEnd = r.endDate ?? r.EndDate;
+
+                const displayStart = safeFormatUS(rawStart);
+                const displayEnd = safeFormatUS(rawEnd);
+
+                return {
+                    id: reportId,
+                    text: `Report: ${displayStart} - ${displayEnd}`,
+                    startDate: safeFormatDash(rawStart),
+                    endDate: safeFormatDash(rawEnd),
+                    isDraft: false
+                };
+            });
+
+            if (reportsList.length > 0) {
+                let targetId = reportsList[0].id;
+                if (preselectReportId) {
+                    const match = reportsList.find(r => r.id === preselectReportId.toString());
+                    if (match) targetId = match.id;
+                }
+
+                currentMode = 'UPDATE';
+                $('#insertReportBtn').hide();
+                $('#updateClosingCountBtn').show().prop('disabled', true);
+
+                populateReportSelector(targetId);
+
+                const activeReport = reportsList.find(r => r.id === targetId);
+                if (activeReport) {
+                    startDate = activeReport.startDate;
+                    currentEndDate = activeReport.endDate;
+                    refreshInventorySuiteReportTable(startDate, currentEndDate, false);
+                } else {
+                    hideTableLoading();
+                }
+            } else {
+                hideTableLoading();
+                populateReportSelector(null);
+                $('#updateClosingCountBtn').hide().prop('disabled', true);
+                $('#insertReportBtn').hide();
+                const tbody = $('.cogs-report-table tbody');
+                tbody.empty();
+                tbody.append('<tr><td colspan="10" class="text-center">No reports found. Please click "Add Report" to create a report.</td></tr>');
+            }
+        },
+        onError: function (xhr) {
+            hideTableLoading();
+            // Enable button so user can still try adding a report if needed
+            $('#openAddReportModalBtn').prop('disabled', false);
+            console.error('Failed to load inventory suite reports:', xhr);
+            showNotification('Failed to load reports.', 'error');
+            const tbody = $('.cogs-report-table tbody');
+            tbody.empty();
+            tbody.append('<tr><td colspan="10" class="text-center">Failed to load reports. Please refresh the page.</td></tr>');
+        }
+    });
+}
+
+function populateReportSelector(selectedReportId = null) {
+    const $selector = $('#reportSelector');
+    $selector.empty();
+    $selector.append(new Option('-- Select Report --', ''));
+
+    reportsList.forEach(report => {
+        const isSelected = report.id === selectedReportId;
+        const opt = new Option(report.text, report.id, false, isSelected);
+        $selector.append(opt);
+    });
+
+    currentSelectedReportId = selectedReportId;
+    isSwitchingProgrammatically = true;
+    $selector.val(selectedReportId).trigger('change.select2');
+    isSwitchingProgrammatically = false;
+}
 
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
-function refreshInventorySuiteReportTable(startDate = null, endDate = null) {
+function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNewReport = false) {
     if (!startDate || !endDate) {
         console.warn('Start date or end date missing.');
         showNotification('Please select a valid date range.', 'error');
         return;
     }
+
+    showTableLoading('Loading inventory report...');
+
+    // If already initialized, destroy BEFORE touching the DOM
+    if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
+        table.destroy();
+    }
+
+    const tbody = $('.cogs-report-table tbody');
+    tbody.empty().append(`
+        <tr id="reportLoadingRow">
+            <td colspan="10" class="text-center" style="padding: 48px 16px; color: #6b7280;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: #f08d11; margin-bottom: 12px; display: block;"></i>
+                <span style="font-size: 14px; font-weight: 500;">Loading inventory report...</span>
+            </td>
+        </tr>
+    `);
 
     const requestData = {
         startDate: startDate,
@@ -73,18 +654,26 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null) {
         isQuery: false,
         showMessage: false,
         onSuccess: function (response) {
-            const items = response.data.items || [];
+            hideTableLoading();
+            pendingClosingCounts = {};
+           
+            const items = (response && response.data && response.data.items) ? response.data.items : [];
+            debugger;
+            loadedReportItems = items;
 
-            // If already initialized, destroy BEFORE touching the DOM
-            if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
-                table.destroy();
+            if (isNewReport) {
+                $('#insertReportBtn').show().prop('disabled', false);
+                $('#updateClosingCountBtn').hide();
+            } else {
+                $('#updateClosingCountBtn').show().prop('disabled', true);
+                $('#insertReportBtn').hide();
             }
-            
-            const tbody = $('.cogs-report-table tbody');
+
+            // Clean up tbody
             tbody.empty();
 
             if (items.length === 0) {
-                tbody.append('<tr><td colspan="9" class="text-center">No data available for the selected date range.</td></tr>');
+                tbody.append('<tr><td colspan="10" class="text-center">No data available for the selected date range.</td></tr>');
                 resetFooterValues();
                 initDataTable();
                 return;
@@ -98,6 +687,38 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null) {
                 const purchasesQuantity = Number(item.purchasesQuantity || 0);
                 const purchasesValue = Number(item.purchasesValue || 0);
                 const cogs = Number(item.cogs || 0);
+                const unitPrice = item.price;
+
+                let closingCountCell = '';
+                let closingValueCell = '';
+
+                if (isNewReport) {
+                    const saved = newReportClosingCounts[item.ingredientId];
+                    const initialVal = (saved !== undefined)
+                        ? saved.closingCount
+                        : (closingCount > 0 ? closingCount : '');
+                    const displayVal = (saved !== undefined)
+                        ? saved.closingValue
+                        : (initialVal !== '' ? (parseFloat(initialVal) * unitPrice) : 0);
+
+                    closingCountCell = `
+                        <td data-order="${initialVal || 0}" class="dt-body-left">
+                            <input type="number" step="any" min="0" 
+                                   class="form-control form-control-sm new-report-closing-input" 
+                                   data-ingredient-id="${item.ingredientId}" 
+                                   data-unit-price="${unitPrice}" 
+                                   value="${initialVal !== '' ? Number(initialVal).toFixed(2) : ''}" 
+                                   placeholder="0.00"
+                                   style="width: 85px; text-align: right; font-weight: 600; padding: 4px 6px; border: 1px solid #f08d11; border-radius: 6px;">
+                        </td>`;
+                    closingValueCell = `<td data-order="${displayVal}" id="closingValue_${item.ingredientId}">$${Number(displayVal).toFixed(2)}</td>`;
+                } else {
+                    closingCountCell = `
+                        <td data-order="${closingCount}" class="editable-closing" data-ingredient-id="${item.ingredientId || ''}" data-original-count="${closingCount.toFixed(2)}">
+                            ${closingCount.toFixed(2)}
+                        </td>`;
+                    closingValueCell = `<td data-order="${closingValue}" id="closingValue_${item.ingredientId}">$${closingValue.toFixed(2)}</td>`;
+                }
 
                 const row = `
         <tr>
@@ -124,10 +745,8 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null) {
             
             <td data-order="${purchasesQuantity}">${purchasesQuantity.toFixed(2)}</td>
             <td data-order="${purchasesValue}">$${purchasesValue.toFixed(2)}</td>
-            <td data-order="${closingCount}" class="editable-closing" data-ingredient-id="${item.ingredientId || ''}" >
-                ${closingCount.toFixed(2)}
-            </td>
-            <td data-order="${closingValue}" id="closingValue_${item.ingredientId}">$${closingValue.toFixed(2)}</td>
+            ${closingCountCell}
+            ${closingValueCell}
             <td data-order="${cogs}">$${cogs.toFixed(2)}</td>
         </tr>`;
 
@@ -143,31 +762,14 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null) {
             initDataTable();
         },
         onError: function (xhr, status, error) {
+            hideTableLoading();
             console.error('Failed to fetch Inventory report:', error);
             showNotification('Failed to fetch Inventory report.', 'error');
             const tbody = $('.cogs-report-table tbody');
             tbody.empty();
-            tbody.append('<tr><td colspan="9" class="text-center">Failed to load report. Please try again.</td></tr>');
+            tbody.append('<tr><td colspan="10" class="text-center">Failed to load report. Please try again.</td></tr>');
             resetFooterValues();
             initDataTable();
-        }
-    });
-}
-
-function saveClosingCount(payload) {
-    ajaxRequest({
-        url: '/api/InventoryApi/UpdateClosingCount',
-        method: 'POST',
-        data: JSON.stringify(payload),
-        contentType: 'application/json',
-        showMessage: false,
-        onSuccess: function () {
-            showNotification('Closing count saved', 'success');
-            refreshInventorySuiteReportTable(startDate, currentEndDate);
-        },
-        onError: function (xhr) {
-            showNotification('Failed to save closing count', 'error');
-            console.error(xhr);
         }
     });
 }
@@ -175,10 +777,15 @@ function saveClosingCount(payload) {
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
 // Strips HTML tags from a cell's raw markup and collapses whitespace/newlines
-// so exported CSV rows don't break and PDF cells don't show raw tags.
+// Checks for input value if cell contains an input.
 function cleanExportCell(data) {
     if (data == null) return '';
-    const text = $('<div>').html(data).text();
+    const $el = $('<div>').html(data);
+    const $inp = $el.find('input');
+    if ($inp.length) {
+        return $inp.val() || '0.00';
+    }
+    const text = $el.text();
     return text.replace(/\s+/g, ' ').trim();
 }
 
@@ -187,20 +794,22 @@ function initDataTable() {
         paging: true,
         searching: true,
         ordering: false,
+        processing: true,
         order: [[1, 'asc']],
         columnDefs: [
             { targets: [3, 4, 5, 6, 7, 8, 9], className: 'dt-body-left' }
         ],
         pageLength: 10,
         lengthMenu: [10, 25, 50, 100],
-        autoWidth: false, // Disable automatic column width calculation
+        autoWidth: false,
         columnDefs: [
-            { width: "150px", targets: 0 },   // First column
-            { width: "80px", targets: 1 },   // First column
+            { width: "150px", targets: 0 },
+            { width: "80px", targets: 1 },
         ],
         language: {
             search: '',
-            searchPlaceholder: 'Search ingredients...'
+            searchPlaceholder: 'Search ingredients...',
+            processing: '<div style="padding: 12px 20px; background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 8px;"><i class="fas fa-spinner fa-spin" style="color: #f08d11; font-size: 18px;"></i> <span style="font-weight: 500; font-size: 14px; color: #374151;">Processing...</span></div>'
         },
         dom: 'Bfrtip',
         buttons: [
@@ -213,11 +822,9 @@ function initDataTable() {
                     columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                     format: {
                         body: function (data, row, column, node) {
-                            // Remove $ and extra spaces, keep negative sign
                             if (column === 0) {
                                 return $(data).find('.ingredient-name').text().trim() || cleanExportCell(data);
                             }
-                            // Strip any HTML (e.g. the Size/UOM span) before cleaning numeric formatting
                             let cleanData = cleanExportCell(data).replace(/\$/g, '').trim();
                             return cleanData;
                         }
@@ -231,17 +838,14 @@ function initDataTable() {
                     let variancePercentage = $('#variance-percentage-value').text() || '0%';
                     let varianceValue = $('#variance-value').text() || '$0.00';
 
-                    // Clean values - remove $ and spaces but keep negative sign
                     totalCogs = totalCogs.replace(/\$/g, '').trim();
                     totalFoodRevenue = totalFoodRevenue.replace(/\$/g, '').trim();
                     varianceValue = varianceValue.replace(/\$/g, '').trim();
 
-                    // Add an empty row to separate the summary
                     data.body.push([]);
 
                     const emptyCols = ['', '', '', '', '', '', '', ''];
 
-                    // Add summary rows
                     data.body.push(['Total Food Revenue', totalFoodRevenue, ...emptyCols]);
                     data.body.push(['Theoretical Food Cost %', theoreticalFoodCost, ...emptyCols]);
                     data.body.push(['Actual Food Cost %', actualFoodCost, ...emptyCols]);
@@ -250,7 +854,6 @@ function initDataTable() {
                     data.body.push(['Total COGS', totalCogs, ...emptyCols]);
                 }
             },
-
             {
                 extend: 'pdfHtml5',
                 text: '<i class="fas fa-file-pdf"></i> Export PDF',
@@ -279,7 +882,6 @@ function initDataTable() {
                 customize: function (doc) {
                     doc.content[1].table.footerRows = 1;
 
-                    // Get values from footer or summary section
                     const totalCogs = $('#total-cogs-value').text() || '$0.00';
                     const totalFoodRevenue = $('#total-food-revenue-value').text() || '$0.00';
                     const actualFoodCost = $('#actual-food-cost-value').text() || '0%';
@@ -287,7 +889,6 @@ function initDataTable() {
                     const variancePercentage = $('#variance-percentage-value').text() || '0%';
                     const varianceValue = $('#variance-value').text() || '$0.00';
 
-                    // Add a summary section below the table
                     doc.content.push({
                         margin: [0, 20, 0, 0],
                         table: {
@@ -313,19 +914,61 @@ function initDataTable() {
         table.buttons().container().appendTo('#exportButtons');
     }
 
-    // Make cells editable
-    makeClosingCountEditable();
+    // Only make closing counts editable on click if in UPDATE mode
+    if (currentMode !== 'INSERT') {
+        makeClosingCountEditable();
+    } else {
+        // Redraw preservation for inputs across pages
+        table.on('draw', function () {
+            $('.new-report-closing-input').each(function () {
+                const $inp = $(this);
+                const ingId = parseInt($inp.attr('data-ingredient-id'), 10);
+                if (newReportClosingCounts[ingId] !== undefined) {
+                    $inp.val(Number(newReportClosingCounts[ingId].closingCount).toFixed(2));
+                    $(`#closingValue_${ingId}`).text('$' + Number(newReportClosingCounts[ingId].closingValue).toFixed(2));
+                }
+            });
+        });
+    }
 
     // Custom search
-    $('#ingredientSearch').on('keyup', function () {
+    $('#ingredientSearch').off('keyup').on('keyup', function () {
         table.search(this.value).draw();
     });
 
     // Clear filter
-    $('#clear-filter').on('click', function () {
+    $('#clear-filter').off('click').on('click', function () {
         table.search('').draw();
         $('#ingredientSearch').val('').trigger('keyup');
     });
+}
+
+function recalculateNewReportSummary() {
+    if (!loadedReportItems || loadedReportItems.length === 0) return;
+
+    let totalCogs = 0;
+
+    loadedReportItems.forEach(item => {
+        const openingVal = Number(item.openingValue || 0);
+        const purchasesVal = Number(item.purchasesValue || 0);
+        const unitPrice = item.price;
+
+        let closingVal = 0;
+        if (newReportClosingCounts[item.ingredientId] !== undefined) {
+            closingVal = newReportClosingCounts[item.ingredientId].closingValue;
+        } else {
+            const $inp = $(`input.new-report-closing-input[data-ingredient-id="${item.ingredientId}"]`);
+            if ($inp.length) {
+                closingVal = (parseFloat($inp.val()) || 0) * unitPrice;
+            } else {
+                closingVal = Number(item.closingValue || 0);
+            }
+        }
+
+        totalCogs += (openingVal + purchasesVal - closingVal);
+    });
+
+    $('#total-cogs-value').text(`$${totalCogs.toFixed(2)}`);
 }
 
 function updateFooterValues(data) {
@@ -362,30 +1005,52 @@ function makeClosingCountEditable() {
         const ingredientId = $closingCountTd.attr('data-ingredient-id');
         if (!ingredientId) { console.warn('ingredientId missing'); return; }
 
-        const oldClosingCount = $closingCountTd.text().trim().replace(/,/g, '');
-        const $closingCountInput = $(`<input type="text" class="form-control form-control-sm" style="width:80px;" value="${oldClosingCount}">`);
+        const oldClosingCount = parseFloat($closingCountTd.text().trim().replace(/,/g, '')) || 0;
+        const $closingCountInput = $(`<input type="number" step="any" class="form-control form-control-sm" style="width:85px; text-align:right; font-weight:600;" value="${oldClosingCount}">`);
         $closingCountTd.html($closingCountInput);
         $closingCountInput.focus().select();
 
         const $closingValueTd = $('#closingValue_' + ingredientId);
-        const oldClosingValue = $closingValueTd.text().replace('$', '');
-        const price = oldClosingValue / oldClosingCount;
-      
-        
+        const oldClosingValue = parseFloat($closingValueTd.text().replace(/[$,]/g, '')) || 0;
+        const price = oldClosingCount > 0 ? (oldClosingValue / oldClosingCount) : 0;
+
         const finish = () => {
-            const newClosingCount = parseFloat($closingCountInput.val().replace(/[^0-9.-]/g, '')) || 0;
+            const inputVal = $closingCountInput.val();
+            const newClosingCount = parseFloat(inputVal.replace(/[^0-9.-]/g, '')) || 0;
             $closingCountTd.text(newClosingCount.toFixed(2));
             $closingCountTd.removeClass('editing');
 
             const newClosingValue = newClosingCount * price;
             $closingValueTd.text('$' + newClosingValue.toFixed(2));
 
-            saveClosingCount({
-                ingredientId: parseInt(ingredientId),
-                closingCount: newClosingCount,
-                closingValue: newClosingValue,
-                closingDate: currentEndDate
-            });
+            const originalCount = parseFloat($closingCountTd.attr('data-original-count')) || 0;
+            const isChanged = Math.abs(newClosingCount - originalCount) > 0.001;
+
+            if (isChanged) {
+                // Mark visually as modified and queue change
+                $closingCountTd.addClass('modified-count');
+                pendingClosingCounts[ingredientId] = {
+                    ingredientId: parseInt(ingredientId),
+                    closingCount: newClosingCount,
+                    closingValue: newClosingValue,
+                    closingDate: currentEndDate
+                };
+            } else {
+                // Reverted to original value
+                $closingCountTd.removeClass('modified-count');
+                delete pendingClosingCounts[ingredientId];
+            }
+
+            // Enable button ONLY if there are modified counts, else keep disabled
+            const hasChanges = Object.keys(pendingClosingCounts).length > 0;
+            $('#updateClosingCountBtn').prop('disabled', !hasChanges);
+
+            // Recalculate row COGS
+            const $row = $closingCountTd.closest('tr');
+            const openingVal = parseFloat($row.find('td:nth-child(5)').text().replace(/[$,]/g, '')) || 0;
+            const purchasesVal = parseFloat($row.find('td:nth-child(7)').text().replace(/[$,]/g, '')) || 0;
+            const rowCogs = (openingVal + purchasesVal) - newClosingValue;
+            $row.find('td:nth-child(10)').text('$' + rowCogs.toFixed(2));
         };
 
         $closingCountInput.on('blur', finish)

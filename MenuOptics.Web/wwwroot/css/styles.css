@@ -1282,6 +1282,9 @@ hr {
         vertical-align: middle;
     }
 
+div.dt-buttons > .dt-button, div.dt-buttons > div.dt-button-split .dt-button{
+    margin-bottom:auto!important
+}
 /* Ingredient Table Specific */
 .ingredient-info {
     display: flex;
@@ -2095,7 +2098,7 @@ input:checked + .toggle-label {
 /* Loading states */
 .btn:disabled {
     opacity: 0.6;
-    cursor: not-allowed;
+    cursor: not-allowed!important;
 }
 
 .loading {

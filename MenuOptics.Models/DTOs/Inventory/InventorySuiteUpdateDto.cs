@@ -2,7 +2,7 @@ using System;
 
 namespace MenuOptics.Models
 {
-    public class ClosingCountUpdateDto
+    public class InventorySuiteUpdateDto
     {
         public int RestaurantId { get; set; }
         public int IngredientId { get; set; }

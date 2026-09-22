@@ -825,7 +825,6 @@ function refreshMenuGrid() {
                         activeItemCount++;
                     }
 
-                    const availability = item.isAvailable ? 'available' : 'out-of-stock';
                     const actionText = item.isActive ? 'Deactivate' : 'Activate';
                     const actionIcon = item.isActive ? 'fas fa-ban' : 'fas fa-check';
                     const costPercentage = ((item.cost / item.sellingPrice) * 100).toFixed(2);
@@ -841,9 +840,6 @@ function refreshMenuGrid() {
                                 ${item.isActive ? 'Active' : 'Inactive'}
                             </span>
                             <img src="${imageBaseUrl + item.featuredImage || 'https://via.placeholder.com/300x200'}" alt="${item.name}">
-                            <div class="item-badges">
-                                <span class="availability-badge ${availability}">${item.isAvailable ? 'Available' : 'Out of Stock'}</span>
-                            </div>
                         </div>
                         <div class="menu-item-content">
                             <div class="item-header">

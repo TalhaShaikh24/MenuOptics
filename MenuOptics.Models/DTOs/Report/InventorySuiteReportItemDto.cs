@@ -6,6 +6,7 @@ namespace MenuOptics.Models
         public string IngredientName { get; set; } = string.Empty;
         public string Unit { get; set; } = string.Empty;
         public decimal Size { get; set; }
+        public decimal Price { get; set; }
         public int? PackSize { get; set; }
         public string VendorName { get; set; } = string.Empty;
         public decimal OpeningCount { get; set; }

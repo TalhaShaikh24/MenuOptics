@@ -35,5 +35,46 @@ namespace MenuOptics.Controllers.Api
             var responseData = await _reportService.InventorySuiteReportAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
+
+
+        [HttpPost("GetInventorySuiteReports")]
+        public async Task<IActionResult> GetInventorySuiteReports()
+        {
+          
+            var responseData = await _reportService.GetInventorySuiteReportsAsync(CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
+        [HttpPost("UpdateInventorySuiteReport")]
+        public async Task<IActionResult> UpdateInventorySuiteReport([FromBody] UpdateInventorySuiteReportRequestDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDto
+                {
+                    Status = 400,
+                    ResponseMsg = "Invalid input."
+                });
+            }
+
+            var responseData = await _reportService.UpdateInventorySuiteReportAsync(model, CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
+        [HttpPost("AddInventorySuiteReport")]
+        public async Task<IActionResult> AddInventorySuiteReport([FromBody] AddInventorySuiteReportRequestDto model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new ResponseDto
+                {
+                    Status = 400,
+                    ResponseMsg = "Invalid input."
+                });
+            }
+
+            var responseData = await _reportService.AddInventorySuiteReportAsync(model, CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
     }
 }

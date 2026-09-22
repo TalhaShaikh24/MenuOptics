@@ -109,15 +109,11 @@ $('#registerForm').on('submit', function (e) {
                 // User created successfully - now initiate Stripe
                 initiateStripeCheckout(selectedPlan, response.data.userId);
             } else {
-                $('#error-message').text(response.responseMsg).show();
-                $('#success-message').hide();
                 resetSubmitButton();
             }
         },
         onError: function (xhr) {
             const response = xhr.responseJSON;
-            $('#error-message').text(response?.responseMsg || 'Server error occurred.').show();
-            $('#success-message').hide();
             resetSubmitButton();
         }
     });
@@ -191,11 +187,6 @@ function GetAllVendors() {
         onError: function (xhr) {
             const response = xhr.responseJSON;
 
-            $('#error-message')
-                .text(response?.responseMsg || 'Server error occurred.')
-                .show();
-
-            $('#success-message').hide();
             resetSubmitButton();
         }
     });

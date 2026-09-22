@@ -15,7 +15,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<ResponseDto> UpdateClosingCountAsync(ClosingCountUpdateDto model, int currentUserId)
+        public async Task<ResponseDto> UpdateInventorySuiteReportAsync(InventorySuiteUpdateDto model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
 

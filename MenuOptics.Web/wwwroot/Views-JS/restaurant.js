@@ -108,8 +108,7 @@ function validateRestaurantData(formData) {
     const username = formData.get('username');
     const email = formData.get('email');
     const phone = formData.get('phone');
-    const password = formData.get('password');
-    return restaurantName && cuisineType && restaurantSize && firstName && lastName && username && email && phone && (formData.get('userId') || password);
+    return restaurantName && cuisineType && restaurantSize && firstName && lastName && username && email && phone && (formData.get('userId') );
 }
 
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
@@ -149,8 +148,8 @@ function getRestaurantById(id) {
             $('#editRestaurantForm [name="restaurantSize"]').val(restaurant.restaurantSize);
             $('#editRestaurantForm [name="firstName"]').val(restaurant.firstName);
             $('#editRestaurantForm [name="lastName"]').val(restaurant.lastName);
-            $('#editRestaurantForm [name="username"]').val(restaurant.username);
-            $('#editRestaurantForm [name="email"]').val(restaurant.email);
+            $('#editRestaurantForm [name="username"]').val(restaurant.username).attr("disabled",true);
+            $('#editRestaurantForm [name="email"]').val(restaurant.email).attr("disabled", true);;
             $('#editRestaurantForm [name="phone"]').val(restaurant.phone);
             $('#editRestaurantForm [name="address"]').val(restaurant.address);
             $('#editRestaurantForm [name="country"]').val(restaurant.country);

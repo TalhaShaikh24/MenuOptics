@@ -184,8 +184,6 @@ $(document).ready(function () {
         var otpCode = $.trim($('#otpCode').val());
 
         if (!otpCode || otpCode.length !== 6) {
-            $('#error-message').text('Please enter the 6-digit code.').show();
-            setTimeout(function () { $('#error-message').hide(); }, 3000);
             return;
         }
 
@@ -207,8 +205,6 @@ $(document).ready(function () {
                 var msg = (xhr.responseJSON && xhr.responseJSON.responseMsg)
                     ? xhr.responseJSON.responseMsg
                     : 'Invalid or expired OTP. Please try again.';
-                $('#error-message').text(msg).show();
-                setTimeout(function () { $('#error-message').hide(); }, 4000);
 
                 $btn.find('.btn-text').show();
                 $btn.find('.btn-loading').hide();
@@ -232,10 +228,9 @@ $(document).ready(function () {
             method: 'POST',
             data: { UserId: userId },
             showMessage: false,
-            onSuccess: function () {
+            onSuccess: function (res) {
                 $('#otpCode').val('');
-                $('#success-message').text('A new code has been sent to your email.').show();
-                setTimeout(function () { $('#success-message').hide(); }, 4000);
+                showNotification(res.responseMsg)
             }
         });
     });
