@@ -91,14 +91,15 @@ namespace MenuOptics.Services
                     ProfilePic = user.ProfilePic,
                     Token = tokenString,
                     RefreshToken = refreshTokenString,
-                    IntroVideoViewedOn = user.IntroVideoViewedOn,
+                    HasViewedIntroVideo = user.HasViewedIntroVideo,
                 };
 
-                if (user.Roles?.Contains(Roles.Restaurant.ToString()) == true && user.IntroVideoViewedOn == true)
+                //Keep TOGGLE_INTRO_VIDEO_VIEWED part after the ResponseDto is prepared
+                if (user.HasViewedIntroVideo == false)
                 {
                     var updateParams = new DynamicParameters();
                     updateParams.Add("@UserId", user.UserId);
-                    updateParams.Add("@IntroVideoViewedOn", 0);
+                    updateParams.Add("@HasViewedIntroVideo", true);
                     updateParams.Add("@Action", "TOGGLE_INTRO_VIDEO_VIEWED");
                     await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
                 }
