@@ -703,16 +703,6 @@ namespace MenuOptics.Services
                 var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
                     "sp_UserCRUD", selectParams, commandType: CommandType.StoredProcedure);
 
-
-                if (user.Roles?.Contains(Roles.Restaurant.ToString()) == true && user.IntroVideoViewedOn == true)
-                {
-                    var updateParams = new DynamicParameters();
-                    updateParams.Add("@UserId", user.UserId);
-                    updateParams.Add("@IntroVideoViewedOn", 0);
-                    updateParams.Add("@Action", "TOGGLE_INTRO_VIDEO_VIEWED");
-                    await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
-                }
-
                 // 4. Sign in with cookie + issue JWT (same as Login)
                 var effectiveUserId = user.ParentId.HasValue ? user.ParentId.Value : user.UserId;
                 var isParent = !user.ParentId.HasValue;
@@ -723,6 +713,19 @@ namespace MenuOptics.Services
                 var refreshTokenString = _tokenService.GenerateRefreshToken();
                 await _tokenService.SaveRefreshTokenAsync(user.UserId, refreshTokenString);
 
+                // If this user has an associated Vendor, send onboarding SOP email to the Vendor
+                if (user.VendorId.HasValue && user.VendorId.Value > 0)
+                {
+                    try
+                    {
+                        // await SendVendorOnboardingEmailAsync(connection, user);
+                    }
+                    catch
+                    {
+                        // Ignore or handle silently
+                    }
+                }
+
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Registration completed. Welcome!";
                 ResponseDto.Data = new
@@ -730,34 +733,22 @@ namespace MenuOptics.Services
                     UserId = effectiveUserId,
                     ActualUserId = user.UserId,
                     IsParent = isParent,
-                    IsFirstTimeLoggedIn = user.IntroVideoViewedOn,
+                    IsFirstTimeLoggedIn = user.HasViewedIntroVideo,
                     Roles = user.Roles,
                     ProfilePic = user.ProfilePic,
                     Token = tokenString,
                     RefreshToken = refreshTokenString,
-                    IntroVideoViewedOn = user.IntroVideoViewedOn,
+                    HasViewedIntroVideo = user.HasViewedIntroVideo,
                 };
 
-                if (user.Roles?.Contains(Roles.Restaurant.ToString()) == true && user.IntroVideoViewedOn == true)
+                //Keep TOGGLE_INTRO_VIDEO_VIEWED part after the ResponseDto is prepared
+                if (user.HasViewedIntroVideo == false)
                 {
                     var updateParams = new DynamicParameters();
                     updateParams.Add("@UserId", user.UserId);
-                    updateParams.Add("@IntroVideoViewedOn", 0);
+                    updateParams.Add("@HasViewedIntroVideo", true);
                     updateParams.Add("@Action", "TOGGLE_INTRO_VIDEO_VIEWED");
                     await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
-                }
-
-                // If this user has an associated Vendor, send onboarding SOP email to the Vendor
-                if (user.VendorId.HasValue && user.VendorId.Value > 0)
-                {
-                    try
-                    {
-                       // await SendVendorOnboardingEmailAsync(connection, user);
-                    }
-                    catch
-                    {
-                        // Ignore or handle silently
-                    }
                 }
 
                 return ResponseDto;

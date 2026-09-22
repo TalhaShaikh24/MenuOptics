@@ -144,11 +144,9 @@ $(document).ready(function () {
                 localStorage.setItem('address', response.data.address);
 
                 // Store welcome video flag so the Dashboard can show the video popup
-                if (response.data.introVideoViewedOn == true) {
+                if (response.data.hasViewedIntroVideo == false) {
                     sessionStorage.setItem('showWelcomeVideo', 'true');
                 }
-
-
 
                 var redirectUrl = response.data.roles.includes('Admin')
                     ? '/User/Index'
@@ -271,7 +269,7 @@ $(document).ready(function () {
                 localStorage.setItem('profilePic', response.data.profilePic);
 
                 // Store welcome video flag so the Dashboard can show the video popup
-                if (response.data.introVideoViewedOn == true) {
+                if (response.data.hasViewedIntroVideo == false) {
                     sessionStorage.setItem('showWelcomeVideo', 'true');
                 }
 
