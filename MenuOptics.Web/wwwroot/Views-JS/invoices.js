@@ -183,6 +183,18 @@ function loadEditIngredientsByVendor(vendorId) {
                 }
             });
 
+            // Now that master ingredient data is available, resync hasPackSize
+            // for items already on the invoice using each ingredient's real packSize.
+            editInvoiceItems.forEach(item => {
+                const ing = vendorIngredients.find(i => i.ingredientId === item.ingredientId);
+                if (ing) {
+                    const hasPackSize = ing.packSize != null && Number(ing.packSize) > 0;
+                    item.hasPackSize = hasPackSize;
+                    item.packSize = hasPackSize ? (item.packSize ?? ing.packSize) : null;
+                }
+            });
+            renderEditInvoiceItems();
+
             const ingData = [{ id: '', text: '-- Select Ingredient --' }].concat(
                 ingredients.map(ing => ({ id: ing.ingredientId, text: ing.name }))
             );
@@ -242,7 +254,6 @@ function submitAddInvoice() {
             ingredientId: item.ingredientId,
             quantity: item.quantity ? parseInt(item.quantity) : null,
             packSize: item.hasPackSize ? (item.packSize ? parseInt(item.packSize) : null) : null,
-            weight: !item.hasPackSize ? (item.weight ? parseFloat(item.weight) : (item.quantity ? parseFloat(item.quantity) : null)) : null,
             price: parseFloat(item.price)
         }))
     };
@@ -311,7 +322,6 @@ function submitEditInvoice() {
             ingredientId: item.ingredientId,
             quantity: item.quantity ? parseInt(item.quantity) : null,
             packSize: item.hasPackSize ? (item.packSize ? parseInt(item.packSize) : null) : null,
-            weight: !item.hasPackSize ? (item.weight ? parseFloat(item.weight) : (item.quantity ? parseFloat(item.quantity) : null)) : null,
             price: parseFloat(item.price)
         }))
     };
@@ -385,7 +395,7 @@ function buildInvoiceRow(invoice) {
     const itemsCount = items.length;
     const vendorName = invoice.vendorName || 'N/A';
     const invoiceNum = invoice.invoiceId || ('INV-' + invoice.inventoryInvoiceId);
-    const invoiceDate = invoice.createdOn ? formatInvoiceDate(invoice.createdOn) : '-';
+    const invoiceDate = invoice.invoiceDate ? formatInvoiceDate(invoice.invoiceDate) : '-';
 
     const hasVendorId = invoice.vendorId != null && invoice.vendorId !== 0 && invoice.vendorId !== '';
 
@@ -430,7 +440,7 @@ function viewInvoiceDetails(inventoryInvoiceId) {
     $('#modalInvoiceTitle').text(`Invoice #${invoiceNum}`);
     $('#modalInvoiceSubtitle').text(`Supplier: ${vendorName}`);
     $('#modalInvoiceId').text(invoiceNum);
-    $('#modalInvoiceDate').text(invoice.createdOn ? formatInvoiceDate(invoice.createdOn) : '-');
+    $('#modalInvoiceDate').text(invoice.invoiceDate ? formatInvoiceDate(invoice.invoiceDate) : '-');
     $('#modalVendorName').text(vendorName);
     $('#modalTotal').text(formatCurrency(invoice.total));
 
@@ -551,9 +561,8 @@ function editInvoice(inventoryInvoiceId) {
         $('#editInventoryInvoiceId').val(invoice.inventoryInvoiceId);
         $('#editInvoiceId').val(invoice.invoiceId || '');
 
-        if (invoice.createdOn) {
-            debugger
-            const d = new Date(invoice.createdOn);
+        if (invoice.invoiceDate) {
+            const d = new Date(invoice.invoiceDate);
             if (!isNaN(d.getTime())) {
                 const yyyy = d.getFullYear();
                 const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -596,7 +605,9 @@ function editInvoice(inventoryInvoiceId) {
             $('#editInvoiceVendor').prop('disabled', false).val('').trigger('change').prop('disabled', true);
         }
 
-        // Populate items
+        // Populate items. hasPackSize is provisional here (based on the invoice's own
+        // saved packSize) and gets resynced against the ingredient's master packSize
+        // once loadEditIngredientsByVendor() resolves below.
         const items = invoice.items || (invoice.itemsJson ? parseItems(invoice.itemsJson) : []);
         editInvoiceItems = [];
 
@@ -605,20 +616,16 @@ function editInvoice(inventoryInvoiceId) {
             const ingName = item.ingredientName || 'Unknown Ingredient';
             const qty = item.quantity ?? '';
             const pack = item.packSize ?? null;
-            const weight = item.weight ?? null;
             const price = item.price ?? '';
 
-            const ing = vendorIngredients.find(i => i.ingredientId === ingId);
-            const ingPack = ing ? ing.packSize : null;
-            const hasPackSize = (pack != null && Number(pack) > 0) || (ingPack != null && Number(ingPack) > 0);
+            const hasPackSize = pack != null && Number(pack) > 0;
 
             editInvoiceItems.push({
                 ingredientId: ingId,
                 ingredientName: ingName,
                 quantity: qty,
                 hasPackSize: hasPackSize,
-                packSize: hasPackSize ? (pack ?? ingPack ?? '') : null,
-                weight: !hasPackSize ? (weight ?? qty ?? '') : null,
+                packSize: hasPackSize ? pack : null,
                 price: price
             });
         });
@@ -651,9 +658,7 @@ function renderEditInvoiceItems() {
 
     editInvoiceItems.forEach(item => {
         const isPack = item.hasPackSize;
-        const unitVal = isPack ? (item.packSize ?? '') : (item.weight ?? '');
-        const placeholder = isPack ? 'Pack Size' : 'Weight';
-        const step = isPack ? '1' : 'any';
+        const packSizeVal = isPack ? (item.packSize ?? '') : '';
 
         $body.append(`
             <tr id="edit_irow_${item.ingredientId}" class="ingredient-detail-row" style="border-bottom: 1px solid #f3f4f6;">
@@ -661,18 +666,19 @@ function renderEditInvoiceItems() {
                     <i class="fas fa-box" style="color: #f08d11; margin-right: 6px; font-size: 11px;"></i>
                     ${item.ingredientName}
                     <div style="font-size: 11px; color: #6b7280; font-weight: normal; margin-top: 2px;">
-                        ${isPack ? '<p class="ingredient-meta text-highlight"><i class="fas fa-cubes"></i> Pack Item</p>' : '<p class="ingredient-meta text-highlight"><i class="fas fa-weight-hanging"></i> Pack Item</p>'}
+                        ${isPack ? '<p class="ingredient-meta text-highlight"><i class="fas fa-cubes"></i> Pack Item</p>' : '<p class="ingredient-meta text-highlight danger"><i class="fas fa-weight-hanging"></i> Catch Weight Item</p>'}
                     </div>
                 </td>
                 <td style="padding: 6px 4px;">
-                    <input type="number" id="edit_unitVal_${item.ingredientId}" min="0" step="${step}" placeholder="${placeholder}" value="${unitVal}"
-                           onchange="updateEditItemUnitValue(${item.ingredientId}, this.value)">
+                    ${isPack
+                ? `<input type="number" id="edit_packSize_${item.ingredientId}" min="0" step="1" placeholder="Pack Size" value="${packSizeVal}"
+                                  onchange="updateEditItemPackSize(${item.ingredientId}, this.value)">`
+                : ''}
                 </td>
                 <td style="padding: 6px 4px;">
-                    <input type="number" min="0" step="any" placeholder="Qty" value="${item.quantity ?? ''}"
+                    <input type="number" min="0" step="any" placeholder="${isPack ? 'Qty' : 'Weight'}" value="${item.quantity ?? ''}"
                            onchange="updateEditItemField(${item.ingredientId}, 'quantity', this.value)">
                 </td>
-                
                 <td style="padding: 6px 4px;">
                     <input type="number" min="0" step="any" placeholder="0.00" value="${item.price ?? ''}"
                            onchange="updateEditItemField(${item.ingredientId}, 'price', this.value)">
@@ -714,7 +720,6 @@ function addEditIngredientRow() {
         quantity: '',
         hasPackSize: hasPackSize,
         packSize: '',
-        weight: '',
         price: ''
     });
 
@@ -723,18 +728,12 @@ function addEditIngredientRow() {
     syncEditInvoiceItemsView();
 }
 
-// Updates the value for an edit item
-function updateEditItemUnitValue(ingredientId, value) {
+// Updates the pack size value for an edit item (no-op for catch weight items,
+// since the input is disabled for them)
+function updateEditItemPackSize(ingredientId, value) {
     const item = editInvoiceItems.find(i => i.ingredientId === ingredientId);
-    if (!item) return;
-
-    if (item.hasPackSize) {
-        item.packSize = value;
-        item.weight = null;
-    } else {
-        item.weight = value;
-        item.packSize = null;
-    }
+    if (!item || !item.hasPackSize) return;
+    item.packSize = value;
 }
 
 // Updates a field on an edit invoice item
@@ -768,9 +767,7 @@ function renderInvoiceItems() {
 
     invoiceItems.forEach(item => {
         const isPack = item.hasPackSize;
-        const unitVal = isPack ? (item.packSize ?? '') : (item.weight ?? '');
-        const placeholder = isPack ? 'Pack Size' : 'Weight';
-        const step = isPack ? '1' : 'any';
+        const packSizeVal = isPack ? (item.packSize ?? '') : '';
 
         $body.append(`
             <tr id="irow_${item.ingredientId}" class="ingredient-detail-row" style="border-bottom: 1px solid #f3f4f6;">
@@ -778,18 +775,19 @@ function renderInvoiceItems() {
                     <i class="fas fa-box" style="color: #f08d11; margin-right: 6px; font-size: 11px;"></i>
                     ${item.ingredientName}
                     <div style="font-size: 11px; color: #6b7280; font-weight: normal; margin-top: 2px;">
-                        ${isPack ? '<p class="ingredient-meta text-highlight"><i class="fas fa-cubes"></i> Pack Item</p>' : '<p class="ingredient-meta text-highlight"><i class="fas fa-weight-hanging"></i> Catch Weight Item</p>'}
+                        ${isPack ? '<p class="ingredient-meta text-highlight"><i class="fas fa-cubes"></i> Pack Item</p>' : '<p class="ingredient-meta text-highlight danger"><i class="fas fa-weight-hanging"></i> Catch Weight Item</p>'}
                     </div>
                 </td>
                 <td style="padding: 6px 4px;">
-                    <input type="number" id="unitVal_${item.ingredientId}" min="0" step="${step}" placeholder="${placeholder}" value="${unitVal}"
-                           onchange="updateItemUnitValue(${item.ingredientId}, this.value)">
+                    ${isPack
+                ? `<input type="number" id="packSize_${item.ingredientId}" min="0" step="1" placeholder="Pack Size" value="${packSizeVal}"
+                                  onchange="updateItemPackSize(${item.ingredientId}, this.value)">`
+                : ''}
                 </td>
                 <td style="padding: 6px 4px;">
-                    <input type="number" min="0" step="any" placeholder="Qty" value="${item.quantity ?? ''}"
+                    <input type="number" min="0" step="any" placeholder="${isPack ? 'Qty' : 'Weight'}" value="${item.quantity ?? ''}"
                            onchange="updateItemField(${item.ingredientId}, 'quantity', this.value)">
                 </td>
-                
                 <td style="padding: 6px 4px;">
                     <input type="number" min="0" step="any" placeholder="0.00" value="${item.price ?? ''}"
                            onchange="updateItemField(${item.ingredientId}, 'price', this.value)">
@@ -831,7 +829,6 @@ function addIngredientRow() {
         quantity: '',
         hasPackSize: hasPackSize,
         packSize: '',
-        weight: '',
         price: ''
     });
 
@@ -840,18 +837,12 @@ function addIngredientRow() {
     syncInvoiceItemsView();
 }
 
-// Updates the pack size or weight value for an item
-function updateItemUnitValue(ingredientId, value) {
+// Updates the pack size value for an item (no-op for catch weight items,
+// since the input is disabled for them)
+function updateItemPackSize(ingredientId, value) {
     const item = invoiceItems.find(i => i.ingredientId === ingredientId);
-    if (!item) return;
-
-    if (item.hasPackSize) {
-        item.packSize = value;
-        item.weight = null;
-    } else {
-        item.weight = value;
-        item.packSize = null;
-    }
+    if (!item || !item.hasPackSize) return;
+    item.packSize = value;
 }
 
 // Updates a single field on an already-added invoice item

@@ -185,7 +185,7 @@ $(document).ready(function () {
             $('#startDateMinHint').hide();
         }
 
-        $('#saveReportBtn').prop('disabled', false).html('Start');
+        $('#saveReportBtn').prop('disabled', false).html('Add');
         openModal('addReportModal');
     }
 
@@ -642,6 +642,7 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
     `);
 
     const requestData = {
+        inventorySuiteId: isNewReport ? null : currentSelectedReportId,
         startDate: startDate,
         endDate: endDate
     };

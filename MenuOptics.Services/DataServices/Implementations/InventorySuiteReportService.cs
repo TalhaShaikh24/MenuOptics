@@ -27,6 +27,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
+                parameters.Add("@InventorySuiteId", model.InventorySuiteId);
                 parameters.Add("@StartDate", model.StartDate);
                 parameters.Add("@EndDate", model.EndDate);
                 parameters.Add("@Action", "SELECT");
@@ -79,7 +80,6 @@ namespace MenuOptics.Services
 
                 var inventoryReports = await connection.QueryAsync<InventorySuite>("sp_InventorySuiteCRUD", parameters, commandType: CommandType.StoredProcedure);
 
-               
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Inventory Suite reports retrived successfully.";
                 ResponseDto.Data = inventoryReports;
