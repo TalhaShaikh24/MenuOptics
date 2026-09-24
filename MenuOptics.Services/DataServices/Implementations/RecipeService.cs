@@ -35,57 +35,31 @@ namespace MenuOptics.Services
                     }).ToList();
                 }
 
+                var ingredientTable = new DataTable();
+                ingredientTable.Columns.Add("IngredientId", typeof(int));
+                ingredientTable.Columns.Add("UOM", typeof(string));
+                ingredientTable.Columns.Add("Quantity", typeof(decimal));
+
+                if (model.Ingredients != null && model.Ingredients.Any())
+                {
+                    foreach (var ingredient in model.Ingredients)
+                    {
+                        ingredientTable.Rows.Add(ingredient.IngredientId, ingredient.UOM.ToUpper(), ingredient.Quantity);
+                    }
+                }
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@Unit", model.Unit.ToUpper());
-                parameters.Add("@Cost", 0);
+                parameters.Add("@Cost", model.Cost);
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@CreatedBy", actualUserId);
+                parameters.Add("@RecipeIngredients", ingredientTable.AsTableValuedParameter("dbo.RecipeIngredientsType"));
                 parameters.Add("@Action", "INSERT");
 
                 int recipeId = await connection.ExecuteScalarAsync<int>("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
-
-                if (model.Ingredients != null && model.Ingredients.Any())
-                {
-                    foreach (var ing in model.Ingredients)
-                    {
-                        var priceParams = new DynamicParameters();
-                        priceParams.Add("@IngredientId", ing.IngredientId);
-                        priceParams.Add("@RestaurantId", currentUserId);
-
-                        var ingDetails = await connection.QueryFirstOrDefaultAsync<dynamic>(
-                            @"SELECT COALESCE(vip.Price, i.Price) AS Price
-                              FROM Ingredients i
-                              LEFT JOIN VendorIngredientRestaurantPrices vip
-                                ON i.IngredientId = vip.VendorIngredientId AND vip.RestaurantId = @RestaurantId
-                              WHERE i.IngredientId = @IngredientId",
-                            priceParams);
-
-                        if (ingDetails == null)
-                        {
-                            throw new Exception($"Ingredient {ing.IngredientId} not found.");
-                        }
-
-                        var ingParams = new DynamicParameters();
-                        ingParams.Add("@RecipeId", recipeId);
-                        ingParams.Add("@IngredientId", ing.IngredientId);
-                        ingParams.Add("@UOM", ing.UOM.ToUpper());
-                        ingParams.Add("@Quantity", ing.Quantity);
-                        ingParams.Add("@Action", "INSERT");
-
-                        await connection.ExecuteAsync("sp_RecipeIngredientsCRUD", ingParams, commandType: CommandType.StoredProcedure);
-                    }
-                }
-
-                // Update total price
-                var updateParams = new DynamicParameters();
-                updateParams.Add("@RecipeId", recipeId);
-                updateParams.Add("@RestaurantId", currentUserId);
-                updateParams.Add("@Cost", model.Cost);
-                updateParams.Add("@Action", "UPDATE");
-                await connection.ExecuteAsync("sp_RecipeCRUD", updateParams, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Recipe created successfully.";
@@ -130,6 +104,19 @@ namespace MenuOptics.Services
                     }).ToList();
                 }
 
+                var ingredientTable = new DataTable();
+                ingredientTable.Columns.Add("IngredientId", typeof(int));
+                ingredientTable.Columns.Add("UOM", typeof(string));
+                ingredientTable.Columns.Add("Quantity", typeof(decimal));
+
+                if (model.Ingredients != null && model.Ingredients.Any())
+                {
+                    foreach (var ingredient in model.Ingredients)
+                    {
+                        ingredientTable.Rows.Add(ingredient.IngredientId, ingredient.UOM.ToUpper(), ingredient.Quantity);
+                    }
+                }
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@RecipeId", model.RecipeId);
                 parameters.Add("@Name", model.Name);
@@ -138,34 +125,14 @@ namespace MenuOptics.Services
                 parameters.Add("@Size", model.Size);
                 parameters.Add("@Description", model.Description);
                 parameters.Add("@ModifiedBy", actualUserId);
+                parameters.Add("@RecipeIngredients", ingredientTable.AsTableValuedParameter("dbo.RecipeIngredientsType"));
                 parameters.Add("@Action", "UPDATE");
 
-                int updatedRecipe = await connection.ExecuteAsync("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
+                int updatedRecipeId = await connection.ExecuteAsync("sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
                 
-                // Delete old ingredients
-                var deleteParams = new DynamicParameters();
-                deleteParams.Add("@RecipeId", model.RecipeId);
-                deleteParams.Add("@Action", "DELETE_ALL");
-                await connection.ExecuteAsync("sp_RecipeIngredientsCRUD", deleteParams, commandType: CommandType.StoredProcedure);
-
-                if (model.Ingredients != null && model.Ingredients.Any())
-                {
-                    foreach (var ing in model.Ingredients)
-                    {
-                        var ingParams = new DynamicParameters();
-                        ingParams.Add("@RecipeId", model.RecipeId);
-                        ingParams.Add("@IngredientId", ing.IngredientId);
-                        ingParams.Add("@UOM", ing.UOM.ToUpper());
-                        ingParams.Add("@Quantity", ing.Quantity);
-                        ingParams.Add("@Action", "INSERT");
-
-                        await connection.ExecuteAsync("sp_RecipeIngredientsCRUD", ingParams, commandType: CommandType.StoredProcedure);
-                    }
-                }
-
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Recipe updated successfully.";
-                ResponseDto.Data = new { RecipeId = model.RecipeId };
+                ResponseDto.Data = new { RecipeId = updatedRecipeId };
                 return ResponseDto;
             }
             catch (SqlException sqlEx)

@@ -91,6 +91,7 @@ namespace MenuOptics.Services
                     ProfilePic = user.ProfilePic,
                     Token = tokenString,
                     RefreshToken = refreshTokenString,
+                    PaidBy = user.PaidBy,
                     HasViewedIntroVideo = user.HasViewedIntroVideo,
                 };
 
@@ -104,7 +105,7 @@ namespace MenuOptics.Services
                     await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
                 }
 
-                if (user.Roles?.Contains(Roles.Vendor.ToString()) == true)
+                if (user.Roles?.Contains(Role.Vendor.ToString()) == true)
                 {
                     await _activityLog.LogAsync(user.UserId, requestId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success");
@@ -496,9 +497,10 @@ namespace MenuOptics.Services
                 new Claim("LastName", user.LastName ?? ""),
                 // ActualUserId is the ID of the user who logged in, which may be different from effectiveUserId if the user is a child account.
                 new Claim("ActualUserId", user.UserId.ToString()),
-                new Claim("IsParent", isParent.ToString().ToLower()),
-                new Claim("StripeSubscriptionId", stripeSubscriptionId.ToString().ToLower()),
-                new Claim("SubscriptionType", subscriptionType.ToString().ToLower())
+                new Claim("IsParent", isParent.ToString()),
+                new Claim("StripeSubscriptionId", stripeSubscriptionId.ToString()),
+                new Claim("SubscriptionType", subscriptionType.ToString().ToUpper()),
+                new Claim("PaidBy", user.PaidBy?.ToString() ?? "")
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

@@ -489,6 +489,12 @@ body {
         border-color: #e07c0a;
     }
 
+.btn-danger {
+    background: #ba0e0e;
+    color: white;
+    border-color: #ba0e0e;
+}
+
 .btn-outline {
     background: transparent;
     color: #374151;

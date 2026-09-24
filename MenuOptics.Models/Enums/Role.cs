@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MenuOptics.Models.Enums
 {
-    public enum Roles
+    public enum Role
     {
         Admin,
         Vendor,

@@ -48,8 +48,8 @@ namespace MenuOptics.API.Middleware
 
             // Admin and Vendor accounts do not require restaurant subscriptions
             if (!string.IsNullOrEmpty(user.Roles) &&
-                (user.Roles.Contains(Roles.Admin.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                 user.Roles.Contains(Roles.Vendor.ToString(), StringComparison.OrdinalIgnoreCase)))
+                (user.Roles.Contains(Role.Admin.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                 user.Roles.Contains(Role.Vendor.ToString(), StringComparison.OrdinalIgnoreCase)))
             {
                 await next();
                 return;
@@ -67,9 +67,9 @@ namespace MenuOptics.API.Middleware
             }
 
             // If restaurant was created by a Vendor, it is completely free to use (no subscription required)
-            bool isVendorCreated = targetUser.VendorId.HasValue && targetUser.VendorId.Value > 0;
+            bool isSubscriptionActive = targetUser.SubscriptionStatus == "Active";
 
-            if (isVendorCreated)
+            if (isSubscriptionActive)
             {
                 await next();
                 return;

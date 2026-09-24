@@ -1,3 +1,4 @@
+using MenuOptics.Models.Enums;
 using System;
 
 namespace MenuOptics.Models
@@ -30,6 +31,7 @@ namespace MenuOptics.Models
         public string? VendorCustomerNumber { get; set; }
         public bool? IsParent { get; set; }
         public int? ParentId { get; set; }
+        public string? PaidBy { get; set; }
         public bool? HasViewedIntroVideo { get; set; }
         public int? CreatedBy { get; set; }
         public int? VendorId { get; set; }

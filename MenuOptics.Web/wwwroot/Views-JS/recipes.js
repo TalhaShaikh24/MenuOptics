@@ -356,7 +356,6 @@ function addRecipe(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add recipe:', error);
-            showNotification('Failed to add recipe.', 'error');
         }
     });
 }
@@ -376,7 +375,6 @@ function updateRecipe(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update recipe:', error);
-            showNotification('Failed to update recipe.', 'error');
         }
     });
 }

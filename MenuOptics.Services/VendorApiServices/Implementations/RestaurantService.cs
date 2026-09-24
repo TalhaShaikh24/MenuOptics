@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.Enums;
 using MenuOptics.Services.VendorApi;
 using System.Data;
 using System.Data.SqlClient;
@@ -70,6 +71,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword("dbMF0sgx45FD0nVb"));
                 parameters.Add("@SubscriptionType", model.SubscriptionType);
                 parameters.Add("@SubscriptionStatus", "Active");
+                parameters.Add("@PaidBy", PaidBy.VENDOR.ToString());
                 parameters.Add("@CreatedBy", callerVendorId);
                 parameters.Add("@Action", "INSERT");
 

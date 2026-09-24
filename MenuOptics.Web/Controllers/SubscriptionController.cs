@@ -24,6 +24,13 @@ namespace MenuOptics.Controllers
                 return RedirectToAction("Index", "Menu");
             }
 
+
+            var paidby = User.FindFirst("PaidBy")?.Value;
+            if(string.IsNullOrEmpty(paidby) || !paidby.Equals("SELF", StringComparison.OrdinalIgnoreCase))
+            {
+                return RedirectToAction("Index", "Menu");
+            }
+
             return View();
         }
     }

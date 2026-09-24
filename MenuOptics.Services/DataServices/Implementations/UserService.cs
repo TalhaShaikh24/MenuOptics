@@ -140,7 +140,7 @@ namespace MenuOptics.Services
                 {
                     filePathUrl = await _fileService.UploadFileAsync(model.File, "uploads");
                 }
-                string abc = Roles.Restaurant.ToString();
+                string abc = Role.Restaurant.ToString();
                 var parameters = new DynamicParameters();
                 parameters.Add("@FirstName", model.FirstName);
                 parameters.Add("@LastName", model.LastName);
@@ -156,13 +156,14 @@ namespace MenuOptics.Services
                 parameters.Add("@VendorId", model.VendorId);
                 parameters.Add("@SecondaryVendor", model.SecondaryVendor);
                 parameters.Add("@VendorCustomerNumber", model.VendorCustomerNumber);
-                parameters.Add("@RestaurantName", model.Role == Roles.Restaurant.ToString() ? model.RestaurantName : null);
+                parameters.Add("@RestaurantName", model.Role == Role.Restaurant.ToString() ? model.RestaurantName : null);
                 parameters.Add("@PasswordHash", BCrypt.Net.BCrypt.HashPassword(model.Password));
                 parameters.Add("@RoleName", model.Role);
                 parameters.Add("@IsRegistrationCompleted", 1);
-                parameters.Add("@SubscriptionType", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : "CORE");
-                parameters.Add("@SubscriptionStatus", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : "Pending");
-                parameters.Add("@IsParent", model.Role == Roles.Vendor.ToString() || model.Role == Roles.Admin.ToString() ? null : 1);
+                parameters.Add("@SubscriptionType", model.Role == Role.Vendor.ToString() || model.Role == Role.Admin.ToString() ? null : "CORE");
+                parameters.Add("@SubscriptionStatus", model.Role == Role.Vendor.ToString() || model.Role == Role.Admin.ToString() ? null : "Pending");
+                parameters.Add("@IsParent", model.Role == Role.Vendor.ToString() || model.Role == Role.Admin.ToString() ? null : 1);
+                parameters.Add("@PaidBy", model.Role == Role.Restaurant.ToString() ? PaidBy.SELF.ToString() : null);
                 parameters.Add("@CreatedBy", model.CreatedBy ?? fallbackCreatedBy);
                 parameters.Add("@Action", "INSERT");
 
@@ -357,7 +358,7 @@ namespace MenuOptics.Services
                 parameters.Add("@State", model.State);
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
-                parameters.Add("@RestaurantName", model.Role == Roles.Restaurant.ToString() ? model.RestaurantName : null);
+                parameters.Add("@RestaurantName", model.Role == Role.Restaurant.ToString() ? model.RestaurantName : null);
                 parameters.Add("@ModifiedBy", modifiedBy);
                 parameters.Add("@Action", "UPDATE");
 
@@ -436,7 +437,7 @@ namespace MenuOptics.Services
             try
             {
                 // Restaurant owners who are members (IsParent=false) cannot create sub-members
-                if (callerRole.Contains(Roles.Restaurant.ToString()) && isParentClaim != "true")
+                if (callerRole.Contains(Role.Restaurant.ToString()) && isParentClaim != "true")
                 {
                     ResponseDto.Status = 403;
                     ResponseDto.ResponseMsg = "Only the parent restaurant account can add members.";
@@ -444,7 +445,7 @@ namespace MenuOptics.Services
                 }
 
                 int resolvedParentId;
-                if (callerRole.Contains(Roles.Admin.ToString()))
+                if (callerRole.Contains(Role.Admin.ToString()))
                 {
                     if (!model.ParentId.HasValue || model.ParentId <= 0)
                     {
