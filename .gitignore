@@ -362,4 +362,3 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /MenuOptics.API/appsettings.json
-config.bat
