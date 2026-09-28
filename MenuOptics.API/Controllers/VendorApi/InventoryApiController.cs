@@ -2,6 +2,7 @@ using MenuOptics.API.Middleware;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services.VendorApi;
+using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +17,12 @@ namespace MenuOptics.Controllers.VendorApi
     public class InventoryApiController : ControllerBase
     {
         private readonly IInventoryService _inventoryService;
-        private readonly Services.IActivityLogService _activityLog;
+        private readonly IVendorActivityLogService _vendorActivityLog;
 
-        public InventoryApiController(IInventoryService inventoryService, Services.IActivityLogService activityLog)
+        public InventoryApiController(IInventoryService inventoryService, IVendorActivityLogService activityLog)
         {
             _inventoryService = inventoryService;
-            _activityLog = activityLog;
+            _vendorActivityLog = activityLog;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -42,7 +43,7 @@ namespace MenuOptics.Controllers.VendorApi
                     ResponseMsg = "Invalid input.",
                     Data = ModelState
                 };
-                await _activityLog.LogAsync(null, RequestId, "POST /api/InventoryApi/InvoiceInventory",
+                await _vendorActivityLog.LogAsync(CurrentUserId, RequestId, "POST /api/InventoryApi/InvoiceInventory",
                     System.Text.Json.JsonSerializer.Serialize(model), System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }

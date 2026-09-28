@@ -10,7 +10,6 @@ namespace MenuOptics.Services
     public class IngredientService : IIngredientService
     {
         private readonly DapperContext _context;
-        private readonly IActivityLogService _activityLog;
 
         private static readonly HashSet<string> _allowedUnits = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -20,10 +19,9 @@ namespace MenuOptics.Services
             "RL", "TB"
         };
 
-        public IngredientService(DapperContext context, IActivityLogService activityLog)
+        public IngredientService(DapperContext context)
         {
             _context = context;
-            _activityLog = activityLog;
         }
 
         public async Task<(int StatusCode, object Body)> CreateIngredientAsync(Ingredient model, int currentUserId, int actualUserId)

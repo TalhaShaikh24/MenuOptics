@@ -2,6 +2,7 @@ using MenuOptics.API.Middleware;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services.VendorApi;
+using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,16 +16,14 @@ namespace MenuOptics.Controllers.VendorApi
     public class IngredientApiController : ControllerBase
     {
         private readonly IIngredientService _ingredientService;
-        private readonly Services.IActivityLogService _activityLog;
-        public IngredientApiController(IIngredientService ingredientService, Services.IActivityLogService activityLog)
+        private readonly IVendorActivityLogService _vendorActivityLog;
+        public IngredientApiController(IIngredientService ingredientService, IVendorActivityLogService activityLog)
         {
             _ingredientService = ingredientService;
-            _activityLog = activityLog;
+            _vendorActivityLog = activityLog;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-        private int CurrentUserIdOrDefault => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "1");
 
         private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
 
@@ -41,7 +40,7 @@ namespace MenuOptics.Controllers.VendorApi
                     Status = 400,
                     ResponseMsg = "Invalid input."
                 };
-                await _activityLog.LogAsync(CurrentUserId, RequestId, "POST /api/IngredientApi/CreateIngredientByVendor",
+                await _vendorActivityLog.LogAsync(CurrentUserId, RequestId, "POST /api/IngredientApi/CreateIngredientByVendor",
                     System.Text.Json.JsonSerializer.Serialize(model), System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }

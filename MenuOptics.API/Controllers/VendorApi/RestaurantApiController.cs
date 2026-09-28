@@ -4,6 +4,7 @@ using MenuOptics.Models;
 using MenuOptics.Services;
 using MenuOptics.Services.EmailTemplates;
 using MenuOptics.Services.VendorApi;
+using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,20 +21,19 @@ namespace MenuOptics.API.Controllers.VendorApi
     public class RestaurantApiController : ControllerBase
     {
         private readonly IRestaurantService _restaurantService;
-        private readonly IActivityLogService _activityLog;
+        private readonly IVendorActivityLogService _vendorActivityLog;
         private readonly ISmtpEmailService _emailService;
         private readonly IConfiguration _configuration;
 
-        public RestaurantApiController(IRestaurantService restaurantService, IActivityLogService activityLog, ISmtpEmailService emailService, IConfiguration configuration)
+        public RestaurantApiController(IRestaurantService restaurantService, IVendorActivityLogService activityLog, ISmtpEmailService emailService, IConfiguration configuration)
         {
             _restaurantService = restaurantService;
-            _activityLog = activityLog;
+            _vendorActivityLog = activityLog;
             _emailService = emailService;
             _configuration = configuration;
         }
 
-        private string? NameIdentifierClaim => User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
+        private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
 
         [HttpPost("SignupRestaurant")]
@@ -48,7 +48,7 @@ namespace MenuOptics.API.Controllers.VendorApi
                 responseData.Status = 400;
                 responseData.ResponseMsg = "A valid RestaurantId is required. RestaurantId cannot be null or 0.";
                 responseData.Data = ModelState;
-                await _activityLog.LogAsync(null, requestId, "POST /api/RestaurantApi/SignupRestaurant",
+                await _vendorActivityLog.LogAsync(CurrentUserId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }
@@ -64,12 +64,12 @@ namespace MenuOptics.API.Controllers.VendorApi
                 responseData.ResponseMsg = string.Join(" ", errors);
                 responseData.Data = null;
 
-                await _activityLog.LogAsync(null, requestId, "POST /api/RestaurantApi/SignupRestaurant",
+                await _vendorActivityLog.LogAsync(CurrentUserId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }
 
-            var result = await _restaurantService.SignupRestaurantAsync(model, NameIdentifierClaim, requestId);
+            var result = await _restaurantService.SignupRestaurantAsync(model, CurrentUserId, requestId);
 
             if (result.Status is 200 or 201)
             {
@@ -87,7 +87,7 @@ namespace MenuOptics.API.Controllers.VendorApi
         [HttpPut("UpdateRestaurant")]
         public async Task<IActionResult> UpdateRestaurant([FromBody] UpdateRestaurantDto model)
         {
-            var responseData = await _restaurantService.UpdateRestaurantAsync(model, NameIdentifierClaim, RequestId);
+            var responseData = await _restaurantService.UpdateRestaurantAsync(model, CurrentUserId, RequestId);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -103,7 +103,7 @@ namespace MenuOptics.API.Controllers.VendorApi
                 });
             }
 
-            var responseData = await _restaurantService.ToggleRestaurantActiveAsync(restaurantId, request, NameIdentifierClaim, RequestId);
+            var responseData = await _restaurantService.ToggleRestaurantActiveAsync(restaurantId, request, CurrentUserId, RequestId);
             return StatusCode(responseData.Status, responseData);
         }
     }

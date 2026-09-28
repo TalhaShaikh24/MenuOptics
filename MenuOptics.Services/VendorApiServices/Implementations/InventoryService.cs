@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.Extensions.Primitives;
 using System.Data;
 using System.Data.SqlClient;
@@ -10,12 +11,12 @@ namespace MenuOptics.Services.VendorApi
     public class InventoryService : IInventoryService
     {
         private readonly DapperContext _context;
-        private readonly IActivityLogService _activityLog;
+        private readonly IVendorActivityLogService _vendorActivityLog;
 
-        public InventoryService(DapperContext context, IActivityLogService activityLog)
+        public InventoryService(DapperContext context, IVendorActivityLogService activityLog)
         {
             _context = context;
-            _activityLog = activityLog;
+            _vendorActivityLog = activityLog;
 
         }
 
@@ -29,8 +30,8 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = "At least one item is required.";
 
-                await _activityLog.LogAsync(
-                    null,
+                await _vendorActivityLog.LogAsync(
+                    currentUserId,
                     requestId,
                     "POST /api/InventoryApi/InvoiceInventory",
                     payload,
@@ -171,7 +172,7 @@ namespace MenuOptics.Services.VendorApi
                     Errors = failedItems
                 };
 
-                await _activityLog.LogAsync(
+                await _vendorActivityLog.LogAsync(
                     currentUserId,
                     requestId,
                     "POST /api/InventoryApi/InvoiceInventory",
@@ -186,8 +187,8 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = $"{ex.Message}";
 
-                await _activityLog.LogAsync(
-                    null,
+                await _vendorActivityLog.LogAsync(
+                    currentUserId,
                     requestId,
                     "POST /api/InventoryApi/InvoiceInventory",
                     payload,

@@ -20,7 +20,6 @@ namespace MenuOptics.Services
         private readonly DapperContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly IAuthService _authService;
-        private readonly IActivityLogService _activityLog;
         private readonly ITokenService _tokenService;
         private readonly ISmtpEmailService _emailService;
         private readonly IFileUploadService _fileService;
@@ -31,7 +30,6 @@ namespace MenuOptics.Services
             DapperContext context,
             IWebHostEnvironment environment,
             IAuthService authService,
-            IActivityLogService activityLog,
             ITokenService tokenService,
             ISmtpEmailService emailService,
             IFileUploadService fileService,
@@ -41,7 +39,6 @@ namespace MenuOptics.Services
             _context = context;
             _environment = environment;
             _authService = authService;
-            _activityLog = activityLog;
             _tokenService = tokenService;
             _emailService = emailService;
             _fileService = fileService;

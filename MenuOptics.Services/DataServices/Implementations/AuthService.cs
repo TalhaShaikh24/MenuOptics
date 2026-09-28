@@ -2,6 +2,7 @@ using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
 using MenuOptics.Models.Enums;
+using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Stripe;
@@ -16,7 +17,7 @@ namespace MenuOptics.Services
     {
         private readonly DapperContext _context;
         private readonly IWebHostEnvironment _environment;
-        private readonly IActivityLogService _activityLog;
+        private readonly IVendorActivityLogService _vendorActivityLog;
         private readonly ITokenService _tokenService;
         private readonly ISmtpEmailService _emailService;
         private readonly IFileUploadService _fileService;
@@ -26,7 +27,7 @@ namespace MenuOptics.Services
         public AuthService(
             DapperContext context,
             IWebHostEnvironment environment,
-            IActivityLogService activityLog,
+            IVendorActivityLogService activityLog,
             ITokenService tokenService,
             ISmtpEmailService emailService,
             IFileUploadService fileService,
@@ -35,7 +36,7 @@ namespace MenuOptics.Services
         {
             _context = context;
             _environment = environment;
-            _activityLog = activityLog;
+            _vendorActivityLog = activityLog;
             _tokenService = tokenService;
             _emailService = emailService;
             _fileService = fileService;
@@ -107,7 +108,7 @@ namespace MenuOptics.Services
 
                 if (user.Roles?.Contains(Role.Vendor.ToString()) == true)
                 {
-                    await _activityLog.LogAsync(user.UserId, requestId, "POST /api/UserApi/Login", payload,
+                    await _vendorActivityLog.LogAsync(user.UserId, requestId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success");
                 }
 

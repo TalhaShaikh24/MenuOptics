@@ -61,8 +61,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@PrivateVendorId", id);
-                parameters.Add("@RestaurantId", restaurantId);
-                parameters.Add("@Action", "SELECT_BY_ID");
+                parameters.Add("@Action", "SELECT");
 
                 var vendor = await connection.QuerySingleOrDefaultAsync<PrivateVendor>(
                     "sp_PrivateVendorCRUD", parameters, commandType: CommandType.StoredProcedure);

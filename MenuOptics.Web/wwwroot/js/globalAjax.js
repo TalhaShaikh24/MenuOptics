@@ -140,6 +140,23 @@ function executeAjaxRequest({
             } catch {
                 errorMsg = "Error parsing error response";
             }
+
+            // ── 401: Session / Token expired — auto logout ─────────────────
+            if (statusCode === 401) {
+                // Guard against multiple concurrent 401s triggering duplicate redirects
+                if (window._sessionExpiredHandled) return;
+                window._sessionExpiredHandled = true;
+
+                showNotification('Your session has expired. Please log in again.', 'error');
+
+                setTimeout(function () {
+                    window.location.href = '/User/login';
+                }, 2500);
+
+                onError(xhr, status, error);
+                return;
+            }
+
             if (statusCode === 402) {
                 var $stripe = $('#subscriptioStatus');
                 $stripe.text(errorMsg).show();

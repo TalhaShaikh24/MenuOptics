@@ -60,8 +60,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@CategoryId", id);
-                parameters.Add("@RestaurantId", restaurantId);
-                parameters.Add("@Action", "SELECT_BY_ID");
+                parameters.Add("@Action", "SELECT");
 
                 var category = await connection.QuerySingleOrDefaultAsync<Category>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
 

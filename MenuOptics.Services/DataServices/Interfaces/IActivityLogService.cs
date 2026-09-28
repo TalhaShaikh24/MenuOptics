@@ -3,7 +3,7 @@ namespace MenuOptics.Services
     public interface IActivityLogService
     {
         Task LogAsync(
-            int? vendorId,
+            int? userId,
             string requestId,
             string requestType,
             string? payload,

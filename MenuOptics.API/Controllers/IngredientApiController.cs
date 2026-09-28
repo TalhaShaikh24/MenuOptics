@@ -15,11 +15,9 @@ namespace MenuOptics.Controllers.Api
     public class IngredientApiController : ControllerBase
     {
         private readonly IIngredientService _ingredientService;
-        private readonly IActivityLogService _activityLog;
-        public IngredientApiController(IIngredientService ingredientService, IActivityLogService activityLog)
+        public IngredientApiController(IIngredientService ingredientService)
         {
             _ingredientService = ingredientService;
-            _activityLog = activityLog;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");

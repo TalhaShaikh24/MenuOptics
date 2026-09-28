@@ -1,5 +1,6 @@
 using Dapper;
 using MenuOptics.Data;
+using MenuOptics.Services.VendorApiServices.Interfaces;
 using System.Data;
 
 namespace MenuOptics.Services
@@ -14,7 +15,7 @@ namespace MenuOptics.Services
         }
 
         public async Task LogAsync(
-            int? vendorId,
+            int? userId,
             string requestId,
             string requestType,
             string? payload,
@@ -26,20 +27,16 @@ namespace MenuOptics.Services
                 using var connection = _context.CreateConnection();
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@VendorId", vendorId, DbType.Int32);
-                parameters.Add("@RequestId", requestId, DbType.String);
-                parameters.Add("@RequestType", requestType, DbType.String);
-                parameters.Add("@Payload", payload, DbType.String);
-                parameters.Add("@Response", ResponseDto, DbType.String);
-                parameters.Add("@LogLevel", logLevel, DbType.String);
-                parameters.Add("@TimeStamp", DateTime.UtcNow, DbType.DateTime);
+                parameters.Add("@VendorId", userId);
+                parameters.Add("@RequestId", requestId);
+                parameters.Add("@RequestType", requestType);
+                parameters.Add("@Payload", payload);
+                parameters.Add("@Response", ResponseDto);
+                parameters.Add("@LogLevel", logLevel);
+                parameters.Add("@Action", "INSERT");
 
-                await connection.ExecuteAsync(
-                    @"INSERT INTO ActivityLogs 
-                        (VendorId, RequestId, RequestType, Payload, Response, LogLevel, TimeStamp)
-                      VALUES 
-                        (@VendorId, @RequestId, @RequestType, @Payload, @Response, @LogLevel, @TimeStamp)",
-                    parameters);
+                await connection.ExecuteScalarAsync<int>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+
             }
             catch
             {

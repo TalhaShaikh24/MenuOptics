@@ -16,12 +16,10 @@ namespace MenuOptics.Controllers.Api
     public class InventoryApiController : ControllerBase
     {
         private readonly IInventoryService _inventoryService;
-        private readonly IActivityLogService _activityLog;
 
-        public InventoryApiController(IInventoryService inventoryService,IActivityLogService activityLog)
+        public InventoryApiController(IInventoryService inventoryService)
         {
             _inventoryService = inventoryService;
-            _activityLog = activityLog;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");

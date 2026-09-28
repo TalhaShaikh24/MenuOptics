@@ -3,6 +3,7 @@ using MenuOptics.Data;
 using MenuOptics.Models;
 using MenuOptics.Models.Enums;
 using MenuOptics.Services.VendorApi;
+using MenuOptics.Services.VendorApiServices.Interfaces;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -11,28 +12,19 @@ namespace MenuOptics.Services.VendorApi
     public class RestaurantService : IRestaurantService
     {
         private readonly DapperContext _context;
-        private readonly IActivityLogService _activityLog;
+        private readonly IVendorActivityLogService _vendorActivityLog;
         private static readonly HashSet<string> _allowedSubscriptionType = new(StringComparer.OrdinalIgnoreCase)
         {
             "CORE","PREMIUM"
         };
 
-        public RestaurantService(DapperContext context, IActivityLogService activityLog)
+        public RestaurantService(DapperContext context, IVendorActivityLogService activityLog)
         {
             _context = context;
-            _activityLog = activityLog;
+            _vendorActivityLog = activityLog;
         }
 
-        // Resolves the caller's VendorId from the JWT NameIdentifier claim value.
-        private static int GetCallerVendorId(string? nameIdentifierClaim)
-        {
-            if (int.TryParse(nameIdentifierClaim, out int id))
-                return id;
-
-            throw new InvalidOperationException("Vendor identity could not be determined from token.");
-        }
-
-        public async Task<ResponseDto> SignupRestaurantAsync(CreateRestaurantDto model, string? nameIdentifierClaim, string requestId)
+        public async Task<ResponseDto> SignupRestaurantAsync(CreateRestaurantDto model, int currentUserId, string requestId)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var ResponseDto = new ResponseDto();
@@ -48,20 +40,9 @@ namespace MenuOptics.Services.VendorApi
             connection.Open();
             try
             {
-                var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
-
-                if (callerVendorId == 0)
-                {
-                    ResponseDto.Status = 401;
-                    ResponseDto.ResponseMsg = "Unauthorized";
-                    await _activityLog.LogAsync(null, requestId, "POST /api/RestaurantApi/SignupRestaurant",
-                        payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
-                    return ResponseDto;
-                }
-
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", model.RestaurantId);
-                parameters.Add("@VendorId", callerVendorId);
+                parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@FirstName", model.FirstName);
                 parameters.Add("@LastName", model.LastName);
                 parameters.Add("@Username", model.Username);
@@ -72,7 +53,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@SubscriptionType", model.SubscriptionType);
                 parameters.Add("@SubscriptionStatus", "Active");
                 parameters.Add("@PaidBy", PaidBy.VENDOR.ToString());
-                parameters.Add("@CreatedBy", callerVendorId);
+                parameters.Add("@CreatedBy", currentUserId);
                 parameters.Add("@Action", "INSERT");
 
                 int newId = await connection.ExecuteScalarAsync<int>(
@@ -83,7 +64,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.ResponseMsg = "Restaurant signed up successfully.";
                 ResponseDto.Data = new { restaurantId = newId };
 
-                await _activityLog.LogAsync(callerVendorId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
                    payload, System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg, ResponseDto.Data }), "Success");
 
                 return ResponseDto;
@@ -93,16 +74,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 503;
                 ResponseDto.ResponseMsg = $"Exception: {sqlEx.Message}";
 
-                await _activityLog.LogAsync(null, requestId, "POST /api/RestaurantApi/SignupRestaurant",
-                    payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
-                return ResponseDto;
-            }
-            catch (InvalidOperationException invalidOpEx)
-            {
-                ResponseDto.Status = 422;
-                ResponseDto.ResponseMsg = $"Invalid operation: {invalidOpEx.Message}";
-
-                await _activityLog.LogAsync(null, requestId, "POST /api/RestaurantApi/SignupRestaurant",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
                 return ResponseDto;
             }
@@ -111,7 +83,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 500;
                 ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
 
-                await _activityLog.LogAsync(null, requestId, "POST /api/RestaurantApi/SignupRestaurant",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
                 return ResponseDto;
             }
@@ -121,7 +93,7 @@ namespace MenuOptics.Services.VendorApi
             }
         }
 
-        public async Task<ResponseDto> UpdateRestaurantAsync(UpdateRestaurantDto model, string? nameIdentifierClaim, string requestId)
+        public async Task<ResponseDto> UpdateRestaurantAsync(UpdateRestaurantDto model, int currentUserId, string requestId)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var ResponseDto = new ResponseDto();
@@ -142,24 +114,23 @@ namespace MenuOptics.Services.VendorApi
                     ResponseDto.Status = 400;
                     ResponseDto.ResponseMsg = "RestaurantId is required for update.";
 
-                    await _activityLog.LogAsync(null, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
+                    await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/RestaurantApi/UpdateRestaurant",
                         payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
 
                     return ResponseDto;
                 }
 
-                var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", model.RestaurantId);
-                parameters.Add("@VendorId", callerVendorId);
+                parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@FirstName", model.FirstName);
                 parameters.Add("@LastName", model.LastName);
                 parameters.Add("@Email", model.Email);
                 parameters.Add("@Phone", model.Phone);
                 parameters.Add("@RestaurantName", model.RestaurantName);
                 parameters.Add("@SubscriptionType", model.SubscriptionType);
-                parameters.Add("@ModifiedBy", callerVendorId);
+                parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "UPDATE");
 
                 var updated = await connection.QueryFirstOrDefaultAsync<UpdateRestaurantDto>(
@@ -170,7 +141,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.ResponseMsg = "Restaurant updated successfully.";
                 ResponseDto.Data = updated;
 
-                await _activityLog.LogAsync(callerVendorId, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/RestaurantApi/UpdateRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Success");
 
                 return ResponseDto;
@@ -180,7 +151,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 503;
                 ResponseDto.ResponseMsg = $"Exception: {sqlEx.Message}";
 
-                await _activityLog.LogAsync(null, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/RestaurantApi/UpdateRestaurant",
                         payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
 
                 return ResponseDto;
@@ -190,18 +161,9 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 403;
                 ResponseDto.ResponseMsg = $"{sqlEx.Message}";
 
-                await _activityLog.LogAsync(null, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/RestaurantApi/UpdateRestaurant",
                         payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
 
-                return ResponseDto;
-            }
-            catch (InvalidOperationException invalidOpEx)
-            {
-                ResponseDto.Status = 422;
-                ResponseDto.ResponseMsg = $"Invalid operation: {invalidOpEx.Message}";
-
-                await _activityLog.LogAsync(null, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
-                    payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
                 return ResponseDto;
             }
             catch (Exception ex)
@@ -209,7 +171,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 500;
                 ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
 
-                await _activityLog.LogAsync(null, requestId, "PUT /api/RestaurantApi/UpdateRestaurantDto",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/RestaurantApi/UpdateRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
                 return ResponseDto;
             }
@@ -219,7 +181,7 @@ namespace MenuOptics.Services.VendorApi
             }
         }
 
-        public async Task<ResponseDto> ToggleRestaurantActiveAsync(int restaurantId, RestaurantStatusRequestDto request, string? nameIdentifierClaim, string requestId)
+        public async Task<ResponseDto> ToggleRestaurantActiveAsync(int restaurantId, RestaurantStatusRequestDto request, int currentUserId, string requestId)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(request);
             var ResponseDto = new ResponseDto();
@@ -229,13 +191,12 @@ namespace MenuOptics.Services.VendorApi
 
             try
             {
-                var callerVendorId = GetCallerVendorId(nameIdentifierClaim);
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", restaurantId);
-                parameters.Add("@VendorId", callerVendorId);
+                parameters.Add("@VendorId", currentUserId);
                 parameters.Add("@IsActive", request.IsActive);
-                parameters.Add("@ModifiedBy", callerVendorId);
+                parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
                 await connection.ExecuteAsync(
@@ -251,7 +212,7 @@ namespace MenuOptics.Services.VendorApi
                     request.IsActive
                 };
 
-                await _activityLog.LogAsync(callerVendorId, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
                     payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Success");
 
                 return ResponseDto;
@@ -261,7 +222,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 503;
                 ResponseDto.ResponseMsg = $"Exception: {sqlEx.Message}";
 
-                await _activityLog.LogAsync(null, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
                         payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
 
                 return ResponseDto;
@@ -271,7 +232,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 403;
                 ResponseDto.ResponseMsg = $"{sqlEx.Message}";
 
-                await _activityLog.LogAsync(null, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
                         payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
 
                 return ResponseDto;
@@ -281,7 +242,7 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.Status = 500;
                 ResponseDto.ResponseMsg = $"Server error: {ex.Message}";
 
-                await _activityLog.LogAsync(null, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
+                await _vendorActivityLog.LogAsync(currentUserId, requestId, $"PUT /api/RestaurantApi/ToggleRestaurantActive/{restaurantId}",
                         payload, System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
 
                 return ResponseDto;

@@ -1,15 +1,18 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using MenuOptics.API.Middleware;
 using MenuOptics.Data;
 using MenuOptics.Middleware;
 using MenuOptics.Services;
-using System.Text;
-using Microsoft.AspNetCore.DataProtection;
 using MenuOptics.Services.VendorApi;
+using MenuOptics.Services.VendorApiServices.Implementations;
+using MenuOptics.Services.VendorApiServices.Interfaces;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +37,7 @@ builder.Services.AddDataProtection()
 
 // Infrastructure services
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
+builder.Services.AddScoped<IVendorActivityLogService, VendorActivityLogService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ISmtpEmailService, SmtpEmailService>();
 
@@ -184,6 +188,7 @@ app.UseRouting();
 app.UseRequestId();
 
 app.UseAuthentication();
+//app.UseMiddleware<ActivityLogMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
