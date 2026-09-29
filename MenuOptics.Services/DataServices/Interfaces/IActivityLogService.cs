@@ -8,7 +8,8 @@ namespace MenuOptics.Services
             string requestType,
             string? payload,
             string? ResponseDto,
-            string logLevel // "Success" | "Error" | "Warning"
+            string logLevel,
+            string? ipAddress = null
         );
     }
 }
