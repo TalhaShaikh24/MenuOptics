@@ -35,7 +35,7 @@ namespace MenuOptics.Services
                 parameters.Add("@LogLevel", logLevel);
                 parameters.Add("@Action", "INSERT");
 
-                await connection.ExecuteScalarAsync<int>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+                await connection.ExecuteScalarAsync<int>("sp_ActivityLogCRUD", parameters, commandType: CommandType.StoredProcedure);
 
             }
             catch

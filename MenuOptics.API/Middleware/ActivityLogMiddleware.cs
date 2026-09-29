@@ -1,7 +1,8 @@
-﻿using MenuOptics.Services;
+using MenuOptics.Services;
 using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using System.Diagnostics;
+using System.Security.Claims;
 using System.Text;
 
 namespace MenuOptics.API.Middleware
@@ -59,13 +60,31 @@ namespace MenuOptics.API.Middleware
             }
 
             // =========================================================
-            // 2. REQUEST INFORMATION
+            // 2. SKIP GET / HEAD / OPTIONS — only log mutating requests
+            // =========================================================
+
+            var httpMethod = context.Request.Method.ToUpperInvariant();
+
+            if (httpMethod == "GET" ||
+                httpMethod == "HEAD" ||
+                httpMethod == "OPTIONS")
+            {
+                await _next(context);
+                return;
+            }
+
+            // =========================================================
+            // 3. REQUEST INFORMATION
             // =========================================================
 
             var requestId = context.TraceIdentifier;
 
-            var requestType =
-                $"{context.Request.Method} {context.Request.Path}";
+            // Use format: "HTTP_METHOD ActionName" e.g. "POST CreateCategory"
+            var actionMethodName = controllerAction?.MethodInfo?.Name;
+
+            var requestType = !string.IsNullOrWhiteSpace(actionMethodName)
+                ? $"{context.Request.Method.ToUpperInvariant()} {actionMethodName}"
+                : $"{context.Request.Method.ToUpperInvariant()} {context.Request.Path}";
 
             string? requestBody = null;
 
@@ -145,10 +164,10 @@ namespace MenuOptics.API.Middleware
                 // 8. DETERMINE LOG LEVEL
                 // =====================================================
 
-                var logLevel =
-                    context.Response.StatusCode >= 400
-                        ? "ERROR"
-                        : "INFO";
+                var statusCode = context.Response.StatusCode;
+                var logLevel = (statusCode == 200 || statusCode == 201)
+                    ? "SUCCESS"
+                    : "ERROR";
 
                 // =====================================================
                 // 9. SAVE ACTIVITY LOG
@@ -201,10 +220,8 @@ namespace MenuOptics.API.Middleware
         private static int? GetUserId(
             HttpContext context)
         {
-            var userIdValue =
-                context.User
-                    .FindFirst("UserId")
-                    ?.Value;
+            var userIdValue = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
 
             if (int.TryParse(
                 userIdValue,

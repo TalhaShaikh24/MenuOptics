@@ -188,7 +188,7 @@ app.UseRouting();
 app.UseRequestId();
 
 app.UseAuthentication();
-//app.UseMiddleware<ActivityLogMiddleware>();
+app.UseMiddleware<ActivityLogMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
