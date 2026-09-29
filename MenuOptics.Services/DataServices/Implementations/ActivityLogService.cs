@@ -20,19 +20,21 @@ namespace MenuOptics.Services
             string requestType,
             string? payload,
             string? ResponseDto,
-            string logLevel)
+            string logLevel,
+            string? ipAddress = null)
         {
             try
             {
                 using var connection = _context.CreateConnection();
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@VendorId", userId);
+                parameters.Add("@UserId", userId);
                 parameters.Add("@RequestId", requestId);
                 parameters.Add("@RequestType", requestType);
                 parameters.Add("@Payload", payload);
                 parameters.Add("@Response", ResponseDto);
                 parameters.Add("@LogLevel", logLevel);
+                parameters.Add("@IpAddress", ipAddress);
                 parameters.Add("@Action", "INSERT");
 
                 await connection.ExecuteScalarAsync<int>("sp_ActivityLogCRUD", parameters, commandType: CommandType.StoredProcedure);

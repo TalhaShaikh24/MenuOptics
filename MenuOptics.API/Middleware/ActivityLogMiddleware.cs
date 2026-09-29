@@ -155,10 +155,11 @@ namespace MenuOptics.API.Middleware
                 }
 
                 // =====================================================
-                // 7. GET VENDOR ID
+                // 7. GET USER ID & IP ADDRESS
                 // =====================================================
 
                 var userId = GetUserId(context);
+                var ipAddress = GetClientIpAddress(context);
 
                 // =====================================================
                 // 8. DETERMINE LOG LEVEL
@@ -179,13 +180,15 @@ namespace MenuOptics.API.Middleware
                     requestType,
                     requestBody,
                     responseContent,
-                    logLevel);
+                    logLevel,
+                    ipAddress);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
 
                 var userId = GetUserId(context);
+                var ipAddress = GetClientIpAddress(context);
 
                 // =====================================================
                 // 10. LOG EXCEPTION
@@ -197,7 +200,8 @@ namespace MenuOptics.API.Middleware
                     requestType,
                     requestBody,
                     ex.Message,
-                    "ERROR");
+                    "ERROR",
+                    ipAddress);
 
                 throw;
             }
@@ -222,15 +226,20 @@ namespace MenuOptics.API.Middleware
         {
             var userIdValue = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-
-            if (int.TryParse(
-                userIdValue,
-                out var userId))
-            {
+            if (int.TryParse(userIdValue, out var userId))
                 return userId;
-            }
 
             return null;
+        }
+
+        private static string? GetClientIpAddress(HttpContext context)
+        {
+            // X-Forwarded-For: real IP when behind a reverse proxy / load balancer
+            var forwarded = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(forwarded))
+                return forwarded.Split(',')[0].Trim();
+
+            return context.Connection.RemoteIpAddress?.ToString();
         }
     }
 }
