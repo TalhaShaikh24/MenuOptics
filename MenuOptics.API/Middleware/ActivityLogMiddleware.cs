@@ -160,7 +160,6 @@ namespace MenuOptics.API.Middleware
                 // =====================================================
 
                 var userId = GetUserId(context);
-                var ipAddress = BrowserRequestHeaders.GetClientIpAddress(context);
 
                 // =====================================================
                 // 8. DETERMINE LOG LEVEL
@@ -189,7 +188,6 @@ namespace MenuOptics.API.Middleware
                 stopwatch.Stop();
 
                 var userId = GetUserId(context);
-                var ipAddress = BrowserRequestHeaders.GetClientIpAddress(context);
 
                 // =====================================================
                 // 10. LOG EXCEPTION
@@ -227,10 +225,15 @@ namespace MenuOptics.API.Middleware
         {
             var userIdValue = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (int.TryParse(userIdValue, out var userId))
-                return userId;
 
-            return null;
+            if (int.TryParse(
+                userIdValue,
+                out var userId))
+            {
+                return userId;
+            }
+
+            return context.Connection.RemoteIpAddress?.ToString();
         }
 
        
