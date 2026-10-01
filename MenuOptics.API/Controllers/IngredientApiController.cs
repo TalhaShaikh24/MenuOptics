@@ -23,7 +23,6 @@ namespace MenuOptics.Controllers.Api
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
-        private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
 
         [HttpPost("CreateIngredient")]
         [HttpPost]

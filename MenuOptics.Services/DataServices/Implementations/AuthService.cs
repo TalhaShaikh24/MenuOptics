@@ -9,6 +9,7 @@ using Stripe;
 using Stripe.Checkout;
 using System.Data;
 using System.Data.SqlClient;
+using System.Net;
 using System.Security.Claims;
 
 namespace MenuOptics.Services
@@ -18,6 +19,7 @@ namespace MenuOptics.Services
         private readonly DapperContext _context;
         private readonly IWebHostEnvironment _environment;
         private readonly IVendorActivityLogService _vendorActivityLog;
+        private readonly IActivityLogService _activityLog;
         private readonly ITokenService _tokenService;
         private readonly ISmtpEmailService _emailService;
         private readonly IFileUploadService _fileService;
@@ -27,7 +29,8 @@ namespace MenuOptics.Services
         public AuthService(
             DapperContext context,
             IWebHostEnvironment environment,
-            IVendorActivityLogService activityLog,
+            IVendorActivityLogService vendorActivityLog,
+            IActivityLogService activityLog,
             ITokenService tokenService,
             ISmtpEmailService emailService,
             IFileUploadService fileService,
@@ -36,7 +39,8 @@ namespace MenuOptics.Services
         {
             _context = context;
             _environment = environment;
-            _vendorActivityLog = activityLog;
+            _vendorActivityLog = vendorActivityLog;
+            _activityLog = activityLog;
             _tokenService = tokenService;
             _emailService = emailService;
             _fileService = fileService;
@@ -44,7 +48,7 @@ namespace MenuOptics.Services
             _configuration = configuration;
         }
 
-        public async Task<ResponseDto> LoginAsync(LoginDto model, string requestId)
+        public async Task<ResponseDto> LoginAsync(LoginDto model, string requestId, string? ipAddress)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(new { model.Username }); // never log password
@@ -110,6 +114,11 @@ namespace MenuOptics.Services
                 {
                     await _vendorActivityLog.LogAsync(user.UserId, requestId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success");
+                }
+                if (user.Roles?.Contains(Role.Restaurant.ToString()) == true || user.Roles?.Contains(Role.Admin.ToString()) == true)
+                {
+                    await _activityLog.LogAsync(user.UserId, "Login", payload,
+                        System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success", ipAddress);
                 }
 
                 return ResponseDto;

@@ -67,7 +67,7 @@ $(document).ready(function () {
             return;
         }
 
-        const type = $('#currentPolicyType').val();
+        const type = "Terms";
         const content = editorInstance.getData();
 
         // Validation

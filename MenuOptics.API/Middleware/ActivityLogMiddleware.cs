@@ -1,3 +1,4 @@
+using MenuOptics.API.Utility;
 using MenuOptics.Services;
 using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -77,13 +78,13 @@ namespace MenuOptics.API.Middleware
             // 3. REQUEST INFORMATION
             // =========================================================
 
-            var requestId = context.TraceIdentifier;
+            var requestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
 
             // Use format: "HTTP_METHOD ActionName" e.g. "POST CreateCategory"
             var actionMethodName = controllerAction?.MethodInfo?.Name;
 
             var requestType = !string.IsNullOrWhiteSpace(actionMethodName)
-                ? $"{context.Request.Method.ToUpperInvariant()} {actionMethodName}"
+                ? $"{context.Request.Method.ToUpperInvariant()} {context.Request.Path}"
                 : $"{context.Request.Method.ToUpperInvariant()} {context.Request.Path}";
 
             string? requestBody = null;
@@ -159,7 +160,7 @@ namespace MenuOptics.API.Middleware
                 // =====================================================
 
                 var userId = GetUserId(context);
-                var ipAddress = GetClientIpAddress(context);
+                var ipAddress = BrowserRequestHeaders.GetClientIpAddress(context);
 
                 // =====================================================
                 // 8. DETERMINE LOG LEVEL
@@ -167,8 +168,8 @@ namespace MenuOptics.API.Middleware
 
                 var statusCode = context.Response.StatusCode;
                 var logLevel = (statusCode == 200 || statusCode == 201)
-                    ? "SUCCESS"
-                    : "ERROR";
+                    ? "Success"
+                    : "Error";
 
                 // =====================================================
                 // 9. SAVE ACTIVITY LOG
@@ -188,7 +189,7 @@ namespace MenuOptics.API.Middleware
                 stopwatch.Stop();
 
                 var userId = GetUserId(context);
-                var ipAddress = GetClientIpAddress(context);
+                var ipAddress = BrowserRequestHeaders.GetClientIpAddress(context);
 
                 // =====================================================
                 // 10. LOG EXCEPTION
@@ -232,14 +233,6 @@ namespace MenuOptics.API.Middleware
             return null;
         }
 
-        private static string? GetClientIpAddress(HttpContext context)
-        {
-            // X-Forwarded-For: real IP when behind a reverse proxy / load balancer
-            var forwarded = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(forwarded))
-                return forwarded.Split(',')[0].Trim();
-
-            return context.Connection.RemoteIpAddress?.ToString();
-        }
+       
     }
 }

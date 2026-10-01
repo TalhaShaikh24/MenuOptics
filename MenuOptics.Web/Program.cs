@@ -58,7 +58,6 @@ app.UseApiProxy();
 app.UseStaticFiles();
 
 app.UseRouting();
-app.UseRequestId();
 
 app.UseAuthentication();
 app.UseAuthorization();

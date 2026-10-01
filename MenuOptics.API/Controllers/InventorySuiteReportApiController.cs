@@ -37,7 +37,7 @@ namespace MenuOptics.Controllers.Api
         }
 
 
-        [HttpPost("GetInventorySuiteReports")]
+        [HttpGet("GetInventorySuiteReports")]
         public async Task<IActionResult> GetInventorySuiteReports()
         {
           

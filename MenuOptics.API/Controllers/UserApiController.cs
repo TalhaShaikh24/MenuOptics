@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using MenuOptics.API.Utility;
 using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace MenuOptics.Controllers.Api
@@ -26,7 +27,8 @@ namespace MenuOptics.Controllers.Api
 
         private string RequestBaseUrl => $"{Request.Scheme}://{Request.Host}";
 
-        private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
+        private string RequestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
+
 
         private ResponseDto ModelStateErrorResponse()
         {
@@ -134,7 +136,8 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
-            var responseData = await _authService.LoginAsync(model, RequestId);
+            var ipAddress = BrowserRequestHeaders.GetClientIpAddress(HttpContext);
+            var responseData = await _authService.LoginAsync(model, RequestId, ipAddress);
             return StatusCode(responseData.Status, responseData);
         }
 

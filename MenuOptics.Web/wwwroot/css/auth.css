@@ -1,4 +1,4 @@
-﻿/* Authentication Styles */
+/* Authentication Styles */
 .auth-body {
     background: linear-gradient(135deg, rgb(255 255 255 / 13%) 0%, rgb(255 255 255 / 23%) 100%), url('../bg-restaurant.jpg');
     background-size: cover;
@@ -253,11 +253,13 @@
 
 .checkbox-label {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     font-size: 14px;
+    text-align:left;
     color: #374151;
     cursor: pointer;
+    line-height: 1.5;
 }
 
     .checkbox-label input[type="checkbox"] {
@@ -271,9 +273,12 @@
 .checkmark {
     width: 18px;
     height: 18px;
+    min-width: 18px;
+    flex-shrink: 0;
     border: 2px solid #d1d5db;
     border-radius: 4px;
     position: relative;
+    margin-top: 2px;
     transition: all 0.2s ease;
 }
 

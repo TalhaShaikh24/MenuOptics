@@ -153,8 +153,8 @@
     </div>
     <div class="header-actions">
         <div id="exportButtons"></div>
-        <button class="btn btn-primary" id="openAddReportModalBtn" disabled>
-            <i class="fas fa-plus"></i> Add Report
+        <button class="btn btn-primary" id="openSaveReportModalBtn" disabled>
+            <i class="fas fa-plus"></i> Start Inventory
         </button>
     </div>
 </div>
@@ -168,7 +168,7 @@
     <button class="btn btn-outline" id="clear-filter"><i class="fas fa-times"></i> Clear Filters</button>
     <div class="report-select-wrapper" style="margin-left: auto;">
         <select id="reportSelector" class="form-control" style="width: 100%;">
-            <option value="">-- Select Report --</option>
+            <option value="">-- Select Inventory --</option>
         </select>
     </div>
 </div>
@@ -185,11 +185,11 @@
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <h3><i class="fas fa-chart-line"></i> Inventory Cost Overview</h3>
         <div id="reportActionContainer" style="display: flex; gap: 8px; align-items: center;">
-            <button class="btn btn-primary" id="insertReportBtn" style="display: none;">
-                <i class="fas fa-plus-circle"></i> Submit Report
+            <button class="btn btn-primary" id="saveInventoryBtn" style="display: none;">
+                <i class="fas fa-plus-circle"></i> Save Inventory
             </button>
-            <button class="btn btn-primary" id="updateClosingCountBtn" disabled style="display: none;">
-                <i class="fas fa-check-circle"></i> Update Report
+            <button class="btn btn-primary" id="updateInventoryBtn" disabled style="display: none;">
+                <i class="fas fa-check-circle"></i> Update Inventory
             </button>
         </div>
     </div>
@@ -260,7 +260,7 @@
 <div class="modal" id="addReportModal">
     <div class="modal-content" style="max-width: 480px;">
         <div class="modal-header">
-            <h3>Add Report</h3>
+            <h3>Start Inventory</h3>
             <button class="modal-close" type="button">&times;</button>
         </div>
         <div class="modal-body">
@@ -280,7 +280,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" type="button" onclick="closeModal('addReportModal')">Cancel</button>
-            <button id="saveReportBtn" class="btn btn-primary" type="button">Add</button>
+            <button id="saveReportBtn" class="btn btn-primary" type="button">Start</button>
         </div>
     </div>
 </div>
@@ -294,7 +294,7 @@
             </div>
             <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 8px;">Unsaved Changes</h3>
             <p style="font-size: 14px; color: #6b7280; line-height: 1.5; margin: 0 0 24px;">
-                You have unsaved closing counts for this report. If you switch to another report, your changes will be lost.
+                You have unsaved closing counts for this report. If you switch to another inventory, your changes will be lost.
             </p>
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <button class="btn btn-outline" id="cancelSwitchReportBtn" type="button" style="flex: 1; justify-content: center;">Keep Editing</button>

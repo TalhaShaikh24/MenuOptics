@@ -27,7 +27,7 @@ namespace MenuOptics.Controllers.VendorApi
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
+        private string RequestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
 
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]

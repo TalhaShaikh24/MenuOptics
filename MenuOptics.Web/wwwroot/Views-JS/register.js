@@ -56,8 +56,8 @@ $('#password').on('input', function () {
     updatePasswordStrength(strength);
 });
 
-// Terms checkbox controls Next button availability
-$('input[name="terms"]').on('change', updateNextButtonState);
+// Terms + Authorize checkboxes control Next/Submit button availability
+$('#authorizeTerms, #authorizeVendor').on('change', updateNextButtonState);
 
 // Password confirmation validation
 $('#confirmPassword').on('input', function () {
@@ -212,11 +212,13 @@ function updateStep() {
     $('.submit-btn').toggle(currentStep === totalSteps);
 }
 
-// Terms checkbox controls Next button availability
+// Terms + Authorize checkbox both must be checked to enable Next / Submit
 function updateNextButtonState() {
-    const isChecked = $('input[name="terms"]').is(':checked');
-    $('.next-btn').prop('disabled', !isChecked);
-    $('.submit-btn').prop('disabled', !isChecked);
+    const termsChecked    = $('#authorizeTerms').is(':checked');
+    const authorizeChecked = $('#authorizeVendor').is(':checked');
+    const allChecked = termsChecked && authorizeChecked;
+    $('.next-btn').prop('disabled', !allChecked);
+    $('.submit-btn').prop('disabled', !allChecked);
 }
 
 function resetSubmitButton() {
@@ -233,7 +235,7 @@ function resetSubmitButton() {
 
 function validateCurrentStep() {
     const currentStepElement = $(`.form-step[data-step="${currentStep}"]`);
-    const requiredFields = currentStepElement.find('input[required], select[required], textarea[required]');
+    const requiredFields = currentStepElement.find('input[required]:not([type="checkbox"]), select[required], textarea[required]');
     let isValid = true;
 
     requiredFields.each(function () {
@@ -242,6 +244,16 @@ function validateCurrentStep() {
             isValid = false;
         } else {
             $(this).removeClass('error');
+        }
+    });
+
+    // Validate required checkboxes in the current step
+    currentStepElement.find('input[type="checkbox"][required]').each(function () {
+        if (!$(this).is(':checked')) {
+            $(this).closest('.checkbox-label').addClass('error');
+            isValid = false;
+        } else {
+            $(this).closest('.checkbox-label').removeClass('error');
         }
     });
 

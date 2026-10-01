@@ -2414,16 +2414,19 @@ input:checked + .toggle-label {
 
 .checkbox-label {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    align-items: flex-start;
+    gap: 8px;
     font-size: 14px;
     color: #374151;
     cursor: pointer;
+    line-height: 1.5;
 }
 
     .checkbox-label input[type="checkbox"] {
         width: auto;
         margin: 0;
+        flex-shrink: 0;
+        margin-top: 2px;
     }
 
 .file-upload {

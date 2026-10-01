@@ -34,7 +34,8 @@ namespace MenuOptics.API.Controllers.VendorApi
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        private string RequestId => HttpContext.Items[RequestIdMiddleware.RequestIdItemKey]?.ToString() ?? Guid.NewGuid().ToString();
+        
+        private string RequestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
 
         [HttpPost("SignupRestaurant")]
         public async Task<IActionResult> SignupRestaurant([FromBody] CreateRestaurantDto model)

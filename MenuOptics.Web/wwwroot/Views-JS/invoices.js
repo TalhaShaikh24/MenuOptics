@@ -403,6 +403,9 @@ function buildInvoiceRow(invoice) {
         <a href="#" onclick="editInvoice(${invoice.inventoryInvoiceId}); return false;"><i class="fas fa-edit"></i> Edit Details</a>
     ` : '';
 
+    const ingredientNames = items.map(i => i.ingredientName || '').join(', ');
+    const vendorProductIds = items.map(i => i.vendorProductId || '').join(', ');
+
     return `
                     <tr>
                         <td>
@@ -414,6 +417,8 @@ function buildInvoiceRow(invoice) {
                         <td><i class="fas fa-truck"></i> ${vendorName}</td>
                         <td class="text-right">${formatCurrency(invoice.total)}</td>
                         <td class="text-center"><span class="status-badge good">${itemsCount}</span></td>
+                        <td class="hidden">${ingredientNames}</td>
+                        <td class="hidden">${vendorProductIds}</td>
                         <td>
                             <div class="dropdown">
                                 <button class="dropdown-toggle">
@@ -425,6 +430,7 @@ function buildInvoiceRow(invoice) {
                                 </div>
                             </div>
                         </td>
+                        
                     </tr>
                 `;
 }

@@ -35,7 +35,7 @@ function hasUnsavedChanges() {
 $(document).ready(function () {
     // Initialize select2 on #reportSelector
     $('#reportSelector').select2({
-        placeholder: '-- Select Report --',
+        placeholder: '-- Select Inventory --',
         width: '100%',
         minimumResultsForSearch: 10
     });
@@ -82,20 +82,20 @@ $(document).ready(function () {
 
                 if (report.isDraft) {
                     currentMode = 'INSERT';
-                    $('#insertReportBtn').show().prop('disabled', false);
-                    $('#updateClosingCountBtn').hide().prop('disabled', true);
+                    $('#saveInventoryBtn').show().prop('disabled', false);
+                    $('#updateInventoryBtn').hide().prop('disabled', true);
                     refreshInventorySuiteReportTable(report.startDate, report.endDate, true);
                 } else {
                     currentMode = 'UPDATE';
-                    $('#updateClosingCountBtn').show().prop('disabled', true);
-                    $('#insertReportBtn').hide();
+                    $('#updateInventoryBtn').show().prop('disabled', true);
+                    $('#saveInventoryBtn').hide();
                     refreshInventorySuiteReportTable(report.startDate, report.endDate, false);
                 }
             }
         } else {
             currentSelectedReportId = null;
-            $('#updateClosingCountBtn').hide().prop('disabled', true);
-            $('#insertReportBtn').hide();
+            $('#updateInventoryBtn').hide().prop('disabled', true);
+            $('#saveInventoryBtn').hide();
         }
     });
 
@@ -112,14 +112,14 @@ $(document).ready(function () {
         pendingClosingCounts = {};
         newReportClosingCounts = {};
         $('.cogs-report-table td.editable-closing').removeClass('modified-count');
-        $('#updateClosingCountBtn').prop('disabled', true);
+        $('#updateInventoryBtn').prop('disabled', true);
 
         // If discarding from a draft, remove the draft item from reportsList
         reportsList = reportsList.filter(r => !r.isDraft);
 
         if (pendingTargetReportId === 'add_report_modal') {
             pendingTargetReportId = null;
-            openAddReportModal();
+            openSaveReportModal();
             return;
         }
 
@@ -136,11 +136,11 @@ $(document).ready(function () {
                 currentEndDate = report.endDate;
                 currentMode = report.isDraft ? 'INSERT' : 'UPDATE';
                 if (currentMode === 'INSERT') {
-                    $('#insertReportBtn').show().prop('disabled', false);
-                    $('#updateClosingCountBtn').hide();
+                    $('#saveInventoryBtn').show().prop('disabled', false);
+                    $('#updateInventoryBtn').hide();
                 } else {
-                    $('#updateClosingCountBtn').show().prop('disabled', true);
-                    $('#insertReportBtn').hide();
+                    $('#updateInventoryBtn').show().prop('disabled', true);
+                    $('#saveInventoryBtn').hide();
                 }
                 refreshInventorySuiteReportTable(report.startDate, report.endDate, report.isDraft);
             }
@@ -148,7 +148,7 @@ $(document).ready(function () {
     });
 
     // Add Report modal triggers
-    function openAddReportModal() {
+    function openSaveReportModal() {
         const today = new Date();
         const last30Days = new Date();
         last30Days.setDate(today.getDate() - 29);
@@ -185,7 +185,7 @@ $(document).ready(function () {
             $('#startDateMinHint').hide();
         }
 
-        $('#saveReportBtn').prop('disabled', false).html('Add');
+        $('#saveInventoryBtn').prop('disabled', false).html('Save Inventory');
         openModal('addReportModal');
     }
 
@@ -200,7 +200,7 @@ $(document).ready(function () {
         }
     });
 
-    $('#openAddReportModalBtn').on('click', function () {
+    $('#openSaveReportModalBtn').on('click', function () {
         if ($(this).is(':disabled')) return;
 
         if (hasUnsavedChanges()) {
@@ -208,7 +208,7 @@ $(document).ready(function () {
             openModal('unsavedChangesModal');
             return;
         }
-        openAddReportModal();
+        openSaveReportModal();
     });
 
     // "Start" button inside Add Report modal
@@ -229,7 +229,7 @@ $(document).ready(function () {
 
         const minStartDateStr = formatToDateInputVal(lastEndDate);
         if (minStartDateStr && sDate < minStartDateStr) {
-            showNotification(`Start date cannot be before last report's end date (${safeFormatUS(lastEndDate)}).`, 'error');
+            showNotification(`Start date cannot be before last inventory's end date (${safeFormatUS(lastEndDate)}).`, 'error');
             return;
         }
 
@@ -253,7 +253,7 @@ $(document).ready(function () {
         const draftId = 'draft_' + Date.now();
         const draftReport = {
             id: draftId,
-            text: `New Report: ${safeFormatUS(sDate)} - ${safeFormatUS(eDate)} (Draft)`,
+            text: `New Inventory: ${safeFormatUS(sDate)} - ${safeFormatUS(eDate)} (Draft)`,
             startDate: safeFormatDash(sDate),
             endDate: safeFormatDash(eDate),
             isDraft: true
@@ -263,19 +263,19 @@ $(document).ready(function () {
         populateReportSelector(draftId);
 
         // Show Insert Report button, hide Update Report button
-        $('#insertReportBtn').show().prop('disabled', false);
-        $('#updateClosingCountBtn').hide().prop('disabled', true);
+        $('#saveInventoryBtn').show().prop('disabled', false);
+        $('#updateInventoryBtn').hide().prop('disabled', true);
 
         // Fetch ingredients for this date range with closing count inputs
         refreshInventorySuiteReportTable(startDate, currentEndDate, true);
     });
 
     // Insert Report button handler (calls AddInventorySuiteReport with all items)
-    $('#insertReportBtn').on('click', function () {
+    $('#saveInventoryBtn').on('click', function () {
         if ($(this).is(':disabled')) return;
 
         if (!startDate || !currentEndDate) {
-            showNotification('Invalid date range for report.', 'error');
+            showNotification('Invalid date range for inventory.', 'error');
             return;
         }
 
@@ -311,7 +311,7 @@ $(document).ready(function () {
         }));
 
         if (itemsPayload.length === 0) {
-            $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Report');
+            $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Inventory');
             showNotification('Please enter closing count for at least one ingredient.', 'warning');
             return;
         }
@@ -329,16 +329,16 @@ $(document).ready(function () {
             contentType: 'application/json',
             showMessage: false,
             onSuccess: function (response) {
-                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Report');
-                showNotification(response.responseMsg || 'Report created successfully.', 'success');
+                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Inventory');
+                showNotification(response.responseMsg || 'Inventory created successfully.', 'success');
 
                 // Remove draft from list
                 reportsList = reportsList.filter(r => !r.isDraft);
 
                 // Switch back to UPDATE mode for newly created report
                 currentMode = 'UPDATE';
-                $('#insertReportBtn').hide();
-                $('#updateClosingCountBtn').show().prop('disabled', true);
+                $('#saveInventoryBtn').hide();
+                $('#updateInventoryBtn').show().prop('disabled', true);
                 newReportClosingCounts = {};
                 pendingClosingCounts = {};
 
@@ -349,23 +349,22 @@ $(document).ready(function () {
                 loadInventorySuiteReports(newReportId);
             },
             onError: function (xhr) {
-                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Report');
-                console.error('Failed to insert inventory suite report:', xhr);
+                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Inventory');
                 const errorMsg = (xhr.responseJSON && xhr.responseJSON.responseMsg)
                     ? xhr.responseJSON.responseMsg
-                    : 'Failed to insert report.';
+                    : 'Failed to insert inventory.';
                 showNotification(errorMsg, 'error');
             }
         });
     });
 
     // Update closing count button handler
-    $('#updateClosingCountBtn').on('click', function () {
+    $('#updateInventoryBtn').on('click', function () {
         if ($(this).is(':disabled')) return;
 
         const suiteId = parseInt(currentSelectedReportId, 10);
         if (!suiteId || isNaN(suiteId)) {
-            showNotification('Please select a valid report first.', 'error');
+            showNotification('Please select a valid inventory first.', 'error');
             return;
         }
 
@@ -395,7 +394,7 @@ $(document).ready(function () {
             contentType: 'application/json',
             showMessage: false,
             onSuccess: function (response) {
-                $btn.html('<i class="fas fa-check-circle"></i> Update Report');
+                $btn.html('<i class="fas fa-check-circle"></i> Update Inventory');
 
                 // Update data-original-count to the new values
                 $('.cogs-report-table td.editable-closing').each(function () {
@@ -414,7 +413,7 @@ $(document).ready(function () {
                 refreshInventorySuiteReportTable(startDate, currentEndDate, false);
             },
             onError: function (xhr) {
-                $btn.prop('disabled', false).html('<i class="fas fa-check-circle"></i> Update Report');
+                $btn.prop('disabled', false).html('<i class="fas fa-check-circle"></i> Update Inventory');
                 console.error('Failed to update closing counts:', xhr);
                 const errorMsg = (xhr.responseJSON && xhr.responseJSON.responseMsg)
                     ? xhr.responseJSON.responseMsg
@@ -509,7 +508,7 @@ function formatToDateInputVal(dateVal) {
     return `${y}-${m}-${day}`;
 }
 
-function showTableLoading(message = 'Loading inventory report...') {
+function showTableLoading(message = 'Loading inventory...') {
     $('#loadingOverlayText').text(message);
     $('#tableLoadingOverlay').css('display', 'flex');
 }
@@ -519,10 +518,10 @@ function hideTableLoading() {
 }
 
 function loadInventorySuiteReports(preselectReportId = null) {
-    showTableLoading('Loading reports...');
+    showTableLoading('Loading inventory...');
     ajaxRequest({
         url: '/api/InventorySuiteReportApi/GetInventorySuiteReports',
-        method: 'POST',
+        method: 'GET',
         contentType: 'application/json',
         isQuery: false,
         showMessage: false,
@@ -535,7 +534,7 @@ function loadInventorySuiteReports(preselectReportId = null) {
                 : null;
 
             // Enable Add Report button now that API response is received
-            $('#openAddReportModalBtn').prop('disabled', false);
+            $('#openSaveReportModalBtn').prop('disabled', false);
 
             reportsList = rawReports.map(r => {
                 const reportId = (r.inventorySuiteId ?? r.InventorySuiteId ?? '').toString();
@@ -547,7 +546,7 @@ function loadInventorySuiteReports(preselectReportId = null) {
 
                 return {
                     id: reportId,
-                    text: `Report: ${displayStart} - ${displayEnd}`,
+                    text: `Inventory: ${displayStart} - ${displayEnd}`,
                     startDate: safeFormatDash(rawStart),
                     endDate: safeFormatDash(rawEnd),
                     isDraft: false
@@ -562,8 +561,8 @@ function loadInventorySuiteReports(preselectReportId = null) {
                 }
 
                 currentMode = 'UPDATE';
-                $('#insertReportBtn').hide();
-                $('#updateClosingCountBtn').show().prop('disabled', true);
+                $('#saveInventoryBtn').hide();
+                $('#updateInventoryBtn').show().prop('disabled', true);
 
                 populateReportSelector(targetId);
 
@@ -578,22 +577,21 @@ function loadInventorySuiteReports(preselectReportId = null) {
             } else {
                 hideTableLoading();
                 populateReportSelector(null);
-                $('#updateClosingCountBtn').hide().prop('disabled', true);
-                $('#insertReportBtn').hide();
+                $('#updateInventoryBtn').hide().prop('disabled', true);
+                $('#saveInventoryBtn').hide();
                 const tbody = $('.cogs-report-table tbody');
                 tbody.empty();
-                tbody.append('<tr><td colspan="10" class="text-center">No reports found. Please click "Add Report" to create a report.</td></tr>');
+                tbody.append('<tr><td colspan="10" class="text-center">No inventory found. Please click "Start Inventory" to create a inventory.</td></tr>');
             }
         },
         onError: function (xhr) {
             hideTableLoading();
             // Enable button so user can still try adding a report if needed
-            $('#openAddReportModalBtn').prop('disabled', false);
-            console.error('Failed to load inventory suite reports:', xhr);
-            showNotification('Failed to load reports.', 'error');
+            $('#openSaveReportModalBtn').prop('disabled', false);
+            showNotification('Failed to load inventory.', 'error');
             const tbody = $('.cogs-report-table tbody');
             tbody.empty();
-            tbody.append('<tr><td colspan="10" class="text-center">Failed to load reports. Please refresh the page.</td></tr>');
+            tbody.append('<tr><td colspan="10" class="text-center">Failed to load inventory. Please refresh the page.</td></tr>');
         }
     });
 }
@@ -601,7 +599,7 @@ function loadInventorySuiteReports(preselectReportId = null) {
 function populateReportSelector(selectedReportId = null) {
     const $selector = $('#reportSelector');
     $selector.empty();
-    $selector.append(new Option('-- Select Report --', ''));
+    $selector.append(new Option('-- Select Inventory --', ''));
 
     reportsList.forEach(report => {
         const isSelected = report.id === selectedReportId;
@@ -624,7 +622,7 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
         return;
     }
 
-    showTableLoading('Loading inventory report...');
+    showTableLoading('Loading inventory...');
 
     // If already initialized, destroy BEFORE touching the DOM
     if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
@@ -636,7 +634,7 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
         <tr id="reportLoadingRow">
             <td colspan="10" class="text-center" style="padding: 48px 16px; color: #6b7280;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: #f08d11; margin-bottom: 12px; display: block;"></i>
-                <span style="font-size: 14px; font-weight: 500;">Loading inventory report...</span>
+                <span style="font-size: 14px; font-weight: 500;">Loading inventory...</span>
             </td>
         </tr>
     `);
@@ -663,11 +661,11 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
             loadedReportItems = items;
 
             if (isNewReport) {
-                $('#insertReportBtn').show().prop('disabled', false);
-                $('#updateClosingCountBtn').hide();
+                $('#saveInventoryBtn').show().prop('disabled', false);
+                $('#updateInventoryBtn').hide();
             } else {
-                $('#updateClosingCountBtn').show().prop('disabled', true);
-                $('#insertReportBtn').hide();
+                $('#updateInventoryBtn').show().prop('disabled', true);
+                $('#saveInventoryBtn').hide();
             }
 
             // Clean up tbody
@@ -764,11 +762,11 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
         },
         onError: function (xhr, status, error) {
             hideTableLoading();
-            console.error('Failed to fetch Inventory report:', error);
-            showNotification('Failed to fetch Inventory report.', 'error');
+            console.error('Failed to fetch Inventory:', error);
+            showNotification('Failed to fetch Inventory.', 'error');
             const tbody = $('.cogs-report-table tbody');
             tbody.empty();
-            tbody.append('<tr><td colspan="10" class="text-center">Failed to load report. Please try again.</td></tr>');
+            tbody.append('<tr><td colspan="10" class="text-center">Failed to load inventory. Please try again.</td></tr>');
             resetFooterValues();
             initDataTable();
         }
@@ -861,7 +859,7 @@ function initDataTable() {
                 className: 'btn btn-primary',
                 orientation: 'landscape',
                 pageSize: 'A4',
-                title: 'Inventory Report',
+                title: 'Inventory',
                 footer: true,
                 exportOptions: {
                     columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -1044,7 +1042,7 @@ function makeClosingCountEditable() {
 
             // Enable button ONLY if there are modified counts, else keep disabled
             const hasChanges = Object.keys(pendingClosingCounts).length > 0;
-            $('#updateClosingCountBtn').prop('disabled', !hasChanges);
+            $('#updateInventoryBtn').prop('disabled', !hasChanges);
 
             // Recalculate row COGS
             const $row = $closingCountTd.closest('tr');

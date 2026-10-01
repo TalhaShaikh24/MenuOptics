@@ -185,7 +185,6 @@ app.UseCors("AllowAll");       // Must be before UseStaticFiles so /uploads/ ima
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseRequestId();
 
 app.UseAuthentication();
 app.UseMiddleware<ActivityLogMiddleware>();

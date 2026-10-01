@@ -278,7 +278,7 @@ async function exportAiInsightsPdf(reportData) {
                     body: [
                         [
                             { text: 'Health Score', bold: true, fillColor: '#f9fafb' },
-                            { text: 'Est. Monthly Profit Uplift', bold: true, fillColor: '#f9fafb' },
+                            { text: 'Potential Monthly Increase', bold: true, fillColor: '#f9fafb' },
                             { text: 'Average Food Cost %', bold: true, fillColor: '#f9fafb' },
                             { text: 'Analyzed Items', bold: true, fillColor: '#f9fafb' }
                         ],

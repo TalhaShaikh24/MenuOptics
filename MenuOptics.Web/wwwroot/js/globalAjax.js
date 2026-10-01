@@ -128,7 +128,7 @@ function executeAjaxRequest({
         error: function (xhr, status, error) {
             const statusCode = xhr.status;
             let errorMsg = "An unexpected error occurred";
-
+            debugger
             try {
                 if (xhr.responseJSON) {
                     errorMsg = xhr.responseJSON.responseMsg || xhr.responseJSON.error || JSON.stringify(xhr.responseJSON);
@@ -142,17 +142,17 @@ function executeAjaxRequest({
             }
 
             // ── 401: Session / Token expired — auto logout ─────────────────
-            if (statusCode === 401) {
+            if (statusCode === 401 && errorMsg.includes("Invalid password")) {
                 // Guard against multiple concurrent 401s triggering duplicate redirects
                 if (window._sessionExpiredHandled) return;
                 window._sessionExpiredHandled = true;
+
 
                 showNotification('Your session has expired. Please log in again.', 'error');
 
                 setTimeout(function () {
                     window.location.href = '/User/login';
                 }, 2500);
-
                 onError(xhr, status, error);
                 return;
             }

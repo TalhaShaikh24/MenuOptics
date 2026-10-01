@@ -5,7 +5,7 @@ namespace MenuOptics.Services
 {
     public interface IAuthService
     {
-        Task<ResponseDto> LoginAsync(LoginDto model, string requestId);
+        Task<ResponseDto> LoginAsync(LoginDto model, string requestId, string? ipAddress);
         Task<ResponseDto> LogoutAsync();
         (string SessionId, string? Url) CreateCheckoutSession(string? plan, int userId);
         Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model);
