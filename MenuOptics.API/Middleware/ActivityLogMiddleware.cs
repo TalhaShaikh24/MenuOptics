@@ -79,6 +79,7 @@ namespace MenuOptics.API.Middleware
             // =========================================================
 
             var requestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
+            var ipAddress = BrowserRequestHeaders.GetClientIpAddress(context);
 
             // Use format: "HTTP_METHOD ActionName" e.g. "POST CreateCategory"
             var actionMethodName = controllerAction?.MethodInfo?.Name;
@@ -225,7 +226,6 @@ namespace MenuOptics.API.Middleware
         {
             var userIdValue = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-
             if (int.TryParse(
                 userIdValue,
                 out var userId))
@@ -233,7 +233,7 @@ namespace MenuOptics.API.Middleware
                 return userId;
             }
 
-            return context.Connection.RemoteIpAddress?.ToString();
+            return null;
         }
 
        

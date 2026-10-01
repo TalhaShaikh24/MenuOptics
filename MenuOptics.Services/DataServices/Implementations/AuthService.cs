@@ -117,7 +117,7 @@ namespace MenuOptics.Services
                 }
                 if (user.Roles?.Contains(Role.Restaurant.ToString()) == true || user.Roles?.Contains(Role.Admin.ToString()) == true)
                 {
-                    await _activityLog.LogAsync(user.UserId, "Login", payload,
+                    await _activityLog.LogAsync(user.UserId,requestId , "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success", ipAddress);
                 }
 
