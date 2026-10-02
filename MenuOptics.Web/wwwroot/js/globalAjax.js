@@ -142,17 +142,18 @@ function executeAjaxRequest({
             }
 
             // ── 401: Session / Token expired — auto logout ─────────────────
-            if (statusCode === 401 && errorMsg.includes("Invalid password")) {
+            const isLoginRequest = (url && url.toLowerCase().includes('/login')) || 
+                                   (window.location.pathname.toLowerCase().includes('/user/login'));
+            if (statusCode === 401 && !isLoginRequest) {
                 // Guard against multiple concurrent 401s triggering duplicate redirects
                 if (window._sessionExpiredHandled) return;
                 window._sessionExpiredHandled = true;
 
-
                 showNotification('Your session has expired. Please log in again.', 'error');
 
                 setTimeout(function () {
-                    window.location.href = '/User/login';
-                }, 2500);
+                    window.location.href = '/User/Login?sessionExpired=true';
+                }, 2000);
                 onError(xhr, status, error);
                 return;
             }

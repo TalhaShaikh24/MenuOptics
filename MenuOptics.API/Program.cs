@@ -12,9 +12,18 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.HttpOverrides;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure forwarded headers to capture client IP behind reverse proxy / web proxy
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Register DataProtection with identical application name so the Web project can decrypt the auth cookie
 builder.Services.AddDataProtection()
@@ -71,6 +80,8 @@ builder.Services.AddScoped<IMenuAiAnalysisService, MenuAiAnalysisService>();
 // 1. Read JWT settings from configuration (appsettings.json) and create a key for token validation
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = Encoding.UTF8.GetBytes(jwtSection["Key"]);
+var expiryHours = double.TryParse(jwtSection["ExpiryInHours"], out var hours) && hours > 0 ? hours : 1;
+var cookieExpiry = TimeSpan.FromHours(expiryHours);
 
 // Configure Cookie Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -82,7 +93,19 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        options.ExpireTimeSpan = cookieExpiry;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync("{\"status\":401,\"responseMsg\":\"Your session has expired. Please log in again.\",\"data\":null}");
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync("{\"status\":403,\"responseMsg\":\"Forbidden. Access denied.\",\"data\":null}");
+        };
     })
 // 2. JWT Bearer configure karein
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
@@ -164,6 +187,8 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

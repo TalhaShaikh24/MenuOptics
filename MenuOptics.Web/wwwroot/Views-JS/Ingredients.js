@@ -162,6 +162,20 @@ $(document).ready(function () {
         });
     });
 
+    // ── Import Ingredient Prices (CSV) ───────────────────────────────────────
+    $('#importIngredientPricesBtn').on('click', function () {
+        openModal('importIngredientPricesModal');
+    });
+
+    $('#downloadSamplePricesBtn').on('click', function (e) {
+        e.preventDefault();
+        downloadSampleIngredientPricesFile();
+    });
+
+    $('#importIngredientPricesSubmitBtn').on('click', function () {
+        submitImportIngredientPrices();
+    });
+
     // ── Initialise ────────────────────────────────────────────────────────────
     loadPrivateVendors();
     refreshVendors();
@@ -625,3 +639,86 @@ function refreshVendors() {
         }
     });
 }
+
+function downloadSampleIngredientPricesFile() {
+    ajaxRequest({
+        url: '/api/IngredientApi/GetAllActiveInactiveIngredients',
+        method: 'GET',
+        showMessage: false,
+        onSuccess: function (response) {
+            const ingredients = (response && response.data) ? response.data : [];
+            // Only export ingredients where PrivateVendorId is not null
+            const privateIngredients = ingredients.filter(i => i.privateVendorId !== null && i.privateVendorId !== undefined && Number(i.privateVendorId) > 0);
+
+            if (privateIngredients.length === 0) {
+                showNotification('No private vendor ingredients available to update.', 'error');
+                return;
+            }
+
+            let csvContent = "Ingredient Name,Ingredient ID,Price\n";
+            privateIngredients.forEach(item => {
+                const name = item.name ? `"${item.name.toString().replace(/"/g, '""')}"` : '""';
+                const id = item.ingredientId !== undefined ? item.ingredientId : item.id;
+                const price = (item.price !== undefined && item.price !== null) ? item.price : '';
+                csvContent += `${name},${id},${price}\n`;
+            });
+
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Ingredient_Prices_Sample_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to fetch ingredients for sample file:', error);
+            showNotification('Failed to download sample file.', 'error');
+        }
+    });
+}
+
+function submitImportIngredientPrices() {
+    const fileInput = $('#ingredientPricesFile')[0];
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showNotification('Please select a CSV file to upload.', 'error');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showNotification('Please upload a valid CSV file (.csv).', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const importBtn = $('#importIngredientPricesSubmitBtn');
+    const originalText = importBtn.html();
+    importBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Importing...');
+
+    ajaxRequest({
+        url: '/api/IngredientApi/ImportIngredientPrices',
+        method: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        onSuccess: function (response) {
+            importBtn.prop('disabled', false).html(originalText);
+            $('#importIngredientPricesForm')[0].reset();
+            closeModal('importIngredientPricesModal');
+            showNotification(response?.responseMsg || 'Ingredient prices updated successfully!', 'success');
+            if (table) {
+                table.ajax.reload(null, false);
+            }
+        },
+        onError: function (xhr, status, error) {
+            importBtn.prop('disabled', false).html(originalText);
+            console.error('Failed to import ingredient prices:', error);
+        }
+    });
+}

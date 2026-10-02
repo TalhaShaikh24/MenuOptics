@@ -45,6 +45,30 @@ namespace MenuOptics.Controllers.Api
             };
         }
 
+        [AllowAnonymous]
+        [HttpGet("GetMyIp")]
+        public IActionResult GetMyIp()
+        {
+            var detectedIp = BrowserRequestHeaders.GetClientIpAddress(HttpContext);
+            var headers = Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString());
+            return Ok(new
+            {
+                detectedIp,
+                remoteIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                headers
+            });
+        }
+
+        [HttpGet("CheckSession")]
+        public IActionResult CheckSession()
+        {
+            return Ok(new ResponseDto
+            {
+                Status = 200,
+                ResponseMsg = "Session is valid."
+            });
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpGet("GetUserStats")]
         public async Task<IActionResult> GetUserStats()

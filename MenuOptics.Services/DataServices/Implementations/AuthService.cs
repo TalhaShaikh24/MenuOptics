@@ -517,8 +517,7 @@ namespace MenuOptics.Services
 
             var authProperties = new AuthenticationProperties
             {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+                IsPersistent = true
             };
 
             await _httpContextAccessor.HttpContext!.SignInAsync(

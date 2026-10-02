@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = "_AuthLayout";
     ViewData["Title"] = "Login";
 }
@@ -260,7 +260,6 @@
 </div>
 
 @section Scripts {
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="~/js/globalajax.js"></script>
+    <script src="~/js/globalajax.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/views-js/login.js?v=@DateTime.Now.Ticks"></script>
 }

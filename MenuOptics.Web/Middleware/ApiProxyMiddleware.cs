@@ -72,6 +72,28 @@ namespace MenuOptics.Web.Middleware
                     requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
                 }
 
+                // Forward real client IP from browser/user to API using custom headers
+                // Custom headers like X-Original-Client-IP will NEVER be overwritten by Cloudflare or IIS reverse proxies
+                var clientIp = GetClientIp(context);
+                if (!string.IsNullOrWhiteSpace(clientIp))
+                {
+                    requestMessage.Headers.Remove("X-Original-Client-IP");
+                    requestMessage.Headers.TryAddWithoutValidation("X-Original-Client-IP", clientIp);
+
+                    requestMessage.Headers.Remove("X-Browser-IP");
+                    requestMessage.Headers.TryAddWithoutValidation("X-Browser-IP", clientIp);
+
+                    requestMessage.Headers.Remove("X-Forwarded-For");
+                    requestMessage.Headers.TryAddWithoutValidation("X-Forwarded-For", clientIp);
+
+                    requestMessage.Headers.Remove("X-Real-IP");
+                    requestMessage.Headers.TryAddWithoutValidation("X-Real-IP", clientIp);
+                }
+
+                // Forward scheme / protocol (http vs https)
+                requestMessage.Headers.Remove("X-Forwarded-Proto");
+                requestMessage.Headers.TryAddWithoutValidation("X-Forwarded-Proto", context.Request.Scheme);
+
                 try
                 {
                     var responseMessage = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
@@ -112,6 +134,57 @@ namespace MenuOptics.Web.Middleware
             }
 
             await _next(context);
+        }
+
+        private static string? GetClientIp(HttpContext context)
+        {
+            // 1. Cloudflare header
+            var cfIp = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(cfIp))
+                return CleanIp(cfIp);
+
+            // 2. True-Client-IP
+            var trueClientIp = context.Request.Headers["True-Client-IP"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(trueClientIp))
+                return CleanIp(trueClientIp);
+
+            // 3. X-Real-IP
+            var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(realIp))
+                return CleanIp(realIp);
+
+            // 4. X-Forwarded-For (take the first IP in the list)
+            var forwarded = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(forwarded))
+            {
+                var firstIp = forwarded.Split(',')[0].Trim();
+                if (!string.IsNullOrWhiteSpace(firstIp))
+                    return CleanIp(firstIp);
+            }
+
+            // 5. RemoteIpAddress fallback
+            var remoteIp = context.Connection.RemoteIpAddress;
+            if (remoteIp != null)
+            {
+                if (remoteIp.IsIPv4MappedToIPv6)
+                    return CleanIp(remoteIp.MapToIPv4().ToString());
+                return CleanIp(remoteIp.ToString());
+            }
+
+            return null;
+        }
+
+        private static string CleanIp(string ip)
+        {
+            ip = ip.Trim();
+            if (ip == "::1")
+                return "127.0.0.1";
+            // Handle IPv4:port format (e.g. 192.168.1.1:5000)
+            if (!ip.StartsWith("[") && ip.Contains(':') && ip.IndexOf(':') == ip.LastIndexOf(':'))
+            {
+                ip = ip.Substring(0, ip.IndexOf(':'));
+            }
+            return ip;
         }
     }
 

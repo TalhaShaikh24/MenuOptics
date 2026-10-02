@@ -19,6 +19,12 @@ $(document).ready(function () {
         $('#loginIdentifier').val(decodeURIComponent(email)).focus();
     }
 
+    if (urlParams.get('sessionExpired') === 'true') {
+        showNotification('Your session has expired. Please log in again.', 'error');
+        // Clean URL so refresh does not keep showing the alert
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     updateCompleteSetupState();
 
     // ──────────────────────────────────────────────────────────────

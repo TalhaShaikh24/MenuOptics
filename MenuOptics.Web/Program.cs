@@ -6,7 +6,17 @@ using Microsoft.AspNetCore.DataProtection;
 using MenuOptics.Middleware;
 using MenuOptics.Web.Middleware;
 
+using Microsoft.AspNetCore.HttpOverrides;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure forwarded headers to capture client IP behind reverse proxy / IIS / Cloudflare
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Register DataProtection with matching application name to decrypt the auth cookie
 builder.Services.AddDataProtection()
@@ -25,22 +35,30 @@ builder.Services.AddDataProtection()
 builder.Services.AddHttpClient("ApiClient", client =>
 {
     // Configuration here if needed, e.g. Timeout
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AllowAutoRedirect = false
 });
 
 // Configure Cookie Authentication to match API's cookie setup
+var expiryHours = double.TryParse(builder.Configuration["Jwt:ExpiryInHours"], out var hours) && hours > 0 ? hours : 1;
+var cookieExpiry = TimeSpan.FromHours(expiryHours);
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/User/Login";
+        options.LoginPath = "/User/Login?sessionExpired=true";
         options.AccessDeniedPath = "/User/AccessDenied";
         options.Cookie.Name = "RestaurantAuthCookie";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        options.ExpireTimeSpan = cookieExpiry;
     });
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

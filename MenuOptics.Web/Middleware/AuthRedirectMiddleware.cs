@@ -49,7 +49,7 @@ namespace MenuOptics.Middleware
 
             if (!isApi && !isStatic && !isPublic && !context.User.Identity!.IsAuthenticated)
             {
-                context.Response.Redirect("/User/Login");
+                context.Response.Redirect("/User/Login?sessionExpired=true");
                 return;
             }
 
