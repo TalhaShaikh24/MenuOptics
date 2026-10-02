@@ -128,6 +128,133 @@ namespace MenuOptics.Services
             }
         }
 
+        public async Task<(int StatusCode, object Body)> ImportIngredientPricesAsync(IFormFile file, int currentUserId, int actualUserId)
+        {
+            var responseDto = new ResponseDto();
+
+            if (file == null || file.Length == 0)
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = "No file uploaded.";
+                return (400, responseDto);
+            }
+
+            if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = "Invalid file format. Please upload a CSV file (.csv).";
+                return (400, responseDto);
+            }
+
+            using var connection = _context.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                using var reader = new StreamReader(file.OpenReadStream(), Encoding.UTF8);
+
+                string? headerLine = await reader.ReadLineAsync();
+
+                if (string.IsNullOrWhiteSpace(headerLine))
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "The uploaded CSV file is empty.";
+                    return (400, responseDto);
+                }
+
+                var table = new DataTable();
+
+                table.Columns.Add("IngredientId", typeof(int));
+                table.Columns.Add("Price", typeof(decimal));
+
+                string? line;
+                int rowNumber = 1;
+
+                while ((line = await reader.ReadLineAsync()) != null)
+                {
+                    rowNumber++;
+
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    var cols = ParseCsvLine(line);
+
+                    if (cols.Count < 3)
+                        continue;
+
+                    if (!int.TryParse(cols[1], out int ingredientId) || ingredientId <= 0)
+                        continue;
+
+                    string priceStr = cols[2];
+
+                    if (string.IsNullOrWhiteSpace(priceStr))
+                        continue;
+
+                    decimal price;
+
+                    if (!decimal.TryParse(
+                            priceStr,
+                            NumberStyles.Any,
+                            CultureInfo.InvariantCulture,
+                            out price) &&
+                        !decimal.TryParse(priceStr, out price))
+                    {
+                        continue;
+                    }
+
+                    if (price < 0)
+                        continue;
+
+                    table.Rows.Add(ingredientId, price);
+                }
+
+                if (table.Rows.Count == 0)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "No valid ingredient prices were found in the CSV.";
+                    return (400, responseDto);
+                }
+
+                var parameters = new DynamicParameters();
+
+                parameters.Add(
+                    "@IngredientPrices",
+                    table.AsTableValuedParameter("dbo.IngredientPriceType")
+                );
+
+                parameters.Add("@RestaurantId", currentUserId);
+                parameters.Add("@Action", currentUserId);
+
+                int updatedCount = await connection.ExecuteAsync(
+                    "sp_IngredientCRUD",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg =
+                    $"Successfully updated {table.Rows.Count} ingredient price(s).";
+
+                return (200, responseDto);
+            }
+            catch (SqlException sqlEx)
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = sqlEx.Message;
+                return (400, responseDto);
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = ex.Message;
+                return (500, responseDto);
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+
         public async Task<(int StatusCode, object Body)> GetIngredientAsync(int id)
         {
             var ResponseDto = new ResponseDto();
@@ -536,133 +663,6 @@ namespace MenuOptics.Services
                 return (200, new DataTablesResponseDto<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
             }
             return (500, new ResponseDto { Status = 500, ResponseMsg = $"{ex.Message}" });
-        }
-
-        public async Task<(int StatusCode, object Body)> ImportIngredientPricesAsync(IFormFile file, int currentUserId, int actualUserId)
-        {
-            var responseDto = new ResponseDto();
-
-            if (file == null || file.Length == 0)
-            {
-                responseDto.Status = 400;
-                responseDto.ResponseMsg = "No file uploaded.";
-                return (400, responseDto);
-            }
-
-            if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
-            {
-                responseDto.Status = 400;
-                responseDto.ResponseMsg = "Invalid file format. Please upload a CSV file (.csv).";
-                return (400, responseDto);
-            }
-
-            using var connection = _context.CreateConnection();
-            connection.Open();
-
-            try
-            {
-                using var reader = new StreamReader(file.OpenReadStream(), Encoding.UTF8);
-
-                string? headerLine = await reader.ReadLineAsync();
-
-                if (string.IsNullOrWhiteSpace(headerLine))
-                {
-                    responseDto.Status = 400;
-                    responseDto.ResponseMsg = "The uploaded CSV file is empty.";
-                    return (400, responseDto);
-                }
-
-                var table = new DataTable();
-
-                table.Columns.Add("IngredientId", typeof(int));
-                table.Columns.Add("Price", typeof(decimal));
-
-                string? line;
-                int rowNumber = 1;
-
-                while ((line = await reader.ReadLineAsync()) != null)
-                {
-                    rowNumber++;
-
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
-
-                    var cols = ParseCsvLine(line);
-
-                    if (cols.Count < 3)
-                        continue;
-
-                    if (!int.TryParse(cols[1], out int ingredientId) || ingredientId <= 0)
-                        continue;
-
-                    string priceStr = cols[2];
-
-                    if (string.IsNullOrWhiteSpace(priceStr))
-                        continue;
-
-                    decimal price;
-
-                    if (!decimal.TryParse(
-                            priceStr,
-                            NumberStyles.Any,
-                            CultureInfo.InvariantCulture,
-                            out price) &&
-                        !decimal.TryParse(priceStr, out price))
-                    {
-                        continue;
-                    }
-
-                    if (price < 0)
-                        continue;
-
-                    table.Rows.Add(ingredientId, price);
-                }
-
-                if (table.Rows.Count == 0)
-                {
-                    responseDto.Status = 400;
-                    responseDto.ResponseMsg = "No valid ingredient prices were found in the CSV.";
-                    return (400, responseDto);
-                }
-
-                var parameters = new DynamicParameters();
-
-                parameters.Add(
-                    "@IngredientPrices",
-                    table.AsTableValuedParameter("dbo.IngredientPriceType")
-                );
-
-                parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@Action", currentUserId);
-
-                int updatedCount = await connection.ExecuteAsync(
-                    "sp_IngredientCRUD",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
-
-                responseDto.Status = 200;
-                responseDto.ResponseMsg =
-                    $"Successfully updated {table.Rows.Count} ingredient price(s).";
-
-                return (200, responseDto);
-            }
-            catch (SqlException sqlEx)
-            {
-                responseDto.Status = 400;
-                responseDto.ResponseMsg = sqlEx.Message;
-                return (400, responseDto);
-            }
-            catch (Exception ex)
-            {
-                responseDto.Status = 500;
-                responseDto.ResponseMsg = ex.Message;
-                return (500, responseDto);
-            }
-            finally
-            {
-                connection.Close();
-            }
         }
 
         private static List<string> ParseCsvLine(string line)
