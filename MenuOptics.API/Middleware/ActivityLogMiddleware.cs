@@ -61,7 +61,22 @@ namespace MenuOptics.API.Middleware
             }
 
             // =========================================================
-            // 2. SKIP GET / HEAD / OPTIONS — only log mutating requests
+            // 2. SKIP VENDOR USERS
+            // =========================================================
+
+            var userRole = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (string.Equals(
+                    userRole,
+                    "VENDOR",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
+            // =========================================================
+            // 3. SKIP GET / HEAD / OPTIONS — only log mutating requests
             // =========================================================
 
             var httpMethod = context.Request.Method.ToUpperInvariant();
@@ -75,7 +90,7 @@ namespace MenuOptics.API.Middleware
             }
 
             // =========================================================
-            // 3. REQUEST INFORMATION
+            // 4. REQUEST INFORMATION
             // =========================================================
 
             var requestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
@@ -91,7 +106,7 @@ namespace MenuOptics.API.Middleware
             string? requestBody = null;
 
             // =========================================================
-            // 3. READ REQUEST BODY
+            // 6. READ REQUEST BODY
             // =========================================================
 
             if (context.Request.ContentLength > 0 &&
@@ -112,7 +127,7 @@ namespace MenuOptics.API.Middleware
             }
 
             // =========================================================
-            // 4. CAPTURE RESPONSE
+            // 6. CAPTURE RESPONSE
             // =========================================================
 
             var originalResponseBody = context.Response.Body;
@@ -126,7 +141,7 @@ namespace MenuOptics.API.Middleware
             try
             {
                 // =====================================================
-                // 5. RUN ACTUAL APPLICATION
+                // 7. RUN ACTUAL APPLICATION
                 // =====================================================
 
                 await _next(context);
@@ -134,7 +149,7 @@ namespace MenuOptics.API.Middleware
                 stopwatch.Stop();
 
                 // =====================================================
-                // 6. READ RESPONSE
+                // 8. READ RESPONSE
                 // =====================================================
 
                 context.Response.Body.Position = 0;
@@ -157,13 +172,13 @@ namespace MenuOptics.API.Middleware
                 }
 
                 // =====================================================
-                // 7. GET USER ID & IP ADDRESS
+                // 9. GET USER ID & IP ADDRESS
                 // =====================================================
 
                 var userId = GetUserId(context);
 
                 // =====================================================
-                // 8. DETERMINE LOG LEVEL
+                // 10. DETERMINE LOG LEVEL
                 // =====================================================
 
                 var statusCode = context.Response.StatusCode;
@@ -172,7 +187,7 @@ namespace MenuOptics.API.Middleware
                     : "Error";
 
                 // =====================================================
-                // 9. SAVE ACTIVITY LOG
+                // 11. SAVE ACTIVITY LOG
                 // =====================================================
 
                 await activityLogService.LogAsync(
@@ -191,7 +206,7 @@ namespace MenuOptics.API.Middleware
                 var userId = GetUserId(context);
 
                 // =====================================================
-                // 10. LOG EXCEPTION
+                // 12. LOG EXCEPTION
                 // =====================================================
 
                 await activityLogService.LogAsync(
@@ -208,7 +223,7 @@ namespace MenuOptics.API.Middleware
             finally
             {
                 // =====================================================
-                // 11. SEND ORIGINAL RESPONSE TO CLIENT
+                // 13. SEND ORIGINAL RESPONSE TO CLIENT
                 // =====================================================
 
                 context.Response.Body.Position = 0;
