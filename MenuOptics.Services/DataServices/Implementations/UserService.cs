@@ -434,7 +434,7 @@ namespace MenuOptics.Services
             try
             {
                 // Restaurant owners who are members (IsParent=false) cannot create sub-members
-                if (callerRole.Contains(Role.Restaurant.ToString()) && isParentClaim != "true")
+                if (callerRole.Contains(Role.Restaurant.ToString()) && string.Equals(isParentClaim, "false", StringComparison.OrdinalIgnoreCase))
                 {
                     ResponseDto.Status = 403;
                     ResponseDto.ResponseMsg = "Only the parent restaurant account can add members.";

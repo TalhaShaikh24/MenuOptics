@@ -5,7 +5,7 @@ using System.Security.Claims;
 
 namespace MenuOptics.Controllers
 {
-    public class Restaurant : Controller
+    public class RestaurantController : Controller
     {
         [AuthorizeAdmin]
         public IActionResult Index()
@@ -22,7 +22,7 @@ namespace MenuOptics.Controllers
         {
             // Only the parent account (IsParent = true) can manage members
             var isParentClaim = User.FindFirst("IsParent")?.Value;
-            if (isParentClaim != "true")
+            if (string.Equals(isParentClaim, "false",StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction("AccessDenied", "User");
             }
