@@ -6,7 +6,7 @@ namespace MenuOptics.Controllers
 {
     public class MenuEngineeringInsightsController : Controller
     {
-        [AuthorizeAdmin]
+        [AuthorizeRestaurant]
         public IActionResult Index()
         {
             return View();

@@ -7,7 +7,7 @@ namespace MenuOptics.Controllers
     public class SalesController : Controller
     {
         
-        [AuthorizeAdmin]
+        [AuthorizeRestaurant]
         public IActionResult Index()
         {
             return View();

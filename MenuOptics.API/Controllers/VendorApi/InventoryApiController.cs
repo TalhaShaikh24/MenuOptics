@@ -27,8 +27,6 @@ namespace MenuOptics.Controllers.VendorApi
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        private string RequestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
-
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
@@ -43,12 +41,12 @@ namespace MenuOptics.Controllers.VendorApi
                     ResponseMsg = "Invalid input.",
                     Data = ModelState
                 };
-                await _vendorActivityLog.LogAsync(CurrentUserId, RequestId, "POST /api/InventoryApi/InvoiceInventory",
+                await _vendorActivityLog.LogAsync(CurrentUserId, "POST /api/InventoryApi/InvoiceInventory",
                     System.Text.Json.JsonSerializer.Serialize(model), System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }
 
-            var result = await _inventoryService.InvoiceInventoryAsync(model, CurrentUserId, RequestId);
+            var result = await _inventoryService.InvoiceInventoryAsync(model, CurrentUserId);
             return StatusCode(result.Status, result);
         }
     }

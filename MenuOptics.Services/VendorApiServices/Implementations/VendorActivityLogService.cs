@@ -16,7 +16,6 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
 
         public async Task LogAsync(
             int? vendorId,
-            string requestId,
             string requestType,
             string? payload,
             string? ResponseDto,
@@ -30,7 +29,6 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@VendorId", vendorId);
-                parameters.Add("@RequestId", requestId);
                 parameters.Add("@RequestType", requestType);
                 parameters.Add("@Payload", payload);
                 parameters.Add("@Response", ResponseDto);

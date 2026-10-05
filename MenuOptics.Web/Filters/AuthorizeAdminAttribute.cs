@@ -24,19 +24,12 @@ namespace MenuOptics.Filters
                 .Select(c => c.Value)
                 .ToList();
             
-            // ✅ Check for either Admin or Restaurant role
-            if (!roles.Contains("Admin") && !roles.Contains("Restaurant"))
+            // ✅ Check for Admin role
+            if (!roles.Contains("Admin"))
             {
-                if (roles.Contains("Vendor"))
-                {
-                    context.HttpContext.Response.Redirect("/Ingredient/VendorIngredients");
-                    context.Result = new RedirectResult("/Ingredient/VendorIngredients");
-                    return;
-                }
-
                 context.HttpContext.Response.Redirect("/User/AccessDenied");
                 context.Result = new RedirectResult("/User/AccessDenied");
-                context.HttpContext.Items["Error"] = "Unauthorized access. Admin or Restaurant role required.";
+                context.HttpContext.Items["Error"] = "Unauthorized access. Admin role required.";
                 return;
             }
 

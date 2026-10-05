@@ -20,7 +20,7 @@ namespace MenuOptics.Services.VendorApi
 
         }
 
-        public async Task<ResponseDto> InvoiceInventoryAsync(InvoiceInventoryRequestDto model, int currentUserId, string requestId)
+        public async Task<ResponseDto> InvoiceInventoryAsync(InvoiceInventoryRequestDto model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
@@ -32,7 +32,6 @@ namespace MenuOptics.Services.VendorApi
 
                 await _vendorActivityLog.LogAsync(
                     currentUserId,
-                    requestId,
                     "POST /api/InventoryApi/InvoiceInventory",
                     payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto),
@@ -174,7 +173,6 @@ namespace MenuOptics.Services.VendorApi
 
                 await _vendorActivityLog.LogAsync(
                     currentUserId,
-                    requestId,
                     "POST /api/InventoryApi/InvoiceInventory",
                     payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto),
@@ -189,7 +187,6 @@ namespace MenuOptics.Services.VendorApi
 
                 await _vendorActivityLog.LogAsync(
                     currentUserId,
-                    requestId,
                     "POST /api/InventoryApi/InvoiceInventory",
                     payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto),

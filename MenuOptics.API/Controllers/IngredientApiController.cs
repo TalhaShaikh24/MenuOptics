@@ -92,11 +92,5 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(statusCode, body);
         }
 
-        [HttpPost("ImportIngredientPrices")]
-        public async Task<IActionResult> ImportIngredientPrices(IFormFile file)
-        {
-            var (statusCode, body) = await _ingredientService.ImportIngredientPricesAsync(file, CurrentUserId, ActualUserId);
-            return StatusCode(statusCode, body);
-        }
     }
 }

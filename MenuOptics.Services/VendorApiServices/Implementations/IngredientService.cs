@@ -28,7 +28,7 @@ namespace MenuOptics.Services.VendorApi
             _vendorActivityLog = activityLog;
             _mainIngredientService = mainIngredientService;
         }
-        public async Task<(int StatusCode, object Body)> CreateIngredientByVendorAsync(VendorIngredientDto model, int currentUserId, string requestId)
+        public async Task<(int StatusCode, object Body)> CreateIngredientByVendorAsync(VendorIngredientDto model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
@@ -37,7 +37,7 @@ namespace MenuOptics.Services.VendorApi
             {
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = $"Invalid unit '{model.Unit}'. Allowed units: {string.Join(", ", _allowedUnits)}";
-                await _vendorActivityLog.LogAsync(currentUserId, requestId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
+                await _vendorActivityLog.LogAsync(currentUserId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
                 return (400, ResponseDto);
             }
@@ -51,7 +51,7 @@ namespace MenuOptics.Services.VendorApi
                 {
                     ResponseDto.Status = 400;
                     ResponseDto.ResponseMsg = "Either PackSize or Weight must be provided and greater than zero.";
-                    await _vendorActivityLog.LogAsync(currentUserId, requestId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
+                    await _vendorActivityLog.LogAsync(currentUserId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
                         System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
                     return (400, ResponseDto);
                 }
@@ -117,7 +117,7 @@ namespace MenuOptics.Services.VendorApi
                     InvalidRestaurantIds = invalidRestaurantIds  // [] if none missing
                 };
 
-                await _vendorActivityLog.LogAsync(currentUserId, requestId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
+                await _vendorActivityLog.LogAsync(currentUserId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
                     System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg, ResponseDto.Data }), "Success");
 
                 // Original controller returned Ok(ResponseDto) even when Status is 207.
@@ -127,12 +127,12 @@ namespace MenuOptics.Services.VendorApi
             {
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = $"{ex.Message}";
-                await _vendorActivityLog.LogAsync(currentUserId, requestId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
+                await _vendorActivityLog.LogAsync(currentUserId, "POST /api/IngredientApi/CreateIngredientByVendor", payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
                 return (400, ResponseDto);
             }
         }
-        public async Task<(int StatusCode, object Body)> UpdateIngredientPricesAsync(UpdateIngredientPriceDto model, int currentUserId, string requestId)
+        public async Task<(int StatusCode, object Body)> UpdateIngredientPricesAsync(UpdateIngredientPriceDto model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
@@ -145,7 +145,7 @@ namespace MenuOptics.Services.VendorApi
                 {
                     ResponseDto.Status = 400;
                     ResponseDto.ResponseMsg = "Either PackSize or Weight must be provided and greater than zero.";
-                    await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
+                    await _vendorActivityLog.LogAsync(currentUserId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
                         System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
                     return (400, ResponseDto);
                 }
@@ -204,7 +204,7 @@ namespace MenuOptics.Services.VendorApi
                         ResponseDto.Status = 400;
                         ResponseDto.ResponseMsg = "All provided restaurant IDs are invalid.";
                         ResponseDto.Data = new { InvalidRestaurantIds = invalidRestaurantIds };
-                        await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
+                        await _vendorActivityLog.LogAsync(currentUserId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
                             System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Warning");
                         return (400, ResponseDto);
                     }
@@ -223,7 +223,7 @@ namespace MenuOptics.Services.VendorApi
                 {
                     InvalidRestaurantIds = invalidRestaurantIds  // [] if none missing
                 };
-                await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
+                await _vendorActivityLog.LogAsync(currentUserId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
                     System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success");
 
                 // Original controller returned Ok(ResponseDto) even when Status is 207.
@@ -233,12 +233,12 @@ namespace MenuOptics.Services.VendorApi
             {
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = ex.Message;
-                await _vendorActivityLog.LogAsync(currentUserId, requestId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
+                await _vendorActivityLog.LogAsync(currentUserId, "PUT /api/IngredientApi/UpdateIngredientPrices", payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto), "Error");
                 return (400, ResponseDto);
             }
         }
-        public async Task<(int StatusCode, object Body)> PatchIngredientDetailsAsync(UpdateIngredientDetailsDto model, int currentUserId, string requestId)
+        public async Task<(int StatusCode, object Body)> PatchIngredientDetailsAsync(UpdateIngredientDetailsDto model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
@@ -250,7 +250,6 @@ namespace MenuOptics.Services.VendorApi
 
                 await _vendorActivityLog.LogAsync(
                     currentUserId,
-                    requestId,
                     "PATCH /api/IngredientApi/PatchIngredientDetails",
                     payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto),
@@ -288,7 +287,6 @@ namespace MenuOptics.Services.VendorApi
 
                 await _vendorActivityLog.LogAsync(
                     currentUserId,
-                    requestId,
                     "PATCH /api/IngredientApi/PatchIngredientDetails",
                     payload,
                     System.Text.Json.JsonSerializer.Serialize(new
@@ -308,7 +306,6 @@ namespace MenuOptics.Services.VendorApi
                 ResponseDto.ResponseMsg = ex.Message;
                 await _vendorActivityLog.LogAsync(
                     currentUserId,
-                    requestId,
                     "PATCH /api/IngredientApi/PatchIngredientDetails",
                     payload,
                     System.Text.Json.JsonSerializer.Serialize(ResponseDto),

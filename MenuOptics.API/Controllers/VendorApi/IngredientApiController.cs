@@ -25,8 +25,6 @@ namespace MenuOptics.Controllers.VendorApi
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        private string RequestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
-
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
@@ -40,12 +38,12 @@ namespace MenuOptics.Controllers.VendorApi
                     Status = 400,
                     ResponseMsg = "Invalid input."
                 };
-                await _vendorActivityLog.LogAsync(CurrentUserId, RequestId, "POST /api/IngredientApi/CreateIngredientByVendor",
+                await _vendorActivityLog.LogAsync(CurrentUserId, "POST /api/IngredientApi/CreateIngredientByVendor",
                     System.Text.Json.JsonSerializer.Serialize(model), System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }
 
-            var (statusCode, body) = await _ingredientService.CreateIngredientByVendorAsync(model, CurrentUserId, RequestId);
+            var (statusCode, body) = await _ingredientService.CreateIngredientByVendorAsync(model, CurrentUserId);
             return StatusCode(statusCode, body);
         }
 
@@ -55,7 +53,7 @@ namespace MenuOptics.Controllers.VendorApi
         [HttpPut("UpdateIngredientPrices")]
         public async Task<IActionResult> UpdateIngredientPrices([FromBody] UpdateIngredientPriceDto model)
         {
-            var (statusCode, body) = await _ingredientService.UpdateIngredientPricesAsync(model, CurrentUserId, RequestId);
+            var (statusCode, body) = await _ingredientService.UpdateIngredientPricesAsync(model, CurrentUserId);
             return StatusCode(statusCode, body);
         }
 
@@ -67,7 +65,7 @@ namespace MenuOptics.Controllers.VendorApi
         [HttpPatch("PatchIngredientDetails")]
         public async Task<IActionResult> PatchIngredientDetails([FromBody] UpdateIngredientDetailsDto model)
         {
-            var (statusCode, body) = await _ingredientService.PatchIngredientDetailsAsync(model, CurrentUserId, RequestId);
+            var (statusCode, body) = await _ingredientService.PatchIngredientDetailsAsync(model, CurrentUserId);
             return StatusCode(statusCode, body);
         }
 

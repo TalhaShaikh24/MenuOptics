@@ -93,7 +93,6 @@ namespace MenuOptics.API.Middleware
             // 4. REQUEST INFORMATION
             // =========================================================
 
-            var requestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
             var ipAddress = BrowserRequestHeaders.GetClientIpAddress(context);
 
             // Use format: "HTTP_METHOD ActionName" e.g. "POST CreateCategory"
@@ -192,7 +191,6 @@ namespace MenuOptics.API.Middleware
 
                 await activityLogService.LogAsync(
                     userId,
-                    requestId,
                     requestType,
                     requestBody,
                     responseContent,
@@ -211,7 +209,6 @@ namespace MenuOptics.API.Middleware
 
                 await activityLogService.LogAsync(
                     userId,
-                    requestId,
                     requestType,
                     requestBody,
                     ex.Message,

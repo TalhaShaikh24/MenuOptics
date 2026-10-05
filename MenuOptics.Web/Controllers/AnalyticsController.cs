@@ -15,8 +15,7 @@ namespace MenuOptics.Controllers
             _configuration = configuration;
         }
 
-        [AuthorizeAdmin]
-        
+        [AuthorizeRestaurant]
         public IActionResult Index()
         {
             if (HttpContext.Items["Error"] != null)

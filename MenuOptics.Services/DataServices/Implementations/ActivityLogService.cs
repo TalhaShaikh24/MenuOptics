@@ -16,7 +16,6 @@ namespace MenuOptics.Services
 
         public async Task LogAsync(
             int? userId,
-            string requestId,
             string requestType,
             string? payload,
             string? ResponseDto,
@@ -29,7 +28,6 @@ namespace MenuOptics.Services
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", userId);
-                parameters.Add("@RequestId", requestId);
                 parameters.Add("@RequestType", requestType);
                 parameters.Add("@Payload", payload);
                 parameters.Add("@Response", ResponseDto);

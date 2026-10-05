@@ -6,7 +6,6 @@ namespace MenuOptics.Models
     {
         public int LogId { get; set; }
         public int? VendorId { get; set; }
-        public string RequestId { get; set; } = string.Empty;
         public string RequestType { get; set; } = string.Empty;
         public string? Payload { get; set; }
         public string? Response { get; set; }

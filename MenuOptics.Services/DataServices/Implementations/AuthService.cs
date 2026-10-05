@@ -11,6 +11,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Net;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace MenuOptics.Services
 {
@@ -48,7 +49,7 @@ namespace MenuOptics.Services
             _configuration = configuration;
         }
 
-        public async Task<ResponseDto> LoginAsync(LoginDto model, string requestId, string? ipAddress)
+        public async Task<ResponseDto> LoginAsync(LoginDto model, string? ipAddress)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(new { model.Username }); // never log password
@@ -112,12 +113,12 @@ namespace MenuOptics.Services
 
                 if (user.Roles?.Contains(Role.Vendor.ToString()) == true)
                 {
-                    await _vendorActivityLog.LogAsync(user.UserId, requestId, "POST /api/UserApi/Login", payload,
+                    await _vendorActivityLog.LogAsync(user.UserId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success");
                 }
                 if (user.Roles?.Contains(Role.Restaurant.ToString()) == true || user.Roles?.Contains(Role.Admin.ToString()) == true)
                 {
-                    await _activityLog.LogAsync(user.UserId,requestId , "POST /api/UserApi/Login", payload,
+                    await _activityLog.LogAsync(user.UserId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success", ipAddress);
                 }
 
@@ -144,7 +145,16 @@ namespace MenuOptics.Services
         public async Task<ResponseDto> LogoutAsync()
         {
             var ResponseDto = new ResponseDto();
-            await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                httpContext.Response.Cookies.Delete("WasLoggedIn", new CookieOptions
+                {
+                    SameSite = SameSiteMode.Lax,
+                    Secure = httpContext.Request.IsHttps
+                });
+            }
 
             ResponseDto.Status = 200;
             ResponseDto.ResponseMsg = "Logout successful.";
@@ -520,10 +530,22 @@ namespace MenuOptics.Services
                 IsPersistent = true
             };
 
-            await _httpContextAccessor.HttpContext!.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                new ClaimsPrincipal(claimsIdentity),
-                authProperties);
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                httpContext.Response.Cookies.Append("WasLoggedIn", "true", new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddDays(30),
+                    HttpOnly = false,
+                    SameSite = SameSiteMode.Lax,
+                    Secure = httpContext.Request.IsHttps
+                });
+
+                await httpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(claimsIdentity),
+                    authProperties);
+            }
         }
     }
 }

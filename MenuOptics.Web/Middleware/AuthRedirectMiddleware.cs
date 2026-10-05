@@ -49,7 +49,17 @@ namespace MenuOptics.Middleware
 
             if (!isApi && !isStatic && !isPublic && !context.User.Identity!.IsAuthenticated)
             {
-                context.Response.Redirect("/User/Login?sessionExpired=true");
+                bool wasLoggedIn = context.Request.Cookies.ContainsKey("WasLoggedIn")
+                                || context.Request.Cookies.ContainsKey("RestaurantAuthCookie");
+
+                if (wasLoggedIn)
+                {
+                    context.Response.Redirect("/User/Login?sessionExpired=true");
+                }
+                else
+                {
+                    context.Response.Redirect("/User/Login?loginRequired=true");
+                }
                 return;
             }
 

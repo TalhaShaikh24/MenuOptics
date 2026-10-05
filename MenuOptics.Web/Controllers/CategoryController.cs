@@ -6,7 +6,7 @@ namespace MenuOptics.Controllers
 {
     public class CategoryController : Controller
     {
-        [AuthorizeAdmin]
+        [AuthorizeRestaurant]
         public IActionResult Index()
         {
             return View();

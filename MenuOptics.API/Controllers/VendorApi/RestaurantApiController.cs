@@ -34,13 +34,10 @@ namespace MenuOptics.API.Controllers.VendorApi
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        
-        private string RequestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
 
         [HttpPost("SignupRestaurant")]
         public async Task<IActionResult> SignupRestaurant([FromBody] CreateRestaurantDto model)
         {
-            var requestId = RequestId;
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var responseData = new ResponseDto();
 
@@ -49,7 +46,7 @@ namespace MenuOptics.API.Controllers.VendorApi
                 responseData.Status = 400;
                 responseData.ResponseMsg = "A valid RestaurantId is required. RestaurantId cannot be null or 0.";
                 responseData.Data = ModelState;
-                await _vendorActivityLog.LogAsync(CurrentUserId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
+                await _vendorActivityLog.LogAsync(CurrentUserId, "POST /api/RestaurantApi/SignupRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }
@@ -65,12 +62,12 @@ namespace MenuOptics.API.Controllers.VendorApi
                 responseData.ResponseMsg = string.Join(" ", errors);
                 responseData.Data = null;
 
-                await _vendorActivityLog.LogAsync(CurrentUserId, requestId, "POST /api/RestaurantApi/SignupRestaurant",
+                await _vendorActivityLog.LogAsync(CurrentUserId, "POST /api/RestaurantApi/SignupRestaurant",
                     payload, System.Text.Json.JsonSerializer.Serialize(responseData), "Warning");
                 return BadRequest(responseData);
             }
 
-            var result = await _restaurantService.SignupRestaurantAsync(model, CurrentUserId, requestId);
+            var result = await _restaurantService.SignupRestaurantAsync(model, CurrentUserId);
 
             if (result.Status is 200 or 201)
             {
@@ -88,7 +85,7 @@ namespace MenuOptics.API.Controllers.VendorApi
         [HttpPut("UpdateRestaurant")]
         public async Task<IActionResult> UpdateRestaurant([FromBody] UpdateRestaurantDto model)
         {
-            var responseData = await _restaurantService.UpdateRestaurantAsync(model, CurrentUserId, RequestId);
+            var responseData = await _restaurantService.UpdateRestaurantAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
@@ -104,7 +101,7 @@ namespace MenuOptics.API.Controllers.VendorApi
                 });
             }
 
-            var responseData = await _restaurantService.ToggleRestaurantActiveAsync(restaurantId, request, CurrentUserId, RequestId);
+            var responseData = await _restaurantService.ToggleRestaurantActiveAsync(restaurantId, request, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
     }

@@ -26,10 +26,6 @@ namespace MenuOptics.Controllers.Api
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
         private string RequestBaseUrl => $"{Request.Scheme}://{Request.Host}";
-
-        private string RequestId = Guid.NewGuid().ToString("N").Substring(0, 12).ToUpperInvariant();
-
-
         private ResponseDto ModelStateErrorResponse()
         {
             var errors = ModelState
@@ -161,7 +157,7 @@ namespace MenuOptics.Controllers.Api
         public async Task<IActionResult> Login([FromBody] LoginDto model)
         {
             var ipAddress = BrowserRequestHeaders.GetClientIpAddress(HttpContext);
-            var responseData = await _authService.LoginAsync(model, RequestId, ipAddress);
+            var responseData = await _authService.LoginAsync(model, ipAddress);
             return StatusCode(responseData.Status, responseData);
         }
 

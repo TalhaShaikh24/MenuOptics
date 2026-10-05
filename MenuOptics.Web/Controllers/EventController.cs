@@ -6,7 +6,7 @@ namespace MenuOptics.Controllers
 {
     public class EventController : Controller
     {
-
+        [AuthorizeRestaurant]
         public IActionResult Index()
         {
             return View();

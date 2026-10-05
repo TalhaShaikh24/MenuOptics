@@ -543,10 +543,11 @@
             contentType: false,
             processData: false,
             onSuccess: function (response) {
+                Cookies.remove('JwtToken', { path: '/' });
+                Cookies.remove('WasLoggedIn', { path: '/' });
                 localStorage.removeItem("profilePic");
                 showNotification('Logout successfully!', 'success');
                 window.location.href = '/User/login';
-
             },
             onError: function (xhr, status, error) {
                 console.error('Failed to logout:', error);

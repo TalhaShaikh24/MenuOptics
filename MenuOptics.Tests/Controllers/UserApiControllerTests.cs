@@ -45,7 +45,7 @@ namespace MenuOptics.Tests.Controllers
             var expected = new ResponseDto { Status = 200, ResponseMsg = "Login successful" };
 
             _mockAuthService
-                .Setup(s => s.LoginAsync(loginDto, It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(s => s.LoginAsync(loginDto, It.IsAny<string>()))
                 .ReturnsAsync(expected);
 
             // Act
@@ -64,7 +64,7 @@ namespace MenuOptics.Tests.Controllers
             var expected = new ResponseDto { Status = 401, ResponseMsg = "Invalid credentials" };
 
             _mockAuthService
-                .Setup(s => s.LoginAsync(loginDto, It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(s => s.LoginAsync(loginDto, It.IsAny<string>()))
                 .ReturnsAsync(expected);
 
             // Act
@@ -82,7 +82,7 @@ namespace MenuOptics.Tests.Controllers
             var expected = new ResponseDto { Status = 200 };
 
             _mockAuthService
-                .Setup(s => s.LoginAsync(loginDto, It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(s => s.LoginAsync(loginDto, It.IsAny<string>()))
                 .ReturnsAsync(expected);
 
             // Act
@@ -91,8 +91,7 @@ namespace MenuOptics.Tests.Controllers
             // Assert — verify the service was called with some requestId (not null/empty)
             _mockAuthService.Verify(s => s.LoginAsync(
                 loginDto,
-                It.Is<string>(id => !string.IsNullOrEmpty(id)),
-                It.IsAny<string?>()
+                It.Is<string>(id => !string.IsNullOrEmpty(id))
             ), Times.Once);
         }
 

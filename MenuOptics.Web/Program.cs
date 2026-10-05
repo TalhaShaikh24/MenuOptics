@@ -47,13 +47,25 @@ var cookieExpiry = TimeSpan.FromHours(expiryHours);
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/User/Login?sessionExpired=true";
+        options.LoginPath = "/User/Login";
         options.AccessDeniedPath = "/User/AccessDenied";
         options.Cookie.Name = "RestaurantAuthCookie";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.None;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.ExpireTimeSpan = cookieExpiry;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            bool wasLoggedIn = context.Request.Cookies.ContainsKey("WasLoggedIn")
+                            || context.Request.Cookies.ContainsKey("RestaurantAuthCookie");
+
+            var redirectUri = wasLoggedIn
+                ? "/User/Login?sessionExpired=true"
+                : "/User/Login?loginRequired=true";
+
+            context.Response.Redirect(redirectUri);
+            return Task.CompletedTask;
+        };
     });
 
 var app = builder.Build();

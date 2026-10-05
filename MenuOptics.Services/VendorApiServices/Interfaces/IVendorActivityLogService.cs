@@ -4,7 +4,6 @@ namespace MenuOptics.Services.VendorApiServices.Interfaces
     {
         Task LogAsync(
             int? vendorId,
-            string requestId,
             string requestType,
             string? payload,
             string? ResponseDto,
