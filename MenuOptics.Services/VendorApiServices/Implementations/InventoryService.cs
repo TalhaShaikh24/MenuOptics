@@ -87,7 +87,7 @@ namespace MenuOptics.Services.VendorApi
                         }
 
                         // Calculate subtotal from quantity × price
-                        subtotal += quantity * item.Price;
+                        subtotal += item.Price;
 
                         table.Rows.Add(
                             item.IngredientId,

@@ -725,7 +725,7 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
                 <div class="ingredient-info" >
                     <p class="ingredient-name">${item.ingredientName.trim().includes(' ') ? item.ingredientName.split(' ').slice(1).join(' ') : item.ingredientName}</p>
                     <p class="ingredient-meta">Brand: ${item.ingredientName.split(' ')[0]}</p>
-                   ${item.packSize == null ? `<p class="ingredient-meta text-highlight danger">Catch Weight Item</p>` : `<p class="ingredient-meta text-highlight">Pack size: ${item.packSize}</p>`}
+                   ${item.packSize == null ? `<p class="ingredient-meta text-highlight danger">Catch Weight Item</p>` : `<p class="ingredient-meta text-highlight">Pack: ${item.packSize}</p>`}
                 </div >
             </td>
             <td>

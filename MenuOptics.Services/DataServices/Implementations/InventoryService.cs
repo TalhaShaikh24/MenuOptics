@@ -166,7 +166,7 @@ namespace MenuOptics.Services
                         quantity = 1;
                     }
 
-                    subtotal += quantity * item.Price;
+                    subtotal += item.Price;
 
                     table.Rows.Add(
                         item.IngredientId,

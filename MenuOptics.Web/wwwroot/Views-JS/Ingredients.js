@@ -59,7 +59,7 @@ $(document).ready(function () {
         if (isFormValid('#addIngredientForm')) {
 
             if (ingredientData.packSize == 0) {
-                showNotification('Pack size must be greater than 0', 'error');
+                showNotification('Pack must be greater than 0', 'error');
                 return false;
             }
 
@@ -86,7 +86,7 @@ $(document).ready(function () {
 
             if (ingredientData.packSize == 0) {
 
-                showNotification('Pack size must be greater than 0', 'error');
+                showNotification('Pack must be greater than 0', 'error');
                 return false;
             }
 
@@ -331,7 +331,7 @@ function initIngredientsTable() {
                     return `<div class="ingredient-info">
                                 <p class="ingredient-name">${name.trim().includes(' ') ? name.split(' ').slice(1).join(' ') : name}</p>
                                 <p class="ingredient-meta">Brand: ${name.split(' ')[0]}</p>
-                               ${row.packSize == null ? `<p class="ingredient-meta text-highlight danger">Catch Weight Item</p>` : `<p class="ingredient-meta text-highlight">Pack size: ${row.packSize}</p>`} 
+                               ${row.packSize == null ? `<p class="ingredient-meta text-highlight danger">Catch Weight Item</p>` : `<p class="ingredient-meta text-highlight">Pack: ${row.packSize}</p>`} 
                             </div>`;
                 }
             },
