@@ -186,7 +186,7 @@ function initializeRecipesSelect(selectId, modalId, detailsId, costInputId) {
             recipesWithPrices = response.data.map(recipe => ({
                 id: recipe.recipeId,
                 text: recipe.name,
-                cost: recipe.cost,
+                cost: recipe.currentCost,
                 unit: recipe.unit,
                 size: recipe.size
             }));
@@ -830,8 +830,8 @@ function refreshMenuGrid() {
                     const costPercentage = ((item.cost / item.sellingPrice) * 100).toFixed(2);
                     const currentCostPercentage = ((item.currentCost / item.sellingPrice) * 100).toFixed(2);
 
-
                     const hasPriceChanged = item.cost != item.currentCost && item.ingredients?.some(i => i.oldPrice != null && i.oldPrice != i.currentPrice);
+                    const isCostHigh = item.currentCost > item.cost;
                     
                     const row = `
                     <div class="menu-item-card" data-category="${item.categoryId}">
@@ -855,7 +855,7 @@ function refreshMenuGrid() {
                                             : `
                                                 <span>
                                                     <span class="text-highlight danger" title="Food Cost % at the time this item was created/updated">${costPercentage}%</span>
-                                                    <span class="text-highlight" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">${currentCostPercentage}% <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i></span>
+                                                    <span class="text-highlight ${isCostHigh ? `negative` : `positive`}" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">${currentCostPercentage}% <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i></span>
                                                 </span>
                                               `
                         }
@@ -882,7 +882,7 @@ function refreshMenuGrid() {
                                             : `<div class="clickable-cost-breakdown" style="display:inline-flex; align-items:center; gap:4px;">
                                             Cost:
                                             <span class="cost text-highlight danger" title="Cost at the time this item was created/updated.">$${item.cost.toFixed(2)}</span> 
-                                            <span class="cost text-highlight success" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">$${item.currentCost.toFixed(2)} <i class="fas fa-info-circle" style="font-size:12px; opacity:0.7; margin-left:2px;"></i></span>
+                                            <span class="cost text-highlight ${isCostHigh ? `negative` : `positive`}" style="cursor:pointer;" onclick="showMenuCostBreakdown(${item.menuItemId})" title="Click to view ingredient cost breakdown">$${item.currentCost.toFixed(2)} <i class="fas fa-info-circle" style="font-size:12px; opacity:0.7; margin-left:2px;"></i></span>
                                            </div>`
                                     }
                                 </div>

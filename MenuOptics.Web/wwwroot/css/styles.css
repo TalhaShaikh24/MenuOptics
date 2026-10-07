@@ -3010,9 +3010,18 @@ h4.event-heading {
     width: fit-content;
     color: #065f46;
 }
+
     .text-highlight.danger {
         background-color: #fddcb9;
         color: #944c1d;
+    }
+    .text-highlight.positive {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    .text-highlight.negative {
+        background-color: #f8d7da;
+        color: #842029;
     }
 
 
