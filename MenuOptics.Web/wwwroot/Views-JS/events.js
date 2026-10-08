@@ -41,11 +41,6 @@ $(document).ready(function () {
 
     $('#exportCsvBtn').on('click', () => $('.buttons-csv').click());
     $('#exportPdfBtn').on('click', () => exportEventsPDF($('#customerFacing').is(':checked'), allEventsData));
-
-    // Global Mode Listener
-    $(document).on('change', '#globalCalcMode', function () {
-        applyGlobalMode(this.value);
-    });
 });
 
 /* ── 7. Utilities ─────────────────────────────────────────────────────── */
@@ -230,18 +225,6 @@ function rebuildEventsTable(events) {
 }
 
 
-// ────────────────────────────────────────────────
-// ITEM & CALCULATION MANAGEMENT
-// ────────────────────────────────────────────────
-
-function applyGlobalMode(mode) {
-    allActiveItems.forEach(item => {
-        item.type = (mode === 'Manual') ? 'PerEvent' : 'PerGuest';
-    });
-    renderRows();
-}
-
-
 /* ── PDF export ───────────────────────────────────────────────────────── */
 
 function exportSingleEventPDF(eventId) {
@@ -260,9 +243,9 @@ function exportSingleEventPDF(eventId) {
         const singleEvent = allEventsData.filter(e => e.eventId === eventId);
 
         if (singleEvent.length) {
-           
+
             exportEventsPDF(false, singleEvent);
-            
+
         }
     }
 }
@@ -531,9 +514,9 @@ function exportEventsPDF(isCustomerFacing, exportableEvents) {
 
                 if (event.items?.length && event.totalFoodCost > 0) {
                     event.items.forEach(i => {
-                     
-                       
-                           
+
+
+
                         if (i.itemSource === "EventOnly") {
 
                             rows.push([
@@ -549,7 +532,7 @@ function exportEventsPDF(isCustomerFacing, exportableEvents) {
                                 { text: i.itemName, style: 'tableRow' },
                                 { text: i.qty.toFixed(0), style: 'tableRow', alignment: 'center' },
                                 { text: ``, style: 'tableRow', alignment: 'right' },
-                                { text: ``, style: 'tableRow', alignment: 'righ'}
+                                { text: ``, style: 'tableRow', alignment: 'righ' }
                             ]);
                         }
                     });
@@ -589,11 +572,11 @@ function exportEventsPDF(isCustomerFacing, exportableEvents) {
                                 body: [
                                     [
                                         { text: 'Subtotal:', bold: true, alignment: 'right', fontSize: 10 },
-                                        { text: `$${event.totalRevenue.toFixed(2) }`, alignment: 'right', fontSize: 10 }
+                                        { text: `$${event.totalRevenue.toFixed(2)}`, alignment: 'right', fontSize: 10 }
                                     ],
                                     [
                                         { text: 'Total:', bold: true, fontSize: 12, alignment: 'right', color: '#f08d11' },
-                                        { text: `$${event.totalRevenue.toFixed(2) }`, bold: true, fontSize: 12, alignment: 'right', color: '#f08d11' }
+                                        { text: `$${event.totalRevenue.toFixed(2)}`, bold: true, fontSize: 12, alignment: 'right', color: '#f08d11' }
                                     ]
                                 ]
                             },
@@ -605,7 +588,7 @@ function exportEventsPDF(isCustomerFacing, exportableEvents) {
 
                 // Aas paas line 351 ke andar:
                 const terms = event.terms || event.paymentTerms || '';
-                
+
                 const notes = event.noteText || '';
 
                 content.push({
@@ -674,7 +657,6 @@ function syncListFromSelect2(selector) {
     const isMenu = selector === '#menuItemSelect';
     const source = isMenu ? 'Menu' : 'EventOnly';
     const sourceData = isMenu ? menuItemsGlobal : eventOnlyItemsGlobal;
-    const currentMode = $('#globalCalcMode').val();
 
     allActiveItems = allActiveItems.filter(item =>
         item.source !== source || selectedIds.includes(item.id.toString())
@@ -693,7 +675,6 @@ function syncListFromSelect2(selector) {
             if (ref) {
                 const newItem = {
                     id: ref.id, name: ref.text, cost: ref.cost, qty: 1,
-                    type: (currentMode === 'Manual') ? 'PerEvent' : (isMenu ? 'PerGuest' : 'PerEvent'),
                     source
                 };
                 allActiveItems.push(newItem);
@@ -712,7 +693,6 @@ function syncListFromSelect2(selector) {
 
 function renderRows() {
     const container = $('#eventItemsContainer').empty();
-    const isManual = $('#globalCalcMode').val() === 'Manual';
 
     allActiveItems.forEach((item, idx) => {
         const badgeClass = item.source === 'Menu' ? 'badge-menu' : 'badge-event';
@@ -726,7 +706,7 @@ function renderRows() {
                 <div style="display:flex; flex-direction:column; width:100px;">
                     <input type="number" class="form-control item-qty" value="${item.qty}" min="0" step="1"
                            onchange="updateItemState(${idx}, 'qty', this.value)" 
-                           style="height:30px; ${isManual ? 'border:1px solid #f08d11;' : ''}">
+                           style="height:30px;">
                 </div>
                 <span class="row-total" style="min-width:120px; text-align:right; font-weight:bold;">$0.00</span>
                 <a href="#" onclick="removeItemByIndex(${idx})" class="text-danger ml-2"><i class="fa-regular fa-trash-can"></i></a>
@@ -755,7 +735,7 @@ function removeItemByIndex(index) {
 
 // ────────────────────────────────────────────────
 // CALCULATIONS
-// ─────────────────��──────────────────────────────
+// ────────────────────────────────────────────────
 
 function initEventCalculations() {
     $('#guestCount, #pricePerGuest').on('input keyup', updateAllCosts);
@@ -763,7 +743,6 @@ function initEventCalculations() {
 
 function updateAllCosts() {
     const guests = parseFloat($('#guestCount').val()) || 0;
-    const isManualMode = $('#globalCalcMode').val() === 'Manual';
     let menuFoodCost = 0;      // Total Cost -> Menu items only
     let eventOnlyCost = 0;     // Added to Total Revenue
 
@@ -816,7 +795,6 @@ function openNewEventModal() {
     allActiveItems = [];
     $('#addEventForm')[0].reset();
     $('#eventId').val('');
-    $('#globalCalcMode').val('PerGuest');
     $('#menuItemSelect, #eventOnlyItemSelect').val(null).trigger('change.select2');
     renderRows();
     resetTabs();
@@ -878,26 +856,10 @@ function saveEvent() {
     const date = $('#eventDate').val();
     const guests = parseFloat($('#guestCount').val()) || 0;
     const price = parseFloat($('#pricePerGuest').val()) || 0;
-    const isManualMode = $('#globalCalcMode').val() === 'Manual';
 
     // Basic Validations
     if (!name || !date || guests <= 0) {
         return showNotification('Please fill required fields and enter valid guest count.', 'error');
-    }
-
-    // 🔹 NEW CONDITION: Total items quantity must match Guest Count in Manual Mode
-    if (isManualMode && allActiveItems.length > 0) {
-        let totalItemsQty = 0;
-        allActiveItems.forEach(item => {
-            // Hum sirf un items ko count kar rahe hain jo "Per Guest" (Menu items mostly) wali nature ke hain
-            if (item.type === 'PerEvent' || item.type === 'PerGuest') {
-                totalItemsQty += item.qty;
-            }
-        });
-
-        if (totalItemsQty !== guests) {
-            return showNotification(`Validation Error: Total items quantity (${totalItemsQty}) must be exactly equal to the Number of Guests (${guests}).`, 'error');
-        }
     }
 
     const items = allActiveItems.map(i => ({
@@ -905,7 +867,6 @@ function saveEvent() {
         EventOnlyItemId: i.source === 'EventOnly' ? i.id : 0,
         ItemName: i.name,
         Qty: i.qty,
-        QtyType: i.type,
         UnitCost: i.cost,
         TotalCost: i.totalCost,
         ItemSource: i.source
@@ -946,6 +907,7 @@ function editEvent(id) {
     ajaxRequest({
         url: `/api/EventApi/GetEvent/${id}`,
         method: 'GET',
+        showMessage: false,
         onSuccess: res => {
             const e = res.data;
             openModal('eventModal');
@@ -961,13 +923,11 @@ function editEvent(id) {
 
             allActiveItems = [];
             const menuIds = [], eventIds = [];
-            let hasManual = e.items?.some(i => i.qtyType === 'PerEvent' && i.itemSource === 'Menu');
-            $('#globalCalcMode').val(hasManual ? 'Manual' : 'PerGuest');
 
             e.items?.forEach(i => {
                 const source = i.itemSource || (i.menuItemId ? 'Menu' : 'EventOnly');
                 const idVal = source === 'Menu' ? i.menuItemId : i.eventOnlyItemId;
-                allActiveItems.push({ id: idVal, name: i.itemName, cost: i.unitCost, qty: i.qty, type: i.qtyType, source });
+                allActiveItems.push({ id: idVal, name: i.itemName, cost: i.unitCost, qty: i.qty, source });
                 if (source === 'Menu') menuIds.push(idVal); else eventIds.push(idVal);
             });
             $('#menuItemSelect').val(menuIds).trigger('change.select2');
