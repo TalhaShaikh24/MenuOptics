@@ -59,7 +59,6 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
         public async Task<ResponseDto> GetInventoryInvoicesAsync(int currentUserId)
         {
             var responseDto = new ResponseDto();
@@ -145,9 +144,14 @@ namespace MenuOptics.Services
 
                 var table = new DataTable();
                 table.Columns.Add("IngredientId", typeof(int));
-                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("VendorProductId", typeof(string));
+                table.Columns.Add("Name", typeof(string));
+                table.Columns.Add("Unit", typeof(string));
+                table.Columns.Add("Size", typeof(decimal));
                 table.Columns.Add("PackSize", typeof(int));
-                table.Columns.Add("Price", typeof(decimal));
+                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("UnitPrice", typeof(decimal));
+                table.Columns.Add("TotalPrice", typeof(decimal));
 
                 foreach (var item in model.Items)
                 {
@@ -166,13 +170,21 @@ namespace MenuOptics.Services
                         quantity = 1;
                     }
 
-                    subtotal += item.Price;
+                    decimal unitPrice = item.UnitPrice ?? item.Price;
+                    decimal totalPrice = item.TotalPrice ?? (unitPrice * quantity);
+
+                    subtotal += totalPrice;
 
                     table.Rows.Add(
-                        item.IngredientId,
-                        quantity,
+                        (item.IngredientId.HasValue && item.IngredientId.Value > 0) ? (object)item.IngredientId.Value : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.VendorProductId) ? (object)item.VendorProductId : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.Name) ? (object)item.Name : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.Unit) ? (object)item.Unit : DBNull.Value,
+                        item.Size.HasValue ? (object)item.Size.Value : DBNull.Value,
                         item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
-                        item.Price
+                        quantity,
+                        unitPrice,
+                        totalPrice
                     );
                 }
 
@@ -224,7 +236,6 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
         public async Task<ResponseDto> UpdateInvoiceAsync(UpdateInvoiceRequestDto model, int currentUserId)
         {
             var responseDto = new ResponseDto();
@@ -247,9 +258,14 @@ namespace MenuOptics.Services
 
                 var table = new DataTable();
                 table.Columns.Add("IngredientId", typeof(int));
-                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("VendorProductId", typeof(string));
+                table.Columns.Add("Name", typeof(string));
+                table.Columns.Add("Unit", typeof(string));
+                table.Columns.Add("Size", typeof(decimal));
                 table.Columns.Add("PackSize", typeof(int));
-                table.Columns.Add("Price", typeof(decimal));
+                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("UnitPrice", typeof(decimal));
+                table.Columns.Add("TotalPrice", typeof(decimal));
 
                 foreach (var item in model.Items)
                 {
@@ -268,13 +284,21 @@ namespace MenuOptics.Services
                         quantity = 1;
                     }
 
-                    subtotal += quantity * item.Price;
+                    decimal unitPrice = item.UnitPrice ?? item.Price;
+                    decimal totalPrice = item.TotalPrice ?? (unitPrice * quantity);
+
+                    subtotal += totalPrice;
 
                     table.Rows.Add(
-                        item.IngredientId,
-                        quantity,
+                        (item.IngredientId.HasValue && item.IngredientId.Value > 0) ? (object)item.IngredientId.Value : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.VendorProductId) ? (object)item.VendorProductId : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.Name) ? (object)item.Name : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.Unit) ? (object)item.Unit : DBNull.Value,
+                        item.Size.HasValue ? (object)item.Size.Value : DBNull.Value,
                         item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
-                        item.Price
+                        quantity,
+                        unitPrice,
+                        totalPrice
                     );
                 }
 

@@ -47,6 +47,7 @@ $(document).ready(function () {
     // ── Save new ingredient ───────────────────────────────────────────────────
     $('#addIngredientBtn2').on('click', function () {
         const ingredientData = {
+            brand: $('#ingredientBrand').val(),
             name: $('#ingredientName').val(),
             unit: $('#ingredientUnit').val(),
             price: parseFloat($('#ingredientPrice').val()) || 0,
@@ -73,6 +74,7 @@ $(document).ready(function () {
     $('#updateIngredientBtn').on('click', function () {
         const ingredientData = {
             ingredientId: $('#editIngredientId').val(),
+            brand: $('#editIngredientBrand').val(),
             name: $('#editIngredientName').val(),
             unit: $('#editIngredientUnit').val(),
             price: parseFloat($('#editIngredientPrice').val()) || 0,
@@ -439,6 +441,7 @@ function addIngredient(ingredientData) {
         url: '/api/IngredientApi/CreateIngredient',
         method: 'POST',
         data: {
+            Brand: ingredientData.brand,
             Name: ingredientData.name,
             Price: ingredientData.price,
             Unit: ingredientData.unit,
@@ -465,8 +468,13 @@ function getIngredientById(id) {
         showMessage: false,
         onSuccess: function (response) {
             const ingredient = response.data;
+            var ingName = ingredient.name.trim().includes(' ') ? ingredient.name.split(' ').slice(1).join(' ') : ingredient.name
+            var ingBrand = ingredient.name.split(' ')[0]
+
+
             $('#editIngredientId').val(ingredient.ingredientId);
-            $('#editIngredientName').val(ingredient.name);
+            $('#editIngredientBrand').val(ingBrand);
+            $('#editIngredientName').val(ingName);
             if (ingredient.unit) {
                 const targetUnit = ingredient.unit.toString().trim().toLowerCase();
                 let matchedVal = null;
@@ -518,6 +526,7 @@ function updateIngredient(ingredientData) {
         method: 'PUT',
         data: {
             IngredientId: ingredientData.ingredientId,
+            Brand: ingredientData.brand,
             Name: ingredientData.name,
             Price: ingredientData.price,
             Unit: ingredientData.unit,

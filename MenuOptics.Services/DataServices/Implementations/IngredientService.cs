@@ -44,7 +44,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@Name", model.Name);
+                parameters.Add("@Name", model.Brand + " " + model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);
@@ -93,7 +93,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@Name", model.Name);
+                parameters.Add("@Name", model.Brand + " " + model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);

@@ -9,6 +9,7 @@ namespace MenuOptics.Models
         public int VendorId { get; set; }
         public int? PrivateVendorId { get; set; }
         public string? VendorProductId { get; set; }
+        public string Brand { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string? VendorName { get; set; }
         public decimal Price { get; set; }

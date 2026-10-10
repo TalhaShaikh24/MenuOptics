@@ -56,6 +56,25 @@ $(document).ready(function () {
         }
     });
 
+    // CSV Import and Sample Download bindings
+    $('#importInvoiceCsvBtn').on('click', function () {
+        const vendorId = $('#newInvoiceVendor').val();
+        if (!vendorId) {
+            showNotification('Please select a supplier first.', 'warning');
+            return;
+        }
+        $('#invoiceCsvFileInput').val('').trigger('click');
+    });
+
+    $('#invoiceCsvFileInput').on('change', function (e) {
+        handleInvoiceCsvUpload(e);
+    });
+
+    $('#downloadInvoiceSampleBtn').on('click', function (e) {
+        e.preventDefault();
+        downloadInvoiceSampleCsv();
+    });
+
     // Initial load
     refreshInvoicesTable();
     loadVendors();
@@ -109,8 +128,12 @@ function loadVendors() {
                 syncInvoiceItemsView();
 
                 if (vendorId) {
+                    $('#importInvoiceCsvBtn').css('display', 'inline-flex');
+                    $('#downloadInvoiceSampleBtn').css('display', 'inline-flex');
                     loadIngredientsByVendor(vendorId);
                 } else {
+                    $('#importInvoiceCsvBtn').hide();
+                    $('#downloadInvoiceSampleBtn').hide();
                     resetIngredientSelector();
                 }
             });
@@ -134,7 +157,10 @@ function loadVendors() {
 }
 
 function loadIngredientsByVendor(vendorId) {
-    resetIngredientSelector();
+    if ($('#ingredientSelector').hasClass('select2-hidden-accessible')) {
+        $('#ingredientSelector').select2('destroy');
+    }
+    $('#ingredientSelector').empty().append('<option value="">Loading ingredients...</option>');
 
     ajaxRequest({
         url: `/api/IngredientApi/GetAllIngredientsByVendorId/${vendorId}/true`,
@@ -143,6 +169,9 @@ function loadIngredientsByVendor(vendorId) {
         showMessage: false,
         onSuccess: function (response) {
             vendorIngredients = (response.data || []).filter(ing => ing.isActive !== false);
+
+            $('#importInvoiceCsvBtn').css('display', 'inline-flex');
+            $('#downloadInvoiceSampleBtn').css('display', 'inline-flex');
 
             const ingData = [{ id: '', text: '-- Select Ingredient --' }].concat(
                 vendorIngredients.map(ing => ({ id: ing.ingredientId, text: ing.name }))
@@ -243,18 +272,30 @@ function submitAddInvoice() {
             return;
         }
     }
-
+    debugger
     const payload = {
         privateVendorId: vendorId,
         invoiceId: invoiceId,
         invoiceDate: invoiceDate,
-        items: invoiceItems.map(item => ({
-            ingredientId: item.ingredientId,
-            vendorProductId: item.vendorProductId || null,
-            quantity: item.quantity ? parseInt(item.quantity) : null,
-            packSize: item.hasPackSize ? (item.packSize ? parseInt(item.packSize) : null) : null,
-            price: parseFloat(item.price)
-        }))
+        items: invoiceItems.map(item => {
+            const isPack = item.hasPackSize;
+            const parsedQty = (item.quantity !== '' && item.quantity != null) ? parseFloat(item.quantity) : 1;
+            const unitPrice = parseFloat(item.price) || 0;
+            const isExisting = typeof item.ingredientId === 'number' && item.ingredientId > 0;
+            return {
+                ingredientId: isExisting ? item.ingredientId : null,
+                vendorProductId: item.vendorProductId || null,
+                name: item.ingredientName || null,
+                unit: item.unit || null,
+                size: item.size ? parseFloat(item.size) : null,
+                packSize: isPack ? (item.packSize ? parseInt(item.packSize) : null) : null,
+                quantity: parsedQty,
+                unitPrice: unitPrice,
+                totalPrice: parseFloat((unitPrice * parsedQty).toFixed(2)),
+                price: unitPrice,
+                weight: !isPack ? parsedQty : null
+            };
+        })
     };
 
     $('#submitInvoiceBtn')
@@ -324,13 +365,25 @@ function submitEditInvoice() {
         privateVendorId: vendorId,
         invoiceId: invoiceId,
         invoiceDate: invoiceDate,
-        items: editInvoiceItems.map(item => ({
-            ingredientId: item.ingredientId,
-            vendorProductId: item.vendorProductId || null,
-            quantity: item.quantity ? parseInt(item.quantity) : null,
-            packSize: item.hasPackSize ? (item.packSize ? parseInt(item.packSize) : null) : null,
-            price: parseFloat(item.price)
-        }))
+        items: editInvoiceItems.map(item => {
+            const isPack = item.hasPackSize;
+            const parsedQty = (item.quantity !== '' && item.quantity != null) ? parseFloat(item.quantity) : 1;
+            const unitPrice = parseFloat(item.price) || 0;
+            const isExisting = typeof item.ingredientId === 'number' && item.ingredientId > 0;
+            return {
+                ingredientId: isExisting ? item.ingredientId : null,
+                vendorProductId: item.vendorProductId || null,
+                name: item.ingredientName || null,
+                unit: item.unit || null,
+                size: item.size ? parseFloat(item.size) : null,
+                packSize: isPack ? (item.packSize ? parseInt(item.packSize) : null) : null,
+                quantity: parsedQty,
+                unitPrice: unitPrice,
+                totalPrice: parseFloat((unitPrice * parsedQty).toFixed(2)),
+                price: unitPrice,
+                weight: !isPack ? parsedQty : null
+            };
+        })
     };
 
     $('#updateInvoiceBtn')
@@ -596,6 +649,9 @@ function openAddInvoiceModal() {
     if ($('#newInvoiceVendor').hasClass('select2-hidden-accessible')) {
         $('#newInvoiceVendor').val(null).trigger('change.select2');
     }
+
+    $('#importInvoiceCsvBtn').hide();
+    $('#downloadInvoiceSampleBtn').hide();
 
     resetIngredientSelector();
 
@@ -999,7 +1055,7 @@ function renderInvoiceItems() {
                                   step="1"
                                   placeholder="Pack Size"
                                   value="${packSizeVal}"
-                                  onchange="updateItemPackSize(${item.ingredientId}, this.value)">`
+                                  onchange="updateItemPackSize('${item.ingredientId}', this.value)">`
                 : ''}
                 </td>
 
@@ -1009,7 +1065,7 @@ function renderInvoiceItems() {
                            step="any"
                            placeholder="${isPack ? 'Qty' : 'Weight'}"
                            value="${item.quantity ?? ''}"
-                           onchange="updateItemField(${item.ingredientId}, 'quantity', this.value)">
+                           onchange="updateItemField('${item.ingredientId}', 'quantity', this.value)">
                 </td>
 
                 <td style="padding: 6px 4px;">
@@ -1018,12 +1074,12 @@ function renderInvoiceItems() {
                            step="any"
                            placeholder="0.00"
                            value="${item.price ?? ''}"
-                           onchange="updateItemField(${item.ingredientId}, 'price', this.value)">
+                           onchange="updateItemField('${item.ingredientId}', 'price', this.value)">
                 </td>
 
                 <td style="padding: 6px 4px; text-align: center;">
                     <button type="button"
-                            onclick="removeIngredientRow(${item.ingredientId})"
+                            onclick="removeIngredientRow('${item.ingredientId}')"
                             style="
                                 background: none;
                                 border: none;
@@ -1085,7 +1141,7 @@ function addIngredientRow() {
 
 function updateItemPackSize(ingredientId, value) {
     const item = invoiceItems.find(
-        i => i.ingredientId === ingredientId
+        i => i.ingredientId == ingredientId
     );
 
     if (!item || !item.hasPackSize) {
@@ -1097,7 +1153,7 @@ function updateItemPackSize(ingredientId, value) {
 
 function updateItemField(ingredientId, field, value) {
     const item = invoiceItems.find(
-        i => i.ingredientId === ingredientId
+        i => i.ingredientId == ingredientId
     );
 
     if (item) {
@@ -1107,10 +1163,10 @@ function updateItemField(ingredientId, field, value) {
 
 function removeIngredientRow(ingredientId) {
     invoiceItems = invoiceItems.filter(
-        i => i.ingredientId !== ingredientId
+        i => i.ingredientId != ingredientId
     );
 
-    $('#irow_' + ingredientId).remove();
+    $(document.getElementById('irow_' + ingredientId)).remove();
 
     syncInvoiceItemsView();
 }
@@ -1154,5 +1210,401 @@ function formatInvoiceDate(dateStr) {
         });
     } catch (e) {
         return dateStr;
+    }
+}
+
+/* ── CSV Import / Export for Add Invoice Modal ────────────────────────────── */
+
+function escapeCsvValue(val) {
+    if (val == null) return '""';
+    const str = val.toString();
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`;
+    }
+    return `"${str}"`;
+}
+
+function downloadInvoiceSampleCsv() {
+    const vendorId = $('#newInvoiceVendor').val();
+    if (!vendorId) {
+        showNotification('Please select a supplier first.', 'warning');
+        return;
+    }
+
+    if (vendorIngredients && vendorIngredients.length > 0) {
+        generateInvoiceSampleCsv(vendorIngredients);
+    } else {
+        ajaxRequest({
+            url: `/api/IngredientApi/GetAllIngredientsByVendorId/${vendorId}/true`,
+            method: 'GET',
+            showMessage: false,
+            onSuccess: function (response) {
+                vendorIngredients = (response.data || []).filter(ing => ing.isActive !== false);
+                if (vendorIngredients.length > 0) {
+                    generateInvoiceSampleCsv(vendorIngredients);
+                } else {
+                    showNotification('No ingredients available for this supplier.', 'warning');
+                }
+            },
+            onError: function () {
+                showNotification('Failed to download sample file.', 'error');
+            }
+        });
+    }
+}
+
+function generateInvoiceSampleCsv(ingredients) {
+    const supplierName = $('#newInvoiceVendor option:selected').text() || 'Supplier';
+
+    // Columns: Product ID, Brand, Description, Pack/Size, Weight/Qty, Catch Weight, Price
+    const headers = ["Product ID", "Brand", "Description", "Pack/Size", "Weight/Qty", "Catch Weight", "Price"];
+    const rows = [headers.join(",")];
+
+    (ingredients || []).forEach(ing => {
+        const prodId = escapeCsvValue(ing.vendorProductId || ing.VendorProductId || '');
+        const brand = escapeCsvValue(ing.brand || ing.Brand || '');
+        const description = escapeCsvValue(ing.name || ing.Name || '');
+        const isCatchWeight = (ing.packSize == null || Number(ing.packSize) <= 0);
+        const catchWeightStr = isCatchWeight ? 'Yes' : 'No';
+
+        // Pack/Size or Weight/Qty: in dono mai se koi aik hoga, dono nahi ho sakte
+        let packSize = '';
+        if (!isCatchWeight) {
+            const p = ing.packSize ?? ing.PackSize;
+            const s = ing.size ?? ing.Size;
+            const u = ing.unit ?? ing.Unit;
+            if (p != null && s != null && u) {
+                packSize = `${p}/${s} ${u}`;
+            } else if (p != null && s != null) {
+                packSize = `${p}/${s}`;
+            } else if (p != null) {
+                packSize = `${p}`;
+            }
+        }
+        const weightQty = '';
+        const price = ing.price != null && !isNaN(Number(ing.price)) ? Number(ing.price).toFixed(2) : '0.00';
+
+        rows.push([
+            prodId,
+            brand,
+            description,
+            packSize,
+            weightQty,
+            catchWeightStr,
+            price
+        ].join(","));
+    });
+
+    const csvContent = rows.join("\r\n");
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const safeSupplier = supplierName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${safeSupplier}_Ingredients_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function handleInvoiceCsvUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showNotification('Please upload a valid .csv file.', 'error');
+        $('#invoiceCsvFileInput').val('');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        try {
+            processInvoiceCsv(event.target.result);
+        } catch (err) {
+            console.error('Error parsing CSV:', err);
+            showNotification('Error processing CSV file. Please check file structure.', 'error');
+        } finally {
+            $('#invoiceCsvFileInput').val('');
+        }
+    };
+    reader.readAsText(file);
+}
+
+function parseCsvText(text) {
+    const lines = [];
+    let row = [];
+    let inQuotes = false;
+    let currentCell = '';
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                currentCell += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if ((char === ',' || char === '\t') && !inQuotes) {
+            row.push(currentCell.trim());
+            currentCell = '';
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+            if (char === '\r' && nextChar === '\n') {
+                i++;
+            }
+            row.push(currentCell.trim());
+            currentCell = '';
+            if (row.some(c => c !== '')) {
+                lines.push(row);
+            }
+            row = [];
+        } else {
+            currentCell += char;
+        }
+    }
+
+    if (currentCell.length > 0 || row.length > 0) {
+        row.push(currentCell.trim());
+        if (row.some(c => c !== '')) {
+            lines.push(row);
+        }
+    }
+
+    return lines;
+}
+
+function parsePackSizeValue(raw) {
+    if (!raw) return { packSize: null, size: null, unit: null };
+    const str = raw.toString().trim();
+    if (!str) return { packSize: null, size: null, unit: null };
+
+    // Format: "2/10 KG", "6/5 LB", "2/10KG", "2/10"
+    const slashMatch = str.match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)(?:\s*([a-zA-Z]+))?/);
+    if (slashMatch) {
+        const pSize = parseInt(slashMatch[1], 10);
+        const sz = parseFloat(slashMatch[2]);
+        const u = slashMatch[3] ? slashMatch[3].toUpperCase().trim() : null;
+        return {
+            packSize: !isNaN(pSize) ? pSize : null,
+            size: !isNaN(sz) ? sz : null,
+            unit: u || null
+        };
+    }
+
+    // Format: single number with optional unit, e.g. "10 KG", "6"
+    const singleMatch = str.match(/^(\d+(?:\.\d+)?)(?:\s*([a-zA-Z]+))?/);
+    if (singleMatch) {
+        const val = parseFloat(singleMatch[1]);
+        const u = singleMatch[2] ? singleMatch[2].toUpperCase().trim() : null;
+        return {
+            packSize: !isNaN(val) ? parseInt(val, 10) : null,
+            size: !isNaN(val) ? val : null,
+            unit: u || null
+        };
+    }
+
+    return { packSize: null, size: null, unit: null };
+}
+
+function parseWeightQtyValue(raw) {
+    if (!raw) return { qty: null, unit: null };
+    const str = raw.toString().trim();
+    if (!str) return { qty: null, unit: null };
+
+    const match = str.match(/^(\d+(?:\.\d+)?)(?:\s*([a-zA-Z]+))?/);
+    if (match) {
+        const q = parseFloat(match[1]);
+        const u = match[2] ? match[2].toUpperCase().trim() : null;
+        return {
+            qty: !isNaN(q) ? q : null,
+            unit: u || null
+        };
+    }
+    return { qty: null, unit: null };
+}
+
+function processInvoiceCsv(csvText) {
+    if (!csvText || !csvText.trim()) {
+        showNotification('The uploaded CSV file is empty.', 'error');
+        return;
+    }
+
+    if (!vendorIngredients || vendorIngredients.length === 0) {
+        showNotification('Supplier ingredients are not loaded yet. Please wait a moment and try again.', 'warning');
+        return;
+    }
+
+    const rows = parseCsvText(csvText);
+    if (rows.length < 2) {
+        showNotification('The CSV file does not contain any item data.', 'error');
+        return;
+    }
+
+    // Map headers (case and punctuation insensitive)
+    const headerRow = rows[0].map(h => (h || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''));
+    debugger
+    const idxProductId = headerRow.findIndex(h => h.includes('productid') || h === 'product' || h === 'id' || h === 'itemid');
+    const idxBrand = headerRow.findIndex(h => h.includes('brand'));
+    const idxDescription = headerRow.findIndex(h => h.includes('desc') || h.includes('name') || h.includes('ingredient'));
+    const idxPackSize = headerRow.findIndex(h => h.includes('pack'));
+    const idxWeightQty = headerRow.findIndex(h => h.includes('qty') || h.includes('weight') || h.includes('quantity'));
+    const idxCatchWeight = headerRow.findIndex(h => h.includes('catch'));
+    const idxPrice = headerRow.findIndex(h => h.includes('price') || h.includes('cost'));
+
+    let importedCount = 0;
+    let unmatchedRows = [];
+
+    for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row || row.length === 0 || row.every(c => !c || !c.trim())) continue;
+
+        const cellProductId = idxProductId !== -1 ? (row[idxProductId] || '').trim() : '';
+        const cellBrand = idxBrand !== -1 ? (row[idxBrand] || '').trim() : '';
+        const cellDescription = idxDescription !== -1 ? (row[idxDescription] || '').trim() : '';
+        const cellPackSize = idxPackSize !== -1 ? (row[idxPackSize] || '').trim() : '';
+        const cellWeightQty = idxWeightQty !== -1 ? (row[idxWeightQty] || '').trim() : '';
+        const cellPrice = idxPrice !== -1 ? (row[idxPrice] || '').trim() : '';
+
+        // Matching strategy:
+        // 1. By Product ID (vendorProductId)
+        let matched = null;
+        if (cellProductId) {
+            matched = vendorIngredients.find(v => {
+                const vPid = (v.vendorProductId || v.VendorProductId || '').toString().trim().toLowerCase();
+                return vPid === cellProductId.toLowerCase();
+            });
+        }
+
+        // 2. By Ingredient Name / Description / Brand + Description
+        if (!matched) {
+            const combinedName = (cellBrand ? cellBrand + ' ' : '') + cellDescription;
+            matched = vendorIngredients.find(v => {
+                const vName = (v.name || v.Name || '').toString().trim().toLowerCase();
+                const vBrand = (v.brand || v.Brand || '').toString().trim().toLowerCase();
+                const vCombined = (vBrand ? vBrand + ' ' : '') + vName;
+
+                return (cellDescription && vName === cellDescription.toLowerCase())
+                    || (combinedName && vName === combinedName.toLowerCase())
+                    || (combinedName && vCombined === combinedName.toLowerCase())
+                    || (cellDescription && vName.includes(cellDescription.toLowerCase()))
+                    || (cellDescription && cellDescription.toLowerCase().includes(vName));
+            });
+        }
+
+        const cellCatchWeight = idxCatchWeight !== -1 ? (row[idxCatchWeight] || '').trim().toLowerCase() : '';
+        const parsedPack = parsePackSizeValue(cellPackSize);
+        const parsedWeight = parseWeightQtyValue(cellWeightQty);
+
+        const hasPack = parsedPack.packSize !== null || parsedPack.size !== null;
+        const hasWeight = parsedWeight.qty !== null && parsedWeight.qty > 0;
+
+        let ingredientId;
+        let ingredientName;
+        let isCatchWeight;
+        let vProdId = cellProductId || null;
+        let unit = parsedPack.unit || parsedWeight.unit || null;
+        let size = parsedPack.size ?? null;
+        let packSize = parsedPack.packSize ?? null;
+
+        if (matched) {
+            ingredientId = matched.ingredientId;
+            ingredientName = matched.name;
+            vProdId = matched.vendorProductId || matched.VendorProductId || cellProductId || null;
+            isCatchWeight = (matched.packSize == null || Number(matched.packSize) <= 0);
+            if (!unit) unit = matched.unit || matched.Unit || null;
+            if (size == null && matched.size != null) size = Number(matched.size);
+            if (packSize == null && matched.packSize != null) packSize = Number(matched.packSize);
+        } else {
+            // New ingredient row added in CSV!
+            ingredientId = 'new_' + (cellProductId ? cellProductId.replace(/[^a-zA-Z0-9_-]/g, '') : ('row' + r)) + '_' + Date.now();
+
+            if (cellBrand && cellDescription) {
+                ingredientName = cellDescription.toLowerCase().includes(cellBrand.toLowerCase())
+                    ? cellDescription
+                    : `${cellBrand} ${cellDescription}`;
+            } else {
+                ingredientName = cellDescription || cellBrand || cellProductId || `New Item ${r}`;
+            }
+
+            // Determine catch weight
+            if (cellCatchWeight === 'yes' || cellCatchWeight === 'true' || cellCatchWeight === '1' || cellCatchWeight === 'y') {
+                isCatchWeight = true;
+            } else if (cellCatchWeight === 'no' || cellCatchWeight === 'false' || cellCatchWeight === '0' || cellCatchWeight === 'n') {
+                isCatchWeight = false;
+            } else if (hasWeight && !hasPack) {
+                isCatchWeight = true;
+            } else {
+                isCatchWeight = false;
+            }
+        }
+
+        const hasPackSize = !isCatchWeight;
+
+        if (!hasPackSize) {
+            packSize = null;
+        } else if (packSize == null && hasPack) {
+            packSize = parsedPack.packSize || 1;
+        }
+
+        // Quantity:
+        let qty = '';
+        if (isCatchWeight) {
+            qty = hasWeight ? parsedWeight.qty : (hasPack ? (parsedWeight.qty || '') : '');
+        } else {
+            qty = hasWeight ? parsedWeight.qty : '';
+        }
+
+        // Price
+        const customPrice = parseFloat(cellPrice);
+        let price = 0;
+        if (!isNaN(customPrice) && customPrice >= 0) {
+            price = customPrice;
+        } else if (matched && matched.price != null && !isNaN(Number(matched.price))) {
+            price = Number(matched.price);
+        }
+
+        // Upsert in invoiceItems
+        const existingIdx = invoiceItems.findIndex(i =>
+            (matched && i.ingredientId === matched.ingredientId) ||
+            (i.ingredientName && ingredientName && i.ingredientName.toLowerCase() === ingredientName.toLowerCase())
+        );
+
+        if (existingIdx !== -1) {
+            if (qty !== '') invoiceItems[existingIdx].quantity = qty;
+            invoiceItems[existingIdx].price = price;
+            invoiceItems[existingIdx].hasPackSize = hasPackSize;
+            invoiceItems[existingIdx].packSize = packSize;
+            if (size !== null) invoiceItems[existingIdx].size = size;
+            if (unit) invoiceItems[existingIdx].unit = unit;
+            if (vProdId) invoiceItems[existingIdx].vendorProductId = vProdId;
+        } else {
+            invoiceItems.push({
+                ingredientId: ingredientId,
+                ingredientName: ingredientName,
+                vendorProductId: vProdId,
+                quantity: qty,
+                hasPackSize: hasPackSize,
+                packSize: packSize,
+                size: size,
+                unit: unit,
+                price: price
+            });
+        }
+
+        importedCount++;
+    }
+
+    renderInvoiceItems();
+    syncInvoiceItemsView();
+
+    if (importedCount > 0) {
+        showNotification(`Successfully imported all ${importedCount} items from CSV!`, 'success');
+    } else {
+        showNotification('No valid items found in CSV file.', 'warning');
     }
 }
