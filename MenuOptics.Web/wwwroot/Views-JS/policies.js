@@ -52,8 +52,6 @@ $(document).ready(function () {
 
                 return;
             }
-
-
         }
 
         // 4. Perform the switch
@@ -143,7 +141,7 @@ function loadAllPolicies() {
                 });
 
                 // Set initial content (Privacy)
-                const initialContent = allPolicies['Privacy'] || '';
+                const initialContent = allPolicies['Terms'] || '';
                 if (editorInstance) {
                     editorInstance.setData(initialContent);
                 }
