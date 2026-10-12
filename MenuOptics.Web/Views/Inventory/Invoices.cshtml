@@ -2,6 +2,100 @@
     ViewData["Title"] = "Inventory Invoices";
 }
 
+<style>
+    /* Update Ingredient Prices Toggle Switch */
+    .invoice-toggle-wrapper {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 6px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        user-select: none;
+        margin: 0 !important;
+        transition: all 0.2s ease;
+    }
+    .invoice-toggle-wrapper:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+    .invoice-toggle-wrapper.active {
+        background: #fff7ed;
+        border-color: #fed7aa;
+    }
+    .invoice-toggle-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .invoice-toggle-title i {
+        color: #f08d11;
+        font-size: 12px;
+    }
+    .invoice-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+        flex-shrink: 0;
+        margin: 0;
+    }
+    .invoice-switch input[type="checkbox"] {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        position: absolute;
+        margin: 0;
+        padding: 0;
+    }
+    .invoice-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        border-radius: 24px;
+        transition: background-color 0.25s ease;
+    }
+    .invoice-slider::before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #ffffff;
+        border-radius: 50%;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+    .invoice-switch input:checked + .invoice-slider {
+        background-color: #f08d11;
+    }
+    .invoice-switch input:checked + .invoice-slider::before {
+        transform: translateX(20px);
+    }
+    .invoice-toggle-status {
+        font-size: 12px;
+        font-weight: 700;
+        color: #94a3b8;
+        min-width: 26px;
+        transition: color 0.2s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .invoice-toggle-status.active {
+        color: #ea580c;
+    }
+</style>
+
 <div class="page-header">
     <div class="header-text">
         <h1>Inventory Invoices</h1>
@@ -171,19 +265,21 @@
             <!-- Ingredient Selector -->
             <div class="form-group">
                 <label><i class="fas fa-box" style="color: #f08d11; margin-right: 6px;"></i> Add Ingredient</label>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 200px;">
                         <select id="ingredientSelector" style="width: 100%;"></select>
                     </div>
                     <button type="button" class="btn btn-primary" onclick="addIngredientRow()" style="white-space: nowrap; margin-top: 0;">
                         <i class="fas fa-plus"></i> Add
                     </button>
-                    <button type="button" class="btn btn-outline" id="importInvoiceCsvBtn" style="white-space: nowrap; margin-top: 0; display: none;">
-                        <i class="fas fa-file-import"></i> Import CSV
-                    </button>
-                    <a href="javascript:void(0)" id="downloadInvoiceSampleBtn" style="font-size: 13px; color: #f08d11; text-decoration: none; font-weight: 500; display: none; align-items: center; gap: 5px; white-space: nowrap; margin-left: 4px;">
-                        <i class="fas fa-file-download"></i> Download Sample CSV
-                    </a>
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                        <button type="button" class="btn btn-outline" id="importInvoiceCsvBtn" style="white-space: nowrap; margin-top: 0; display: none;">
+                            <i class="fas fa-file-import"></i> Import CSV
+                        </button>
+                        <span id="downloadInvoiceSampleBtn" onclick="downloadInvoiceSampleCsv()" style="white-space: nowrap; display: none; align-items: center; gap: 6px; background: transparent;color: #f08d11; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.18s, color 0.18s;" >
+                            <i class="fas fa-file-download"></i> Download Sample CSV
+                        </span>
+                    </div>
                     <input type="file" id="invoiceCsvFileInput" accept=".csv" style="display: none;">
                 </div>
             </div>
@@ -210,17 +306,29 @@
                 </div>
             </div>
 
-            <div id="invoiceItemsEmpty" style="text-align: center; padding: 20px; color: #9ca3af; font-size: 13px;">
+            <div id="invoiceItemsEmpty" style="text-align: center;padding: 20px;color: #9ca3af;font-size: 13px;display: flex;justify-content: center;gap: 10px;align-items: center;">
                 <i class="fas fa-inbox" style="font-size: 28px; display: block; margin-bottom: 8px; color: #d1d5db;"></i>
                 No items added yet. Select an ingredient above and click Add.
             </div>
 
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeAddInvoiceModal()">Cancel</button>
-            <button class="btn btn-primary" id="submitInvoiceBtn" onclick="submitAddInvoice()">
-                <i class="fas fa-save"></i> Save Invoice
-            </button>
+        <div class="modal-footer" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <label class="invoice-toggle-wrapper" id="addUpdatePricesContainer" for="addUpdatePricesToggle">
+                <span class="invoice-toggle-title">
+                    <i class="fas fa-tags"></i> Update Ingredient Prices
+                </span>
+                <span class="invoice-switch">
+                    <input type="checkbox" id="addUpdatePricesToggle">
+                    <span class="invoice-slider"></span>
+                </span>
+                <span class="invoice-toggle-status" id="addUpdatePricesLabel">No</span>
+            </label>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" onclick="closeAddInvoiceModal()">Cancel</button>
+                <button class="btn btn-primary" id="submitInvoiceBtn" onclick="submitAddInvoice()">
+                    <i class="fas fa-save"></i> Save Invoice
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -300,11 +408,23 @@
             </div>
 
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeEditInvoiceModal()">Cancel</button>
-            <button class="btn btn-primary" id="updateInvoiceBtn" onclick="submitEditInvoice()">
-                <i class="fas fa-save"></i> Update Invoice
-            </button>
+        <div class="modal-footer" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <label class="invoice-toggle-wrapper" id="editUpdatePricesContainer" for="editUpdatePricesToggle">
+                <span class="invoice-toggle-title">
+                    <i class="fas fa-tags"></i> Update Ingredient Prices
+                </span>
+                <span class="invoice-switch">
+                    <input type="checkbox" id="editUpdatePricesToggle">
+                    <span class="invoice-slider"></span>
+                </span>
+                <span class="invoice-toggle-status" id="editUpdatePricesLabel">No</span>
+            </label>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" onclick="closeEditInvoiceModal()">Cancel</button>
+                <button class="btn btn-primary" id="updateInvoiceBtn" onclick="submitEditInvoice()">
+                    <i class="fas fa-save"></i> Update Invoice
+                </button>
+            </div>
         </div>
     </div>
 </div>

@@ -13,6 +13,6 @@ namespace MenuOptics.Models
         public decimal? Weight { get; set; }
         public decimal Price { get; set; }
         public decimal? UnitPrice { get; set; }
-        public decimal? TotalPrice { get; set; }
+        public decimal TotalPrice { get; set; }
     }
 }

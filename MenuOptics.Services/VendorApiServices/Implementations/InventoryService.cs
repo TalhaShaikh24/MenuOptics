@@ -56,9 +56,14 @@ namespace MenuOptics.Services.VendorApi
                 var table = new DataTable();
 
                 table.Columns.Add("IngredientId", typeof(int));
-                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("VendorProductId", typeof(string));
+                table.Columns.Add("Name", typeof(string));
+                table.Columns.Add("Unit", typeof(string));
+                table.Columns.Add("Size", typeof(decimal));
                 table.Columns.Add("PackSize", typeof(int));
-                table.Columns.Add("Price", typeof(decimal));
+                table.Columns.Add("Quantity", typeof(decimal));
+                table.Columns.Add("UnitPrice", typeof(decimal));
+                table.Columns.Add("TotalPrice", typeof(decimal));
 
                 foreach (var item in model.Items)
                 {
@@ -91,8 +96,13 @@ namespace MenuOptics.Services.VendorApi
 
                         table.Rows.Add(
                             item.IngredientId,
-                            quantity,
+                            DBNull.Value,
+                            DBNull.Value,
+                            DBNull.Value,
+                            DBNull.Value,
                             item.PackSize,
+                            quantity,
+                            DBNull.Value,
                             item.Price
                         );
                     }

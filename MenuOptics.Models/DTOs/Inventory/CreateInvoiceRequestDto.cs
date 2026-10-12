@@ -6,5 +6,6 @@ namespace MenuOptics.Models
         public string? InvoiceId { get; set; }
         public DateTime? InvoiceDate { get; set; }
         public List<InvoiceItemDto> Items { get; set; } = new();
+        public bool UpdatePrices { get; set; } = false;
     }
 }

@@ -75,6 +75,20 @@ $(document).ready(function () {
         downloadInvoiceSampleCsv();
     });
 
+    // Update Ingredient Prices toggle – Add modal
+    $('#addUpdatePricesToggle').on('change', function () {
+        const on = this.checked;
+        $('#addUpdatePricesLabel').text(on ? 'Yes' : 'No').toggleClass('active', on);
+        $('#addUpdatePricesContainer').toggleClass('active', on);
+    });
+
+    // Update Ingredient Prices toggle – Edit modal
+    $('#editUpdatePricesToggle').on('change', function () {
+        const on = this.checked;
+        $('#editUpdatePricesLabel').text(on ? 'Yes' : 'No').toggleClass('active', on);
+        $('#editUpdatePricesContainer').toggleClass('active', on);
+    });
+
     // Initial load
     refreshInvoicesTable();
     loadVendors();
@@ -272,15 +286,15 @@ function submitAddInvoice() {
             return;
         }
     }
-    debugger
     const payload = {
         privateVendorId: vendorId,
         invoiceId: invoiceId,
         invoiceDate: invoiceDate,
+        updatePrices: $('#addUpdatePricesToggle').is(':checked'),
         items: invoiceItems.map(item => {
             const isPack = item.hasPackSize;
             const parsedQty = (item.quantity !== '' && item.quantity != null) ? parseFloat(item.quantity) : 1;
-            const unitPrice = parseFloat(item.price) || 0;
+            const price = parseFloat(item.price) || 0;
             const isExisting = typeof item.ingredientId === 'number' && item.ingredientId > 0;
             return {
                 ingredientId: isExisting ? item.ingredientId : null,
@@ -290,9 +304,7 @@ function submitAddInvoice() {
                 size: item.size ? parseFloat(item.size) : null,
                 packSize: isPack ? (item.packSize ? parseInt(item.packSize) : null) : null,
                 quantity: parsedQty,
-                unitPrice: unitPrice,
-                totalPrice: parseFloat((unitPrice * parsedQty).toFixed(2)),
-                price: unitPrice,
+                totalPrice: price,
                 weight: !isPack ? parsedQty : null
             };
         })
@@ -365,6 +377,7 @@ function submitEditInvoice() {
         privateVendorId: vendorId,
         invoiceId: invoiceId,
         invoiceDate: invoiceDate,
+        updatePrices: $('#editUpdatePricesToggle').is(':checked'),
         items: editInvoiceItems.map(item => {
             const isPack = item.hasPackSize;
             const parsedQty = (item.quantity !== '' && item.quantity != null) ? parseFloat(item.quantity) : 1;
@@ -659,6 +672,9 @@ function openAddInvoiceModal() {
         .prop('disabled', false)
         .html('<i class="fas fa-save"></i> Save Invoice');
 
+    // Reset Update Prices toggle
+    $('#addUpdatePricesToggle').prop('checked', false).trigger('change');
+
     openModal('addInvoiceModal');
 }
 
@@ -826,6 +842,9 @@ function editInvoice(inventoryInvoiceId) {
             .prop('disabled', false)
             .html('<i class="fas fa-save"></i> Update Invoice');
 
+        // Reset Update Prices toggle
+        $('#editUpdatePricesToggle').prop('checked', false).trigger('change');
+
         openModal('editInvoiceModal');
 
     } catch (err) {
@@ -956,8 +975,10 @@ function addEditIngredientRow() {
         vendorProductId: ing?.vendorProductId || null,
         quantity: '',
         hasPackSize: hasPackSize,
-        packSize: '',
-        price: ''
+        packSize: (hasPackSize && ing?.packSize != null) ? ing.packSize : '',
+        size: (ing?.size != null) ? Number(ing.size) : null,
+        unit: ing?.unit || null,
+        price: (ing?.price != null && !isNaN(Number(ing.price))) ? Number(ing.price) : ''
     });
 
     renderEditInvoiceItems();
@@ -1128,8 +1149,10 @@ function addIngredientRow() {
         vendorProductId: ing?.vendorProductId || null,
         quantity: '',
         hasPackSize: hasPackSize,
-        packSize: '',
-        price: ''
+        packSize: (hasPackSize && ing?.packSize != null) ? ing.packSize : '',
+        size: (ing?.size != null) ? Number(ing.size) : null,
+        unit: ing?.unit || null,
+        price: (ing?.price != null && !isNaN(Number(ing.price))) ? Number(ing.price) : ''
     });
 
     renderInvoiceItems();
@@ -1261,9 +1284,9 @@ function generateInvoiceSampleCsv(ingredients) {
     const rows = [headers.join(",")];
 
     (ingredients || []).forEach(ing => {
-        const prodId = escapeCsvValue(ing.vendorProductId || ing.VendorProductId || '');
-        const brand = escapeCsvValue(ing.brand || ing.Brand || '');
-        const description = escapeCsvValue(ing.name || ing.Name || '');
+        const prodId = escapeCsvValue(ing.vendorProductId);
+        const brand = escapeCsvValue(ing.name.split(" ")[0]);
+        const description = escapeCsvValue(ing.name.split(" ").slice(1).join(" "));
         const isCatchWeight = (ing.packSize == null || Number(ing.packSize) <= 0);
         const catchWeightStr = isCatchWeight ? 'Yes' : 'No';
 
@@ -1447,7 +1470,7 @@ function processInvoiceCsv(csvText) {
 
     // Map headers (case and punctuation insensitive)
     const headerRow = rows[0].map(h => (h || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''));
-    debugger
+    
     const idxProductId = headerRow.findIndex(h => h.includes('productid') || h === 'product' || h === 'id' || h === 'itemid');
     const idxBrand = headerRow.findIndex(h => h.includes('brand'));
     const idxDescription = headerRow.findIndex(h => h.includes('desc') || h.includes('name') || h.includes('ingredient'));
@@ -1469,6 +1492,20 @@ function processInvoiceCsv(csvText) {
         const cellPackSize = idxPackSize !== -1 ? (row[idxPackSize] || '').trim() : '';
         const cellWeightQty = idxWeightQty !== -1 ? (row[idxWeightQty] || '').trim() : '';
         const cellPrice = idxPrice !== -1 ? (row[idxPrice] || '').trim() : '';
+        const cellCatchWeight = idxCatchWeight !== -1 ? (row[idxCatchWeight] || '').trim().toLowerCase() : '';
+
+        debugger
+
+        // Skip rows where Weight/Qty and Price are not present in CSV
+        const parsedWeight = parseWeightQtyValue(cellWeightQty);
+        const hasWeight = parsedWeight && parsedWeight.qty !== null && !isNaN(parsedWeight.qty) && parsedWeight.qty > 0;
+        const cleanPrice = cellPrice.replace(/[^0-9.]/g, '');
+        const priceVal = parseFloat(cleanPrice);
+        const hasPrice = cleanPrice !== '' && !isNaN(priceVal) && priceVal > 0;
+
+        if (!hasPrice || !hasWeight || !cellProductId || !cellWeightQty || !cellPackSize || !cellCatchWeight) {
+            continue;
+        }
 
         // Matching strategy:
         // 1. By Product ID (vendorProductId)
@@ -1496,12 +1533,9 @@ function processInvoiceCsv(csvText) {
             });
         }
 
-        const cellCatchWeight = idxCatchWeight !== -1 ? (row[idxCatchWeight] || '').trim().toLowerCase() : '';
+        
         const parsedPack = parsePackSizeValue(cellPackSize);
-        const parsedWeight = parseWeightQtyValue(cellWeightQty);
-
         const hasPack = parsedPack.packSize !== null || parsedPack.size !== null;
-        const hasWeight = parsedWeight.qty !== null && parsedWeight.qty > 0;
 
         let ingredientId;
         let ingredientName;
@@ -1510,6 +1544,10 @@ function processInvoiceCsv(csvText) {
         let unit = parsedPack.unit || parsedWeight.unit || null;
         let size = parsedPack.size ?? null;
         let packSize = parsedPack.packSize ?? null;
+
+        
+
+
 
         if (matched) {
             ingredientId = matched.ingredientId;
@@ -1551,22 +1589,9 @@ function processInvoiceCsv(csvText) {
             packSize = parsedPack.packSize || 1;
         }
 
-        // Quantity:
-        let qty = '';
-        if (isCatchWeight) {
-            qty = hasWeight ? parsedWeight.qty : (hasPack ? (parsedWeight.qty || '') : '');
-        } else {
-            qty = hasWeight ? parsedWeight.qty : '';
-        }
-
-        // Price
-        const customPrice = parseFloat(cellPrice);
-        let price = 0;
-        if (!isNaN(customPrice) && customPrice >= 0) {
-            price = customPrice;
-        } else if (matched && matched.price != null && !isNaN(Number(matched.price))) {
-            price = Number(matched.price);
-        }
+        // Quantity & Price strictly from CSV (no auto-population from DB)
+        const qty = parsedWeight.qty;
+        const price = priceVal;
 
         // Upsert in invoiceItems
         const existingIdx = invoiceItems.findIndex(i =>
@@ -1598,7 +1623,7 @@ function processInvoiceCsv(csvText) {
 
         importedCount++;
     }
-
+    debugger
     renderInvoiceItems();
     syncInvoiceItemsView();
 

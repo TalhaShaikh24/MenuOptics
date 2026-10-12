@@ -156,24 +156,24 @@ namespace MenuOptics.Services
                 foreach (var item in model.Items)
                 {
                     decimal quantity = 0;
+                    decimal? unitPrice = null;
 
                     if (item.Weight != null && item.Weight != 0)
                     {
                         quantity = item.Weight.Value;
+                        unitPrice = item.Weight.Value / item.TotalPrice;
                     }
                     else if (item.Quantity != null && item.Quantity != 0)
                     {
                         quantity = item.Quantity.Value;
+                        unitPrice = item.Quantity.Value / item.TotalPrice;
                     }
                     else
                     {
                         quantity = 1;
                     }
 
-                    decimal unitPrice = item.UnitPrice ?? item.Price;
-                    decimal totalPrice = item.TotalPrice ?? (unitPrice * quantity);
-
-                    subtotal += totalPrice;
+                    subtotal += item.TotalPrice;
 
                     table.Rows.Add(
                         (item.IngredientId.HasValue && item.IngredientId.Value > 0) ? (object)item.IngredientId.Value : DBNull.Value,
@@ -184,7 +184,7 @@ namespace MenuOptics.Services
                         item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
                         quantity,
                         unitPrice,
-                        totalPrice
+                        item.TotalPrice
                     );
                 }
 
@@ -200,6 +200,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Subtotal", subtotal);
                 parameters.Add("@Tax", tax);
                 parameters.Add("@Total", total);
+                parameters.Add("@UpdatePrices", model.UpdatePrices);
                 parameters.Add("@Action", "INSERT");
                 parameters.Add(
                     "@InventoryInvoiceItems",
@@ -270,24 +271,24 @@ namespace MenuOptics.Services
                 foreach (var item in model.Items)
                 {
                     decimal quantity = 0;
+                    decimal unitPrice = item.UnitPrice ?? item.Price;
 
                     if (item.Weight != null && item.Weight != 0)
                     {
                         quantity = item.Weight.Value;
+                        unitPrice = item.Weight.Value / item.TotalPrice;
                     }
                     else if (item.Quantity != null && item.Quantity != 0)
                     {
                         quantity = item.Quantity.Value;
+                        unitPrice = item.Quantity.Value / item.TotalPrice;
                     }
                     else
                     {
                         quantity = 1;
                     }
 
-                    decimal unitPrice = item.UnitPrice ?? item.Price;
-                    decimal totalPrice = item.TotalPrice ?? (unitPrice * quantity);
-
-                    subtotal += totalPrice;
+                    subtotal += item.TotalPrice;
 
                     table.Rows.Add(
                         (item.IngredientId.HasValue && item.IngredientId.Value > 0) ? (object)item.IngredientId.Value : DBNull.Value,
@@ -298,7 +299,7 @@ namespace MenuOptics.Services
                         item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
                         quantity,
                         unitPrice,
-                        totalPrice
+                        item.TotalPrice
                     );
                 }
 
@@ -311,6 +312,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Tax", tax);
                 parameters.Add("@Total", total);
                 parameters.Add("@ModifiedBy", currentUserId);
+                parameters.Add("@UpdatePrices", model.UpdatePrices);
                 parameters.Add("@Action", "UPDATE");
                 parameters.Add(
                     "@InventoryInvoiceItems",
