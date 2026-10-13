@@ -1,20 +1,23 @@
 /* ============================================================================
  * customRangeFilter.js — Shared date-range filter jQuery plugin.
- * Exposes: $(el).customRangeFilter({ onApplyFilter, initialFilter }).
- * Renders the preset list + custom calendar and invokes onApplyFilter with
- * (filterType, { startDate, endDate }).
+ * Exposes: $(el).customRangeFilter({ onApplyFilter, initialFilter, enableTime }).
+ * Renders the preset list + custom calendar (+ optional time range) and invokes 
+ * onApplyFilter with (filterType, { startDate, endDate, startTime, endTime }).
  * ==========================================================================*/
 
 (function($) {
     $.fn.customRangeFilter = function(options) {
-        // Default settings
+        // Default settings — enableTime is optional and defaults to false
         var settings = $.extend({
             onApplyFilter: function(filterType, selectedDates) {},
-            initialFilter: "Last 30 Days"
+            initialFilter: "Last 30 Days",
+            enableTime: false,
+            defaultStartTime: "00:00",
+            defaultEndTime: "23:59"
         }, options);
 
         // Constants
-        const FILTER_OPTIONS = ["Last 30 Days", "Last 3 Months", "Last 6 Months", "Last Year", "Custom"];
+        const FILTER_OPTIONS = ["Last 7 Days", "Last 30 Days", "Last 3 Months", "Last 6 Months", "Last Year", "Custom"];
         const DAYS_OF_WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
         const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -27,11 +30,26 @@
             let currentYear = new Date().getFullYear();
             let startDate = null;
             let endDate = null;
+            let startTime = settings.defaultStartTime || "00:00";
+            let endTime = settings.defaultEndTime || "23:59";
             let isCalendarOpen = false;
+
+            // Helper to apply time component to Date objects
+            function applyTimesToDates() {
+                if (!settings.enableTime) return;
+                if (startDate) {
+                    const sParts = (startTime || "00:00").split(':');
+                    startDate.setHours(parseInt(sParts[0], 10) || 0, parseInt(sParts[1], 10) || 0, 0, 0);
+                }
+                if (endDate) {
+                    const eParts = (endTime || "23:59").split(':');
+                    endDate.setHours(parseInt(eParts[0], 10) || 23, parseInt(eParts[1], 10) || 59, 59, 999);
+                }
+            }
 
             // Initialize HTML structure
             $element.addClass('wrapper').html(`
-                <button class="toggleButton time-range-button">
+                <button class="toggleButton time-range-button" type="button">
                     <span class="buttonText">${selectedFilter}</span>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="chevron">
                         <path d="M4 6L8 10L12 6" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -42,38 +60,68 @@
                         <h3 class="filterTitle">Filter By</h3>
                         <div class="filterOptions">
                             ${FILTER_OPTIONS.map(option => `
-                                <button class="filterOption ${option === selectedFilter ? 'activeFilter' : ''}">${option}</button>
+                                <button type="button" class="filterOption ${option === selectedFilter ? 'activeFilter' : ''}">${option}</button>
                             `).join('')}
                         </div>
                     </div>
                     <div class="calendarSection">
                         <div class="calendarHeader">
-                            <button class="navButton prevMonth">&lsaquo;</button>
+                            <button type="button" class="navButton prevMonth">&lsaquo;</button>
                             <div class="dateDisplay">
                                 <h3 class="monthTitle"></h3>
                                 <div class="yearNavigation">
-                                    <button class="yearNavButton prevYear">&lsaquo;</button>
+                                    <button type="button" class="yearNavButton prevYear">&lsaquo;</button>
                                     <span class="yearTitle"></span>
-                                    <button class="yearNavButton nextYear">&rsaquo;</button>
+                                    <button type="button" class="yearNavButton nextYear">&rsaquo;</button>
                                 </div>
                             </div>
-                            <button class="navButton nextMonth">&rsaquo;</button>
+                            <button type="button" class="navButton nextMonth">&rsaquo;</button>
                         </div>
                         <div class="daysOfWeek">
                             ${DAYS_OF_WEEK.map(day => `<div class="dayOfWeek">${day}</div>`).join('')}
                         </div>
                         <div class="calendarGrid"></div>
-                        <button class="applyButton">Apply Filter</button>
+                        ${settings.enableTime ? `
+                            <div class="timeSection">
+                                <div class="timeHeader">
+                                    <span class="timeHeaderTitle">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 5px;">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>Time Selection
+                                    </span>
+                                </div>
+                                <div class="timeInputsRow">
+                                    <div class="timeInputGroup">
+                                        <label class="timeLabel">Start Time</label>
+                                        <input type="time" class="timeInput startTimeInput" value="${startTime}">
+                                    </div>
+                                    <span class="timeSeparator">to</span>
+                                    <div class="timeInputGroup">
+                                        <label class="timeLabel">End Time</label>
+                                        <input type="time" class="timeInput endTimeInput" value="${endTime}">
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        <button type="button" class="applyButton">Apply Filter</button>
                     </div>
                 </div>
             `);
 
             // Initialize default range
             (function initialize() {
-                const today = new Date();
-                startDate = new Date(today);
-                startDate.setDate(today.getDate() - 29);
-                endDate = today;
+                const range = calculatePresetRange(selectedFilter);
+                if (range) {
+                    startDate = range.startDate;
+                    endDate = range.endDate;
+                } else {
+                    const today = new Date();
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - 6);
+                    endDate = new Date(today);
+                }
+                applyTimesToDates();
                 updateButtonText();
                 renderCalendar();
             })();
@@ -91,10 +139,15 @@
 
                 if (spaceOnRight >= calendarWidth) {
                     position.left = '0';
+                    position.right = 'auto';
+                    position.transform = 'none';
                 } else if (spaceOnLeft >= calendarWidth) {
                     position.right = '0';
+                    position.left = 'auto';
+                    position.transform = 'none';
                 } else {
                     position.left = '50%';
+                    position.right = 'auto';
                     position.transform = 'translateX(-50%)';
                 }
 
@@ -104,7 +157,8 @@
             }
 
             // Toggle calendar
-            $element.on('click', '.time-range-button', function() {
+            $element.on('click', '.time-range-button', function(e) {
+                e.stopPropagation();
                 isCalendarOpen = !isCalendarOpen;
                 $element.find('.container').css(calculateCalendarPosition()).toggle(isCalendarOpen);
                 $element.find('.chevron').toggleClass('chevronUp', isCalendarOpen);
@@ -124,6 +178,19 @@
                 $(document).off('mousedown.customRangeFilter');
             });
 
+            // Time inputs change
+            $element.on('input change', '.startTimeInput', function() {
+                startTime = $(this).val() || "00:00";
+                applyTimesToDates();
+                updateButtonText();
+            });
+
+            $element.on('input change', '.endTimeInput', function() {
+                endTime = $(this).val() || "23:59";
+                applyTimesToDates();
+                updateButtonText();
+            });
+
             // Filter options click
             $element.on('click', '.filterOption', function() {
                 $element.find('.filterOption').removeClass('activeFilter');
@@ -134,6 +201,7 @@
                     const range = calculatePresetRange(selectedFilter);
                     startDate = range.startDate;
                     endDate = range.endDate;
+                    applyTimesToDates();
                     currentMonth = startDate.getMonth();
                     currentYear = startDate.getFullYear();
                 } else {
@@ -178,24 +246,28 @@
 
             // Apply filter
             $element.on('click', '.applyButton', function () {
-              
                 // If only the start date is selected and there's no end date, set endDate to null
                 if (startDate && !endDate) {
                     endDate = null;
                 }
+                applyTimesToDates();
 
-                // Apply filter with updated start and end dates
-                settings.onApplyFilter(selectedFilter, { startDate, endDate });
+                const result = { startDate, endDate };
+                if (settings.enableTime) {
+                    result.startTime = startTime;
+                    result.endTime = endTime;
+                }
+
+                settings.onApplyFilter(selectedFilter, result);
                 isCalendarOpen = false;
                 $element.find('.container').hide();
                 $element.find('.chevron').removeClass('chevronUp');
                 updateButtonText();
             });
 
-
             // Calendar day click
             $element.on('click', '.calendarDay', function() {
-                const day = parseInt($(this).text());
+                const day = parseInt($(this).text(), 10);
                 const clickedDate = new Date(currentYear, currentMonth, day);
 
                 if (selectedFilter !== "Custom") {
@@ -216,6 +288,24 @@
                     }
                 }
 
+                applyTimesToDates();
+                updateButtonText();
+                renderCalendar();
+            });
+
+            // Reset custom event
+            $element.on('resetFilter.customRangeFilter', function() {
+                selectedFilter = settings.initialFilter;
+                $element.find('.filterOption').removeClass('activeFilter');
+                $element.find(`.filterOption:contains("${selectedFilter}")`).addClass('activeFilter');
+                const range = calculatePresetRange(selectedFilter);
+                startDate = range.startDate;
+                endDate = range.endDate;
+                startTime = settings.defaultStartTime || "00:00";
+                endTime = settings.defaultEndTime || "23:59";
+                $element.find('.startTimeInput').val(startTime);
+                $element.find('.endTimeInput').val(endTime);
+                applyTimesToDates();
                 updateButtonText();
                 renderCalendar();
             });
@@ -226,6 +316,9 @@
                 const endDateObj = new Date(today);
 
                 switch (filterType) {
+                    case "Last 7 Days":
+                        startDateObj.setDate(today.getDate() - 6);
+                        break;
                     case "Last 30 Days":
                         startDateObj.setDate(today.getDate() - 29);
                         break;
@@ -255,15 +348,26 @@
             function isDateInRange(date) {
                 if (!startDate) return false;
                 const currentDate = new Date(currentYear, currentMonth, date);
-                if (!endDate) return currentDate.getTime() === startDate.getTime();
-                return currentDate >= startDate && currentDate <= endDate;
+                if (!endDate) {
+                    return currentDate.getFullYear() === startDate.getFullYear() &&
+                           currentDate.getMonth() === startDate.getMonth() &&
+                           currentDate.getDate() === startDate.getDate();
+                }
+                const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                return currentDate >= startDay && currentDate <= endDay;
             }
 
             function isRangeEdge(date) {
                 if (!startDate) return false;
                 const currentDate = new Date(currentYear, currentMonth, date);
-                const isStart = currentDate.getTime() === startDate.getTime();
-                const isEnd = endDate && currentDate.getTime() === endDate.getTime();
+                const isStart = currentDate.getFullYear() === startDate.getFullYear() &&
+                                currentDate.getMonth() === startDate.getMonth() &&
+                                currentDate.getDate() === startDate.getDate();
+                const isEnd = endDate && 
+                              currentDate.getFullYear() === endDate.getFullYear() &&
+                              currentDate.getMonth() === endDate.getMonth() &&
+                              currentDate.getDate() === endDate.getDate();
                 return isStart || isEnd;
             }
 
@@ -279,11 +383,15 @@
                 let text = selectedFilter;
                 if (selectedFilter === "Custom") {
                     if (startDate && endDate) {
-                        text = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+                        text = settings.enableTime 
+                            ? `${formatDate(startDate)} ${startTime} - ${formatDate(endDate)} ${endTime}`
+                            : `${formatDate(startDate)} - ${formatDate(endDate)}`;
                     } else if (startDate) {
-                        text = `From ${formatDate(startDate)}`;
+                        text = settings.enableTime 
+                            ? `From ${formatDate(startDate)} ${startTime}`
+                            : `From ${formatDate(startDate)}`;
                     } else {
-                        text = "Select Date Range";
+                        text = settings.enableTime ? "Select Date & Time" : "Select Date Range";
                     }
                 }
                 $element.find('.buttonText').text(text);
@@ -307,7 +415,7 @@
                     let classes = 'calendarDay';
                     if (isEdge) classes += ' rangeEdge';
                     else if (isInRange) classes += ' selectedDay';
-                    html += `<button class="${classes}">${day}</button>`;
+                    html += `<button type="button" class="${classes}">${day}</button>`;
                 }
 
                 $element.find('.calendarGrid').html(html);

@@ -1,0 +1,342 @@
+@{
+    ViewData["Title"] = "Restaurant Activity Logs";
+}
+<link href="~/css/customrangefilter.css?v=@DateTime.Now.Ticks" rel="stylesheet" />
+
+<style>
+    .badge-method {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+    .badge-method.post { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-method.put { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-method.patch { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+    .badge-method.get { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-method.delete { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
+
+    .badge-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 12px;
+    }
+    .badge-status.success { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .badge-status.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .badge-status.warning { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+
+    .json-box {
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 14px;
+        border-radius: 8px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 12px;
+        max-height: 280px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid #334155;
+    }
+    .json-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+    .json-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .btn-copy {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-copy:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+    .info-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #334155;
+    }
+    .filter-select {
+        height: 38px;
+        padding: 0 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        background: #fff;
+        color: #374151;
+        outline: none;
+    }
+    .filter-select:focus {
+        border-color: #f08d11;
+        box-shadow: 0 0 0 2px rgba(240, 141, 17, 0.15);
+    }
+    .filters-row {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 12px !important;
+        margin-bottom: 24px;
+        width: 100%;
+        flex-wrap: nowrap !important;
+    }
+    .filters-row .select2-container {
+        width: 100% !important;
+    }
+    .filters-row .select2-container--default .select2-selection--single {
+        height: 40px !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        background-color: #fff !important;
+        font-size: 13px !important;
+        box-shadow: none !important;
+    }
+    .filters-row .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 38px !important;
+        padding-left: 12px !important;
+        padding-right: 28px !important;
+        color: #374151 !important;
+    }
+    .filters-row .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 38px !important;
+        right: 8px !important;
+    }
+    .filters-row .select2-container--default.select2-container--open .select2-selection--single,
+    .filters-row .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #f08d11 !important;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(240, 141, 17, 0.15) !important;
+    }
+    .select2-dropdown {
+        border: 1px solid #d1d5db !important;
+        border-radius: 8px !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        font-size: 13px !important;
+        z-index: 9999 !important;
+    }
+    .select2-search--dropdown .select2-search__field {
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        outline: none !important;
+    }
+    .select2-search--dropdown .select2-search__field:focus {
+        border-color: #f08d11 !important;
+    }
+    .filters-row .wrapper .toggleButton {
+        height: 40px !important;
+        padding: 0 12px !important;
+        font-size: 13px !important;
+        border-radius: 8px !important;
+        border: 1px solid #d1d5db !important;
+        background: #fff !important;
+        min-width: 170px !important;
+        color: #374151 !important;
+        box-shadow: none !important;
+    }
+    .filters-row .wrapper .toggleButton:hover {
+        border-color: #f08d11 !important;
+        box-shadow: 0 0 0 2px rgba(240, 141, 17, 0.15) !important;
+    }
+</style>
+
+<main class="main-content">
+    <div class="page-header">
+        <div class="header-text">
+            <h1>User Activity Logs</h1>
+            <p>Monitor user operations, invoice entries, authentication, and system events.</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline" id="refreshRestaurantLogsBtn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Total Activities</p>
+                    <p class="stat-value" id="statTotalRestaurantLogs"></p>
+                    <p class="stat-change-text">Logged restaurant events</p>
+                </div>
+                <div class="stat-icon users">
+                    <i class="fas fa-list-ul"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Successful</p>
+                    <p class="stat-value" id="statSuccessRestaurantLogs" style="color: #16a34a;"></p>
+                    <p class="stat-change-text">Completed without error</p>
+                </div>
+                <div class="stat-icon active">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Errors</p>
+                    <p class="stat-value" id="statErrorRestaurantLogs" style="color: #dc2626;"></p>
+                    <p class="stat-change-text">Issues requiring attention</p>
+                </div>
+                <div class="stat-icon inactive">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Warnings</p>
+                    <p class="stat-value" id="statWarningRestaurantLogs" style="color: #f59644;"></p>
+                    <p class="stat-change-text">Warnings requiring attention</p>
+                </div>
+                <div class="stat-icon new">
+                    <i class="fa-solid fa-exclamation" style="color: #f59644;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters (Single Row) -->
+    <div class="filters-row">
+        <div class="search-wrapper" style="flex: 1; margin: 0; position: relative; min-width: 170px;">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 14px;"></i>
+            <input type="text" placeholder="Search by user, ip address..." class="filter-search" id="restaurantLogSearch" style="width: 100%; height: 40px; padding: 0 12px 0 36px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; font-size: 13px;">
+        </div>
+
+        <!-- Date & Time Range Filter -->
+        <div id="activityDateRange" style="flex-shrink: 0;"></div>
+
+        <!-- Restaurant Select2 Filter -->
+        <div class="restaurant-filter-wrapper" style="width: 190px; flex-shrink: 0;">
+            <select class="filter-select" id="restaurantFilter" style="width: 100%;">
+                <option value="all">All Users</option>
+            </select>
+        </div>
+
+        <select class="filter-select" id="restaurantLogLevelFilter" style="width: 140px; height: 40px; flex-shrink: 0; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; background: #fff; color: #374151;">
+            <option value="all">All Log Levels</option>
+            <option value="Success">Success</option>
+            <option value="Error">Error</option>
+            <option value="Warning">Warning</option>
+        </select>
+
+        <select class="filter-select" id="restaurantLogRequestFilter" style="width: 180px; height: 40px; flex-shrink: 0; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; background: #fff; color: #374151;">
+            <option value="all">All Endpoints</option>
+        </select>
+
+        <button class="btn btn-outline" id="clearRestaurantLogFiltersBtn" style="height: 40px; padding: 0 16px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+
+    <!-- Activity Table Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-history"></i>Operations Log</h3>
+        </div>
+        <div class="card-content">
+            <div class="table-container">
+                <table class="data-table" id="restaurantActivityTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Log #</th>
+                            <th>User</th>
+                            <th style="width: 130px;">IP Address</th>
+                            <th>Request Type</th>
+                            <th style="width: 120px;">Status</th>
+                            <th style="width: 170px;">Timestamp</th>
+                            <th style="width: 100px; text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="restaurantActivityTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ==================== RESTAURANT LOG DETAILS MODAL ==================== -->
+<div class="modal" id="restaurantLogDetailsModal">
+    <div class="modal-content" style="max-width: 800px; width: 90%;">
+        <div class="modal-header">
+            <div>
+                <h3 style="margin-bottom: 4px;">User Activity Log Details</h3>
+                <span id="modalRestaurantLogSubTitle" style="font-size: 12px; color: #64748b;"></span>
+            </div>
+            <button class="modal-close" onclick="closeModal('restaurantLogDetailsModal')">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+            <!-- Meta Information Chips -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="modalRestaurantMetaChips">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Request Payload -->
+            <div>
+                <div class="json-header">
+                    <span class="json-title"><i class="fas fa-arrow-up"></i> Request Payload</span>
+                    <button class="btn-copy" onclick="copyJsonToClipboard('modalRestaurantPayload')">
+                        <i class="fas fa-copy"></i> Copy Payload
+                    </button>
+                </div>
+                <pre class="json-box" id="modalRestaurantPayload">No payload recorded.</pre>
+            </div>
+
+            <!-- Response Data -->
+            <div>
+                <div class="json-header">
+                    <span class="json-title"><i class="fas fa-arrow-down"></i> Response Output</span>
+                    <button class="btn-copy" onclick="copyJsonToClipboard('modalRestaurantResponse')">
+                        <i class="fas fa-copy"></i> Copy Response
+                    </button>
+                </div>
+                <pre class="json-box" id="modalRestaurantResponse">No response recorded.</pre>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeModal('restaurantLogDetailsModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/js/customrangefilter.js?v=@DateTime.Now.Ticks"></script>
+    <script src="~/views-js/activity-log.js?v=@DateTime.Now.Ticks"></script>
+}

@@ -1,260 +1,420 @@
+/* ============================================================================
+ * customRangeFilter.css — Premium MenuOptics Themed Date & Time Range Filter
+ * ==========================================================================*/
+
 .wrapper {
     position: relative;
     display: inline-block;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .toggleButton {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    background: white;
-    border: 1px solid #dee2e6;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
     border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 16px;
-    color: #495057;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #374151;
     cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 200px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 190px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .toggleButton:hover {
-    border-color: #1976d2;
-    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+    border-color: #f08d11;
+    color: #111827;
+    box-shadow: 0 0 0 3px rgba(240, 141, 17, 0.12);
+}
+
+.toggleButton:focus-visible {
+    outline: none;
+    border-color: #f08d11;
+    box-shadow: 0 0 0 3px rgba(240, 141, 17, 0.2);
 }
 
 .buttonText {
     flex: 1;
     text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.01em;
 }
 
 .chevron {
-    font-size: 12px;
-    color: #6c757d;
-    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s ease;
+}
+
+.toggleButton:hover .chevron path {
+    stroke: #f08d11;
 }
 
 .chevronUp {
     transform: rotate(180deg);
 }
 
+/* ── Calendar Popup Container ─────────────────────────────────────────── */
 .container {
     position: absolute;
-    z-index: 1000;
+    z-index: 1050;
     display: flex;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 14px 35px -8px rgba(15, 23, 42, 0.14), 0 8px 16px -6px rgba(15, 23, 42, 0.06);
     overflow: hidden;
-    max-width: 800px;
-    min-width: 600px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 780px;
+    min-width: 620px;
+    animation: filterPopupIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+@keyframes filterPopupIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Left Sidebar (Presets) ──────────────────────────────────────────── */
 .rangesidebar {
-    background: #f8f9fa;
-    padding: 24px;
-    width: 200px;
-    border-right: 1px solid #e9ecef;
+    background: #f8fafc;
+    padding: 20px 16px;
+    width: 190px;
+    border-right: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
 }
 
 .filterTitle {
-    font-size: 18px;
-    font-weight: 600;
-    color: #495057;
-    margin: 0 0 20px 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin: 0 0 14px 4px;
 }
 
 .filterOptions {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
 }
 
 .filterOption {
-    background: none;
+    background: transparent;
     border: none;
-    padding: 12px 16px;
+    padding: 8px 12px;
     text-align: left;
-    font-size: 16px;
-    color: #6c757d;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
     cursor: pointer;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
+    display: flex;
+    align-items: center;
+    position: relative;
 }
 
 .filterOption:hover {
-    background: #e9ecef;
-    color: #495057;
+    background: #f1f5f9;
+    color: #0f172a;
 }
 
-.activeFilter {
-    background: #e3f2fd !important;
-    color: #1976d2 !important;
-    font-weight: 500;
+.filterOption.activeFilter {
+    background: #fff7ed !important;
+    color: #ea580c !important;
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 #f08d11;
 }
 
+/* ── Main Calendar Body ──────────────────────────────────────────────── */
 .calendarSection {
     flex: 1;
-    padding: 24px;
+    padding: 20px 24px;
     display: flex;
     flex-direction: column;
+    background: #ffffff;
 }
 
 .calendarHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .dateDisplay {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
+}
+
+.monthTitle {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.02em;
 }
 
 .yearNavigation {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+}
+
+.yearTitle {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    min-width: 48px;
+    text-align: center;
 }
 
 .yearNavButton {
-    background: none;
+    background: transparent;
     border: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     font-size: 14px;
-    color: #6c757d;
-    transition: all 0.2s ease;
+    color: #94a3b8;
+    transition: all 0.15s ease;
 }
 
 .yearNavButton:hover {
-    background: #f8f9fa;
-    color: #495057;
-}
-
-.yearTitle {
-    font-size: 16px;
-    font-weight: 500;
-    color: #6c757d;
-    min-width: 60px;
-    text-align: center;
+    background: #f1f5f9;
+    color: #0f172a;
 }
 
 .navButton {
-    background: none;
-    border: 1px solid #dee2e6;
-    width: 40px;
-    height: 40px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    width: 34px;
+    height: 34px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 18px;
-    color: #6c757d;
-    transition: all 0.2s ease;
+    font-size: 16px;
+    color: #64748b;
+    transition: all 0.18s ease;
 }
 
 .navButton:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
+    background: #fff7ed;
+    border-color: #f08d11;
+    color: #ea580c;
 }
 
-.monthTitle {
-    font-size: 20px;
-    font-weight: 600;
-    color: #495057;
-    margin: 0;
-}
-
+/* ── Days Grid ───────────────────────────────────────────────────────── */
 .daysOfWeek {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 4px;
+    margin-bottom: 8px;
 }
 
 .dayOfWeek {
     text-align: center;
-    font-size: 14px;
-    font-weight: 500;
-    color: #6c757d;
-    padding: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 0;
 }
 
 .calendarGrid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    margin-bottom: 32px;
+    gap: 4px;
+    margin-bottom: 18px;
 }
 
 .emptyDay {
-    height: 40px;
+    height: 38px;
 }
 
 .calendarDay {
-    background: none;
+    background: transparent;
     border: none;
-    height: 40px;
-    width: 40px;
-    border-radius: 50%;
+    height: 38px;
+    width: 38px;
+    margin: 0 auto;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 16px;
-    color: #495057;
-    transition: all 0.2s ease;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #334155;
+    transition: all 0.15s ease;
     position: relative;
 }
 
 .calendarDay:hover {
-    background: #f8f9fa;
+    background: #f1f5f9;
+    color: #0f172a;
 }
 
-.calendarDay.rangeEdge {
-    background: #1976d2 !important;
-    color: white !important;
-}
-
+/* In-range connected selection style */
 .selectedDay {
-    background: #e3f2fd !important;
-    color: #1976d2 !important;
+    background: #fff7ed !important;
+    color: #c2410c !important;
+    font-weight: 600;
+    border-radius: 4px !important;
+}
+
+/* Edge / Start & End Day */
+.calendarDay.rangeEdge {
+    background: linear-gradient(135deg, #f08d11 0%, #ff9f2e 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 10px rgba(240, 141, 17, 0.35);
+}
+
+.calendarDay.rangeEdge:hover {
+    background: linear-gradient(135deg, #e07a00 0%, #f08d11 100%) !important;
+    color: #ffffff !important;
 }
 
 .todayDay {
-    background: #1976d2;
-    color: white;
+    border: 1px solid #f08d11;
+    color: #ea580c;
+    font-weight: 600;
 }
 
-.applyButton {
-    background: #1976d2;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 16px;
+/* ── Time Selection Section (Optional) ───────────────────────────────── */
+.timeSection {
+    margin-top: 4px;
+    margin-bottom: 18px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.timeHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.timeHeaderTitle {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+}
+
+.timeHeaderTitle svg {
+    color: #f08d11;
+}
+
+.timeInputsRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.timeInputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.timeLabel {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.timeInput {
+    height: 36px;
+    padding: 6px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 500;
+    color: #0f172a;
+    background: #ffffff;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.timeInput:focus {
+    border-color: #f08d11;
+    box-shadow: 0 0 0 3px rgba(240, 141, 17, 0.15);
+}
+
+.timeSeparator {
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-top: 18px;
+}
+
+/* ── Apply Filter Button ─────────────────────────────────────────────── */
+.applyButton {
+    background: linear-gradient(135deg, #f08d11 0%, #ff9f2e 100%);
+    color: #ffffff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
     cursor: pointer;
     align-self: flex-end;
-    transition: background-color 0.2s ease;
+    box-shadow: 0 4px 12px rgba(240, 141, 17, 0.32);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.01em;
 }
 
 .applyButton:hover {
-    background: #1565c0;
+    background: linear-gradient(135deg, #e07a00 0%, #f08d11 100%);
+    box-shadow: 0 6px 16px rgba(240, 141, 17, 0.42);
+    transform: translateY(-1px);
 }
 
+.applyButton:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(240, 141, 17, 0.25);
+}
+
+/* ── Responsive Styling ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
@@ -265,15 +425,22 @@
         transform: translateX(-50%) !important;
     }
 
-    ..rangesidebar {
+    .rangesidebar {
         width: 100%;
         border-right: none;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 14px;
     }
 
     .filterOptions {
         flex-direction: row;
         flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .filterOption {
+        padding: 6px 10px;
+        font-size: 12px;
     }
 
     .calendarSection {
@@ -292,5 +459,11 @@
         left: 0 !important;
         transform: none !important;
         border-radius: 0;
+    }
+
+    .calendarDay {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
     }
 }

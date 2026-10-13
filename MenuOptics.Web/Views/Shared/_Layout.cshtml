@@ -151,6 +151,27 @@
                         <i class="fas fa-file-contract"></i>
                         <span>Policy Management</span>
                     </a>
+
+                    <!-- Admin: Activity Logs Group -->
+                    <div class="nav-group">
+                        <button class="nav-group-toggle" data-target="admin-activity-logs">
+                            <span class="nav-group-left">
+                                <i class="fas fa-history"></i>
+                                <span>Activity Logs</span>
+                            </span>
+                            <i class="fas fa-chevron-down nav-group-arrow"></i>
+                        </button>
+                        <div class="nav-group-items" id="admin-activity-logs">
+                            <a href="@Url.Action("VendorActivityLog", "ActivityLog")" class="nav-item nav-child @Html.IsActive("ActivityLog", "VendorActivityLog")">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>Vendor Activity</span>
+                            </a>
+                            <a href="@Url.Action("UserActivityLog", "ActivityLog")" class="nav-item nav-child @Html.IsActive("ActivityLog", "UserActivityLog")">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>User Activity</span>
+                            </a>
+                        </div>
+                    </div>
                 }
 
                 @if (User.IsInRole("Restaurant"))
