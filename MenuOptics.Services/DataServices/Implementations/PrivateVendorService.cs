@@ -100,7 +100,6 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@CreatedBy", actualUserId);
-                parameters.Add("@IsActive", true);
                 parameters.Add("@Action", "INSERT");
 
                 int newId = await connection.ExecuteScalarAsync<int>(
