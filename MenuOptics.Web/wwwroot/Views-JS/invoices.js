@@ -37,24 +37,9 @@ $(document).ready(function () {
         table.search('').draw();
     });
 
-    // Close modals on backdrop click
-    $('#invoiceDetailModal').on('click', function (e) {
-        if ($(e.target).is('#invoiceDetailModal')) {
-            closeModal('invoiceDetailModal');
-        }
-    });
+   
 
-    $('#addInvoiceModal').on('click', function (e) {
-        if ($(e.target).is('#addInvoiceModal')) {
-            closeAddInvoiceModal();
-        }
-    });
-
-    $('#editInvoiceModal').on('click', function (e) {
-        if ($(e.target).is('#editInvoiceModal')) {
-            closeEditInvoiceModal();
-        }
-    });
+    
 
     // CSV Import and Sample Download bindings
     $('#importInvoiceCsvBtn').on('click', function () {
@@ -381,7 +366,7 @@ function submitEditInvoice() {
         items: editInvoiceItems.map(item => {
             const isPack = item.hasPackSize;
             const parsedQty = (item.quantity !== '' && item.quantity != null) ? parseFloat(item.quantity) : 1;
-            const unitPrice = parseFloat(item.price) || 0;
+            const price = parseFloat(item.price) || 0;
             const isExisting = typeof item.ingredientId === 'number' && item.ingredientId > 0;
             return {
                 ingredientId: isExisting ? item.ingredientId : null,
@@ -391,9 +376,7 @@ function submitEditInvoice() {
                 size: item.size ? parseFloat(item.size) : null,
                 packSize: isPack ? (item.packSize ? parseInt(item.packSize) : null) : null,
                 quantity: parsedQty,
-                unitPrice: unitPrice,
-                totalPrice: parseFloat((unitPrice * parsedQty).toFixed(2)),
-                price: unitPrice,
+                totalPrice: price,
                 weight: !isPack ? parsedQty : null
             };
         })

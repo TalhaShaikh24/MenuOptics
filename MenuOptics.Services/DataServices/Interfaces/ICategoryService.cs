@@ -4,7 +4,7 @@ namespace MenuOptics.Services
 {
     public interface ICategoryService
     {
-        Task<ResponseDto> GetAllCategoriesAsync(int restaurantId);
+        Task<ResponseDto> GetAllCategoriesAsync(int restaurantId, bool? isActive);
         Task<ResponseDto> GetCategoryAsync(int id, int restaurantId);
         Task<ResponseDto> CreateCategoryAsync(Category model, int currentUserId, int actualUserId);
         Task<ResponseDto> UpdateCategoryAsync(Category model, int currentUserId, int actualUserId);

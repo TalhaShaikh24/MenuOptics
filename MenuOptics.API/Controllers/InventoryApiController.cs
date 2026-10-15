@@ -23,23 +23,6 @@ namespace MenuOptics.Controllers.Api
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-        [HttpPost("UpdateInventorySuiteReport")]
-        public async Task<IActionResult> UpdateInventorySuiteReport([FromBody] InventorySuiteUpdateDto model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(new ResponseDto
-                {
-                    Status = 400,
-                    ResponseMsg = "Invalid input."
-                });
-            }
-
-            var responseData = await _inventoryService.UpdateInventorySuiteReportAsync(model, CurrentUserId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
         [HttpGet("GetInventoryInvoices")]
         public async Task<IActionResult> GetInventoryInvoices()
         {

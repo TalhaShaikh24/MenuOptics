@@ -23,10 +23,10 @@ namespace MenuOptics.Controllers.Api
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
-        [HttpGet("GetAllPrivateVendors")]
-        public async Task<IActionResult> GetAllPrivateVendors()
+        [HttpGet("GetAllPrivateVendors/{isActive?}")]
+        public async Task<IActionResult> GetAllPrivateVendors(bool? isActive)
         {
-            var responseData = await _privateVendorService.GetAllPrivateVendorsAsync(CurrentUserId);
+            var responseData = await _privateVendorService.GetAllPrivateVendorsAsync(CurrentUserId, isActive);
             return StatusCode(responseData.Status, responseData);
         }
 

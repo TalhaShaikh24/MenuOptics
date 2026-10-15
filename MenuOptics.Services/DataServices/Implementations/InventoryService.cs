@@ -15,50 +15,6 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<ResponseDto> UpdateInventorySuiteReportAsync(InventorySuiteUpdateDto model, int currentUserId)
-        {
-            var ResponseDto = new ResponseDto();
-
-            using var connection = _context.CreateConnection();
-            connection.Open();
-
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@IngredientId", model.IngredientId);
-                parameters.Add("@ClosingCount", model.ClosingCount);
-                parameters.Add("@ClosingValue", model.ClosingValue);
-                parameters.Add("@ClosingDate", model.ClosingDate);
-
-                int rows = await connection.ExecuteAsync(
-                    "sp_InventoryClosingCount_Update",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Closing count updated.";
-                ResponseDto.Data = new { RowsAffected = rows };
-                return ResponseDto;
-            }
-            catch (SqlException sqlEx)
-            {
-                ResponseDto.Status = 400;
-                ResponseDto.ResponseMsg = sqlEx.Message;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
         public async Task<ResponseDto> GetInventoryInvoicesAsync(int currentUserId)
         {
             var responseDto = new ResponseDto();

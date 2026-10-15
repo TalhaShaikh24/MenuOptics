@@ -15,7 +15,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<ResponseDto> GetAllPrivateVendorsAsync(int restaurantId)
+        public async Task<ResponseDto> GetAllPrivateVendorsAsync(int restaurantId, bool? isActive)
         {
             var responseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -24,6 +24,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@Action", "SELECT_ALL");
+                parameters.Add("@IsActive", isActive);
                 parameters.Add("@RestaurantId", restaurantId);
 
                 var vendors = await connection.QueryAsync<PrivateVendor>(

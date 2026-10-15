@@ -46,15 +46,8 @@ $(document).ready(function () {
 
     // Search filter
     $('#menuSearch').on('input', function () {
-        const searchTerm = $(this).val().toLowerCase();
-        const searchWords = searchTerm.split(/\s+/).filter(word => word !== '');
-
-        $('.menu-item-card').each(function () {
-            const name = $(this).find('.item-info h3').text().toLowerCase();
-            // Every search word must exist in the item name 
-            const matches = searchWords.every(word => name.includes(word));
-            $(this).toggle(matches);
-        });
+        const activeCategoryId = $('.tab-btn.active').data('category') ?? 'all';
+        filterMenuItems(activeCategoryId);
     });
 
     refreshMenuGrid();
@@ -289,7 +282,7 @@ function updateRecipePrice($quantityInput, detailsId, costInputId) {
 // Initialize Select2 for categories
 function initializeCategorySelect(selectId, modalId) {
     ajaxRequest({
-        url: '/api/CategoryApi/GetAllCategories',
+        url: `/api/CategoryApi/GetAllCategories/${true}`,
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
@@ -757,15 +750,17 @@ function updateMenuItem(formData) {
 // Refresh category tabs
 function refreshCategoryTabs() {
     ajaxRequest({
-        url: '/api/CategoryApi/GetAllCategories',
+        url: `/api/CategoryApi/GetAllCategories/${true}`,
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
+            const currentActiveCategory = $('.tab-btn.active').data('category') || 'all';
             const tabContainer = $('#categoryTabs');
             tabContainer.empty();
-            tabContainer.append('<button class="tab-btn active" data-category="all">All</button>');
+            tabContainer.append(`<button class="tab-btn ${currentActiveCategory == 'all' ? 'active' : ''}" data-category="all">All</button>`);
             response.data.forEach(cat => {
-                tabContainer.append(`<button class="tab-btn" data-category="${cat.categoryId}">${cat.name}</button>`);
+                const isActive = (String(cat.categoryId) === String(currentActiveCategory));
+                tabContainer.append(`<button class="tab-btn ${isActive ? 'active' : ''}" data-category="${cat.categoryId}">${cat.name}</button>`);
             });
 
             $('.tab-btn').on('click', function () {
@@ -907,7 +902,10 @@ function refreshMenuGrid() {
                 const avgCostPercentage = activeItemCount > 0 ? (totalCostPercentage / activeItemCount).toFixed(2) : "0.00";
 
                 $('#avgFoodCost').html(`${avgCostPercentage}%`);
-               
+
+                // Re-apply currently active category tab filter
+                const activeCategoryId = $('.tab-btn.active').data('category') ?? 'all';
+                filterMenuItems(activeCategoryId);
             }
             else {
                 grid.append(`<h2>No Menu Items Added</h2>`);
@@ -919,12 +917,27 @@ function refreshMenuGrid() {
     });
 }
 
-// Filter menu items by category
+// Filter menu items by category and search
 function filterMenuItems(categoryId) {
+    if (categoryId === undefined || categoryId === null) {
+        categoryId = $('.tab-btn.active').data('category') ?? 'all';
+    }
+
+    const searchTerm = ($('#menuSearch').val() || '').toLowerCase().trim();
+    const searchWords = searchTerm ? searchTerm.split(/\s+/).filter(word => word !== '') : [];
+
     let visibleItems = 0;
     $('.menu-item-card').each(function () {
         const itemCategory = $(this).data('category');
-        const isVisible = categoryId === 'all' || itemCategory == categoryId;
+        const matchesCategory = (categoryId === 'all' || String(itemCategory) === String(categoryId));
+
+        let matchesSearch = true;
+        if (searchWords.length > 0) {
+            const name = $(this).find('.item-info h3').text().toLowerCase();
+            matchesSearch = searchWords.every(word => name.includes(word));
+        }
+
+        const isVisible = matchesCategory && matchesSearch;
         $(this).toggle(isVisible);
         if (isVisible) visibleItems++;
     });
@@ -932,8 +945,10 @@ function filterMenuItems(categoryId) {
     const grid = $('#menuGrid');
     grid.find('.no-items-message').remove();
 
-    if (visibleItems === 0) {
-        const categoryName = categoryId === 'all' ? 'All' : categories.find(cat => cat.id == categoryId)?.text || 'This Category';
+    if (visibleItems === 0 && $('.menu-item-card').length > 0) {
+        const categoryName = categoryId === 'all' 
+            ? 'All' 
+            : (categories.find(cat => String(cat.id) === String(categoryId))?.text || $('.tab-btn.active').text() || 'This Category');
         const message = `
             <div class="no-items-message" style="text-align: center; padding: 40px; color: #6b7280; font-size: 1.2rem;">
                 <i class="fas fa-utensils" style="font-size: 2rem; color: #9ca3af; margin-bottom: 10px;"></i>

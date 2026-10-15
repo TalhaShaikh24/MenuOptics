@@ -106,11 +106,11 @@ $(document).ready(function () {
             showMessage: false,
             onSuccess: function (response) {
                 const ingredients = response.data;
-                let csvContent = "Name,Unit,Physical Count\n";
+                let csvContent = "Name,Size,Physical Count\n";
                 ingredients.forEach(ingredient => {
                     const name = ingredient.name.replace(/,/g, ' ');
-                    const unit = ingredient.unit || '';
-                    csvContent += `"${name}","${unit}", ""\n`;
+                    const size = ingredient.size == null ? '' : ingredient.size + ' ' + ingredient.unit || '';
+                    csvContent += `"${name}","${size}", ""\n`;
                 });
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
@@ -576,11 +576,11 @@ function editIngredient(id) {
  */
 function loadPrivateVendors() {
     ajaxRequest({
-        url: '/api/PrivateVendorApi/GetAllPrivateVendors',
+        url: `/api/PrivateVendorApi/GetAllPrivateVendors/${true}`,
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            const vendors = (response.data || []).filter(v => v.isActive);
+            const vendors = response.data || [];
             const $addSelect = $('#ingredientPrivateVendorId');
 
             // Clear existing options (except placeholder)

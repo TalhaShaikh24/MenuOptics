@@ -22,10 +22,10 @@ namespace MenuOptics.Controllers.Api
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
-        [HttpGet("GetAllCategories")]
-        public async Task<IActionResult> GetAllCategories()
+        [HttpGet("GetAllCategories/{isActive?}")]
+        public async Task<IActionResult> GetAllCategories(bool? isActive = null)
         {
-            var responseData = await _categoryService.GetAllCategoriesAsync(CurrentUserId);
+            var responseData = await _categoryService.GetAllCategoriesAsync(CurrentUserId, isActive);
             return StatusCode(responseData.Status, responseData);
         }
 
