@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using Newtonsoft.Json;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -66,25 +67,24 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@EventId", id);
                 parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@Action", "SELECT_BY_ID");
+                parameters.Add("@Action", "SELECT");
 
                 var evt = await connection.QuerySingleOrDefaultAsync<Event>(
                     "sp_EventCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure);
 
-
-                // Load the event's items
-                var itemParams = new DynamicParameters();
-                itemParams.Add("@EventId", id);
-                itemParams.Add("@Action", "SELECT_BY_EVENT");
-
-                var items = await connection.QueryAsync<EventItem>(
-                    "sp_EventItemCRUD",
-                    itemParams,
-                    commandType: CommandType.StoredProcedure);
-
-                evt.Items = items.ToList();
+                if (evt != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(evt.ItemsJson))
+                    {
+                        var items = JsonConvert.DeserializeObject<List<EventItem>>(evt.ItemsJson);
+                        if (items != null)
+                        {
+                            evt.Items = items;
+                        }
+                    }
+                }
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Event retrieved successfully.";
@@ -114,11 +114,36 @@ namespace MenuOptics.Services
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
             connection.Open();
-            using var transaction = connection.BeginTransaction();
 
             try
             {
-                // 1. Insert the event
+                var itemsTable = new DataTable();
+                itemsTable.Columns.Add("MenuItemId", typeof(int));
+                itemsTable.Columns.Add("EventOnlyItemId", typeof(int));
+                itemsTable.Columns.Add("Quantity", typeof(decimal));
+                itemsTable.Columns.Add("UnitCost", typeof(decimal));
+                itemsTable.Columns.Add("TotalCost", typeof(decimal));
+
+                if (model.Items != null && model.Items.Any())
+                {
+                    foreach (var item in model.Items)
+                    {
+                        object menuItemId = (item.MenuItemId > 0) ? (object)item.MenuItemId : DBNull.Value;
+                        object eventOnlyItemId = (item.EventOnlyItemId > 0) ? (object)item.EventOnlyItemId : DBNull.Value;
+
+                        decimal qty = item.Qty != 0 ? item.Qty : item.Quantity;
+                        decimal totalCost = item.TotalCost != 0 ? item.TotalCost : (qty * item.UnitCost);
+
+                        itemsTable.Rows.Add(
+                            menuItemId,
+                            eventOnlyItemId,
+                            qty,
+                            item.UnitCost,
+                            totalCost
+                        );
+                    }
+                }
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@EventName", model.EventName);
@@ -131,25 +156,15 @@ namespace MenuOptics.Services
                 parameters.Add("@PricePerGuest", model.PricePerGuest);
                 parameters.Add("@TotalFoodCost", model.TotalFoodCost);
                 parameters.Add("@TotalRevenue", model.TotalRevenue);
+                parameters.Add("@Notes", model.Notes);
                 parameters.Add("@CreatedBy", actualUserId);
+                parameters.Add("@EventItems", itemsTable.AsTableValuedParameter("dbo.EventItemsType"));
                 parameters.Add("@Action", "INSERT");
 
                 int eventId = await connection.ExecuteScalarAsync<int>(
                     "sp_EventCRUD",
                     parameters,
-                    commandType: CommandType.StoredProcedure,
-                    transaction: transaction);
-
-                // 2. Insert the event items
-                if (model.Items != null && model.Items.Any())
-                {
-                    foreach (var item in model.Items)
-                    {
-                        await InsertEventItemAsync(connection, transaction, eventId, item);
-                    }
-                }
-
-                transaction.Commit();
+                    commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Event created successfully.";
@@ -158,14 +173,12 @@ namespace MenuOptics.Services
             }
             catch (SqlException sqlEx)
             {
-                transaction.Rollback();
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = sqlEx.Message;
                 return ResponseDto;
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
                 ResponseDto.Status = 500;
                 ResponseDto.ResponseMsg = $"{ex.Message}";
                 return ResponseDto;
@@ -181,13 +194,39 @@ namespace MenuOptics.Services
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
             connection.Open();
-            using var transaction = connection.BeginTransaction();
 
             try
             {
-                // 1. Update the event
+                var itemsTable = new DataTable();
+                itemsTable.Columns.Add("MenuItemId", typeof(int));
+                itemsTable.Columns.Add("EventOnlyItemId", typeof(int));
+                itemsTable.Columns.Add("Quantity", typeof(decimal));
+                itemsTable.Columns.Add("UnitCost", typeof(decimal));
+                itemsTable.Columns.Add("TotalCost", typeof(decimal));
+
+                if (model.Items != null && model.Items.Any())
+                {
+                    foreach (var item in model.Items)
+                    {
+                        object menuItemId = (item.MenuItemId > 0) ? (object)item.MenuItemId : DBNull.Value;
+                        object eventOnlyItemId = (item.EventOnlyItemId > 0) ? (object)item.EventOnlyItemId : DBNull.Value;
+
+                        decimal qty = item.Qty != 0 ? item.Qty : item.Quantity;
+                        decimal totalCost = item.TotalCost != 0 ? item.TotalCost : (qty * item.UnitCost);
+
+                        itemsTable.Rows.Add(
+                            menuItemId,
+                            eventOnlyItemId,
+                            qty,
+                            item.UnitCost,
+                            totalCost
+                        );
+                    }
+                }
+
                 var parameters = new DynamicParameters();
                 parameters.Add("@EventId", model.EventId);
+                parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@EventName", model.EventName);
                 parameters.Add("@EventDate", model.EventDate);
                 parameters.Add("@Location", model.Location);
@@ -198,51 +237,28 @@ namespace MenuOptics.Services
                 parameters.Add("@PricePerGuest", model.PricePerGuest);
                 parameters.Add("@TotalFoodCost", model.TotalFoodCost);
                 parameters.Add("@TotalRevenue", model.TotalRevenue);
+                parameters.Add("@Notes", model.Notes);
                 parameters.Add("@ModifiedBy", actualUserId);
+                parameters.Add("@EventItems", itemsTable.AsTableValuedParameter("dbo.EventItemsType"));
                 parameters.Add("@Action", "UPDATE");
 
-                await connection.ExecuteAsync(
+                int eventId = await connection.ExecuteScalarAsync<int>(
                     "sp_EventCRUD",
                     parameters,
-                    commandType: CommandType.StoredProcedure,
-                    transaction: transaction);
-
-                // 2. Delete existing items
-                var parameters2 = new DynamicParameters();
-                parameters2.Add("@EventId", model.EventId);
-                parameters2.Add("@Action", "DELETE_BY_EVENT");
-                await connection.ExecuteAsync(
-                   "sp_EventItemCRUD",
-                   parameters2,
-                   commandType: CommandType.StoredProcedure,
-                   transaction: transaction);
-
-
-                // 3. Insert new items
-                if (model.Items != null && model.Items.Any())
-                {
-                    foreach (var item in model.Items)
-                    {
-                        await InsertEventItemAsync(connection, transaction, model.EventId, item);
-                    }
-                }
-
-                transaction.Commit();
-
+                    commandType: CommandType.StoredProcedure);
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Event updated successfully.";
+                ResponseDto.Data = new { EventId = eventId };
                 return ResponseDto;
             }
             catch (SqlException sqlEx)
             {
-                transaction.Rollback();
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = sqlEx.Message;
                 return ResponseDto;
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
                 ResponseDto.Status = 500;
                 ResponseDto.ResponseMsg = $"{ex.Message}";
                 return ResponseDto;
@@ -292,127 +308,6 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-
-        public async Task<ResponseDto> GetEventNoteAsync(int eventId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@EventId", eventId);
-                parameters.Add("@Action", "SELECT_BY_EVENT");
-
-                var note = await connection.QuerySingleOrDefaultAsync<EventNoteDto>(
-                    "sp_EventNoteCRUD",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Note retrieved successfully.";
-                ResponseDto.Data = note;
-                return ResponseDto;
-            }
-            catch (SqlException sqlEx)
-            {
-                ResponseDto.Status = 400;
-                ResponseDto.ResponseMsg = sqlEx.Message;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
-        public async Task<ResponseDto> SaveEventNoteAsync(EventNoteDto model)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@EventId", model.EventId);
-                parameters.Add("@NoteText", model.NoteText);
-                parameters.Add("@Action", "UPSERT");
-
-                int noteId = await connection.ExecuteScalarAsync<int>(
-                    "sp_EventNoteCRUD",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Note saved successfully.";
-                ResponseDto.Data = new { EventNoteId = noteId };
-                return ResponseDto;
-            }
-            catch (SqlException sqlEx)
-            {
-                ResponseDto.Status = 400;
-                ResponseDto.ResponseMsg = sqlEx.Message;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
-        public async Task<ResponseDto> DeleteEventNoteAsync(int eventId)
-        {
-            var ResponseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@EventId", eventId);
-                parameters.Add("@Action", "DELETE");
-
-                await connection.ExecuteAsync(
-                    "sp_EventNoteCRUD",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                ResponseDto.Status = 200;
-                ResponseDto.ResponseMsg = "Note deleted successfully.";
-                return ResponseDto;
-            }
-            catch (SqlException sqlEx)
-            {
-                ResponseDto.Status = 400;
-                ResponseDto.ResponseMsg = sqlEx.Message;
-                return ResponseDto;
-            }
-            catch (Exception ex)
-            {
-                ResponseDto.Status = 500;
-                ResponseDto.ResponseMsg = $"{ex.Message}";
-                return ResponseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
         public async Task<ResponseDto> ToggleEventActiveAsync(int id, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
@@ -451,37 +346,5 @@ namespace MenuOptics.Services
             }
         }
 
-        /// <summary>
-        /// Inserts a single event item, mapping either MenuItemId or EventOnlyItemId based on the item source.
-        /// </summary>
-        private static async Task InsertEventItemAsync(IDbConnection connection, IDbTransaction transaction, int eventId, EventItem item)
-        {
-            var itemParams = new DynamicParameters();
-            itemParams.Add("@EventId", eventId);
-
-            if (item.ItemSource == "Menu")
-            {
-                itemParams.Add("@MenuItemId", item.MenuItemId);
-                itemParams.Add("@EventOnlyItemId", null);
-            }
-            else
-            {
-                itemParams.Add("@MenuItemId", null);
-                itemParams.Add("@EventOnlyItemId", item.EventOnlyItemId);
-            }
-
-            itemParams.Add("@ItemName", item.ItemName ?? "");
-            itemParams.Add("@Quantity", item.Qty);
-            itemParams.Add("@QuantityType", item.QtyType);
-            itemParams.Add("@UnitCost", item.UnitCost);
-            itemParams.Add("@TotalCost", item.TotalCost);
-            itemParams.Add("@Action", "INSERT");
-
-            await connection.ExecuteAsync(
-                "sp_EventItemCRUD",
-                itemParams,
-                commandType: CommandType.StoredProcedure,
-                transaction: transaction);
-        }
     }
 }

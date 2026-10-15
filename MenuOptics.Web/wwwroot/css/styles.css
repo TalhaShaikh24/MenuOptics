@@ -1704,7 +1704,7 @@ input:checked + .toggle-label {
 }
 
     .modal-content.large {
-        max-width: 800px;
+        max-width: 1000px;
     }
 
 
@@ -2402,7 +2402,7 @@ input:checked + .toggle-label {
 
 .form-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 16px;
 }
 

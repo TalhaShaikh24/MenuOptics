@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.IdentityModel.Tokens;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -77,24 +78,16 @@ namespace MenuOptics.Services
 
             using var connection = _context.CreateConnection();
 
-            // Revoke all existing active refresh tokens for this user
-            await connection.ExecuteAsync(
-                @"UPDATE UserRefreshTokens 
-                  SET IsRevoked = 1 
-                  WHERE UserId = @UserId AND IsRevoked = 0",
-                new { UserId = userId });
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserId", userId);
+            parameters.Add("@Token", refreshToken);
+            parameters.Add("@ExpiresAt", DateTime.UtcNow.AddDays(expiryDays));
+            parameters.Add("@Action", "INSERT");
 
-            // Insert the new refresh token
             await connection.ExecuteAsync(
-                @"INSERT INTO UserRefreshTokens (UserId, Token, ExpiresAt, IsRevoked, CreatedAt)
-                  VALUES (@UserId, @Token, @ExpiresAt, 0, @CreatedAt)",
-                new
-                {
-                    UserId = userId,
-                    Token = refreshToken,
-                    ExpiresAt = DateTime.UtcNow.AddDays(expiryDays),
-                    CreatedAt = DateTime.UtcNow
-                });
+                "sp_TokenCRUD",
+                parameters,
+                commandType: CommandType.StoredProcedure);
         }
 
         /// <summary>
@@ -104,11 +97,14 @@ namespace MenuOptics.Services
         {
             using var connection = _context.CreateConnection();
 
+            var parameters = new DynamicParameters();
+            parameters.Add("@Token", token);
+            parameters.Add("@Action", "SELECT");
+
             return await connection.QueryFirstOrDefaultAsync<RefreshToken>(
-                @"SELECT Id, UserId, Token, ExpiresAt, IsRevoked, CreatedAt
-                  FROM UserRefreshTokens
-                  WHERE Token = @Token",
-                new { Token = token });
+                "sp_TokenCRUD",
+                parameters,
+                commandType: CommandType.StoredProcedure);
         }
 
         /// <summary>
@@ -118,11 +114,14 @@ namespace MenuOptics.Services
         {
             using var connection = _context.CreateConnection();
 
+            var parameters = new DynamicParameters();
+            parameters.Add("@Token", token);
+            parameters.Add("@Action", "UPDATE");
+
             await connection.ExecuteAsync(
-                @"UPDATE UserRefreshTokens 
-                  SET IsRevoked = 1 
-                  WHERE Token = @Token",
-                new { Token = token });
+                "sp_TokenCRUD",
+                parameters,
+                commandType: CommandType.StoredProcedure);
         }
     }
 }

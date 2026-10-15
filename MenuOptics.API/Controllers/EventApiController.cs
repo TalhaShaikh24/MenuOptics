@@ -57,27 +57,6 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
-        [HttpGet("GetEventNote/{eventId}")]
-        public async Task<IActionResult> GetEventNote(int eventId)
-        {
-            var responseData = await _eventService.GetEventNoteAsync(eventId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
-        [HttpPost("SaveEventNote")]
-        public async Task<IActionResult> SaveEventNote([FromBody] EventNoteDto model)
-        {
-            var responseData = await _eventService.SaveEventNoteAsync(model);
-            return StatusCode(responseData.Status, responseData);
-        }
-
-        [HttpDelete("DeleteEventNote/{eventId}")]
-        public async Task<IActionResult> DeleteEventNote(int eventId)
-        {
-            var responseData = await _eventService.DeleteEventNoteAsync(eventId);
-            return StatusCode(responseData.Status, responseData);
-        }
-
         [HttpPut("ToggleEventActive/{id}")]
         public async Task<IActionResult> ToggleEventActive(int id)
         {

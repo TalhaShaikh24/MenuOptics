@@ -44,7 +44,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto>> GetAllRestaurantActivityLogsAsync(MenuOptics.Models.DTOs.ActivityLog.ActivityLogFilterDto? filter = null)
+        public async Task<MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto>> GetAllUserActivityLogsAsync(MenuOptics.Models.DTOs.ActivityLog.ActivityLogFilterDto? filter = null)
         {
             using var connection = _context.CreateConnection();
             var pageNumber = filter?.PageNumber > 0 ? filter.PageNumber : 1;
@@ -79,7 +79,7 @@ namespace MenuOptics.Services
             };
         }
 
-        public async Task<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto?> GetRestaurantActivityLogByIdAsync(int logId)
+        public async Task<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto?> GetUserActivityLogByIdAsync(int logId)
         {
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();

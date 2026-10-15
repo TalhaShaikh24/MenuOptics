@@ -69,7 +69,8 @@ namespace MenuOptics.Services
                 parameters.Add("@Action", "INSERT");
                 parameters.Add("@RestaurantId", restaurantId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@DefaultCost", model.DefaultCost);
+                parameters.Add("@Cost", model.DefaultCost);
+                parameters.Add("@SellingPrice", model.SellingPrice);
 
                 var id = await connection.ExecuteScalarAsync<int>(
                     "sp_EventOnlyItemCRUD",

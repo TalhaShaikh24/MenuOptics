@@ -22,8 +22,8 @@ namespace MenuOptics.Models
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }
         public int? ModifiedBy { get; set; }
-        public bool? HasNote { get; set; }
-
+        public string? Notes { get; set; }
+        public string? ItemsJson { get; set; }
         public List<EventItem> Items { get; set; } = new List<EventItem>();
     }
 
@@ -35,9 +35,9 @@ namespace MenuOptics.Models
         public int EventOnlyItemId { get; set; }
         public string ItemName { get; set; } = string.Empty;
         public decimal Qty { get; set; }
-        public string QtyType { get; set; } = string.Empty;
+        public decimal Quantity { get => Qty; set => Qty = value; }
         public decimal UnitCost { get; set; }
         public decimal TotalCost { get; set; }
-        public string ItemSource { get; set; } = string.Empty;
+        public decimal SellingPrice { get; set; }
     }
 }

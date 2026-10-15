@@ -29,7 +29,7 @@ namespace MenuOptics.API.Controllers
         {
             try
             {
-                var logs = await _activityLogService.GetAllRestaurantActivityLogsAsync(filter);
+                var logs = await _activityLogService.GetAllUserActivityLogsAsync(filter);
                 return Ok(new ResponseDto
                 {
                     Status = 200,
@@ -53,7 +53,7 @@ namespace MenuOptics.API.Controllers
         {
             try
             {
-                var log = await _activityLogService.GetRestaurantActivityLogByIdAsync(id);
+                var log = await _activityLogService.GetUserActivityLogByIdAsync(id);
                 if (log == null)
                 {
                     return NotFound(new ResponseDto
