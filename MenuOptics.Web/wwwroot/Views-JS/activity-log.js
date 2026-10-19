@@ -62,9 +62,7 @@ $(document).ready(function () {
     loadRestaurantsDropdown();
     initRestaurantActivityTable();
 
-    $('#refreshRestaurantLogsBtn').on('click', function () {
-        if (table) table.ajax.reload(null, false);
-    });
+    
 
     $('#restaurantLogSearch').on('input', function () {
         clearTimeout(debounceTimer);
@@ -191,7 +189,7 @@ function initRestaurantActivityTable() {
                     });
 
                     populateRequestTypeDropdown();
-                    updateStatsCards(logs, total);
+                    updateStatsCards(logs, total, result);
 
                     callback({
                         draw: result.draw || dtParams.draw,
@@ -279,27 +277,27 @@ function initRestaurantActivityTable() {
 
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
-function updateStatsCards(logs, total) {
+function updateStatsCards(logs, total, counts) {
     let successCount = 0;
     let errorCount = 0;
     let warningCount = 0;
-    const restaurantSet = new Set();
 
-    logs.forEach(log => {
-        const level = (log.logLevel || '').toLowerCase();
-        if (level === 'success') {
-            successCount++;
-        } else if (level === 'error') {
-            errorCount++;
-        }else if (level === 'warning') {
-            warningCount++;
-        }
-        if (log.restaurantName) {
-            restaurantSet.add(log.restaurantName);
-        } else if (log.userId) {
-            restaurantSet.add(`User-${log.userId}`);
-        }
-    });
+    if (counts && counts.totalSuccessCount !== undefined) {
+        successCount = counts.totalSuccessCount ?? 0;
+        errorCount = counts.totalErrorCount ?? 0;
+        warningCount = counts.totalPendingCount ?? 0;
+    } else {
+        logs.forEach(log => {
+            const level = (log.logLevel || '').toLowerCase();
+            if (level === 'success') {
+                successCount++;
+            } else if (level === 'error') {
+                errorCount++;
+            } else if (level === 'warning') {
+                warningCount++;
+            }
+        });
+    }
 
     $('#statTotalRestaurantLogs').text(total.toLocaleString());
     $('#statSuccessRestaurantLogs').text(successCount.toLocaleString());
@@ -310,10 +308,10 @@ function updateStatsCards(logs, total) {
 function populateRequestTypeDropdown() {
     const $dropdown = $('#restaurantLogRequestFilter');
     const currentVal = $dropdown.val();
-
     $dropdown.find('option:not(:first)').remove();
     Array.from(knownEndpoints).sort().forEach(type => {
-        $dropdown.append(new Option(type, type));
+        var endpoint = getMethodBadgeHtml(type);
+        $dropdown.append(new Option(endpoint.method + " " + endpoint.action, type));
     });
 
     if (currentVal && knownEndpoints.has(currentVal)) {
@@ -355,15 +353,15 @@ function getMethodBadgeHtml(requestType) {
 
     const parts = requestType.trim().split(/\s+/);
     const method = parts[0].toUpperCase();
-    const action = parts[1].split("/").pop();
+    const action = parts[1].split("/").slice(-2).join("/");
     const cls = method.toLowerCase();
-
 
     const actions = {
         method: method,
         action: action,
         cls: cls
-    }
+    };
+
     return actions;
 }
 

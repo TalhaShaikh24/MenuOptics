@@ -70,7 +70,6 @@ namespace MenuOptics.Services
             return Convert.ToBase64String(randomBytes);
         }
 
-
         public async Task SaveRefreshTokenAsync(int userId, string refreshToken)
         {
             var expiryDays = int.Parse(

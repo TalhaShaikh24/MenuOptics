@@ -32,6 +32,24 @@ namespace MenuOptics.API.Middleware
             // 1. CHECK EXCLUDED CONTROLLER
             // =========================================================
 
+
+            var excludedEndpoints = _configuration
+                .GetSection("ActivityLog:ExcludedEndpoints")
+                .Get<string[]>() ?? [];
+
+            var requestPath = context.Request.Path.Value;
+
+            if (!string.IsNullOrWhiteSpace(requestPath) &&
+                excludedEndpoints.Any(path =>
+                    string.Equals(
+                        path.TrimEnd('/'),
+                        requestPath.TrimEnd('/'),
+                        StringComparison.OrdinalIgnoreCase)))
+            {
+                await _next(context);
+                return;
+            }
+
             var endpoint = context.GetEndpoint();
 
             var controllerAction =

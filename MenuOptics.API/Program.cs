@@ -25,10 +25,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Register DataProtection with identical application name so the Web project can decrypt the auth cookie
-builder.Services.AddDataProtection()
-    .SetApplicationName("MenuOptics");
-
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.SuppressModelStateInvalidFilter = true;
@@ -39,6 +35,8 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+
+// Register DataProtection with identical application name so the Web project can decrypt the auth cookie
 builder.Services.AddDataProtection()
     .SetApplicationName("MenuOptics")
     .PersistKeysToFileSystem(new DirectoryInfo(@"C:\MenuOptics-SharedKeys")); // same path on server

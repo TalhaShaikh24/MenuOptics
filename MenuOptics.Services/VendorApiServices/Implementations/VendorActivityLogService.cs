@@ -59,6 +59,9 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             parameters.Add("@PageNumber", pageNumber);
             parameters.Add("@PageSize", pageSize);
             parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@TotalSuccessCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@TotalErrorCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@TotalPendingCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             var logs = await connection.QueryAsync<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>(
                 "sp_VendorActivityLogCRUD",
@@ -67,12 +70,18 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             );
 
             int totalCount = parameters.Get<int?>("@TotalCount") ?? 0;
+            int totalSuccessCount = parameters.Get<int?>("@TotalSuccessCount") ?? 0;
+            int totalErrorCount = parameters.Get<int?>("@TotalErrorCount") ?? 0;
+            int totalPendingCount = parameters.Get<int?>("@TotalPendingCount") ?? 0;
 
             return new MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>
             {
                 Draw = filter?.Draw ?? 0,
                 RecordsTotal = totalCount,
                 RecordsFiltered = totalCount,
+                TotalSuccessCount = totalSuccessCount,
+                TotalErrorCount = totalErrorCount,
+                TotalPendingCount = totalPendingCount,
                 Data = logs
             };
         }

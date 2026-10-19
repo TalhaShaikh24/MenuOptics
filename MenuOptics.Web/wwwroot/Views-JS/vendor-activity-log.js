@@ -191,7 +191,7 @@ function initVendorActivityTable() {
                     });
 
                     populateRequestTypeDropdown();
-                    updateStatsCards(logs, total);
+                    updateStatsCards(logs, total, result);
 
                     callback({
                         draw: result.draw || dtParams.draw,
@@ -271,27 +271,27 @@ function initVendorActivityTable() {
 
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
-function updateStatsCards(logs, total) {
+function updateStatsCards(logs, total, counts) {
     let successCount = 0;
     let errorCount = 0;
     let warningCount = 0;
-    const vendorSet = new Set();
 
-    logs.forEach(log => {
-        const level = (log.logLevel || '').toLowerCase();
-        if (level === 'success') {
-            successCount++;
-        } else if (level === 'error') {
-            errorCount++;
-        }else if (level === 'warning') {
-            warningCount++;
-        }
-        if (log.vendorName) {
-            vendorSet.add(log.vendorName);
-        } else if (log.vendorId) {
-            vendorSet.add(`Vendor-${log.vendorId}`);
-        }
-    });
+    if (counts && counts.totalSuccessCount !== undefined) {
+        successCount = counts.totalSuccessCount ?? 0;
+        errorCount = counts.totalErrorCount ?? 0;
+        warningCount = counts.totalPendingCount ?? 0;
+    } else {
+        logs.forEach(log => {
+            const level = (log.logLevel || '').toLowerCase();
+            if (level === 'success') {
+                successCount++;
+            } else if (level === 'error') {
+                errorCount++;
+            } else if (level === 'warning') {
+                warningCount++;
+            }
+        });
+    }
 
     $('#statTotalVendorLogs').text(total.toLocaleString());
     $('#statSuccessVendorLogs').text(successCount.toLocaleString());
@@ -305,7 +305,8 @@ function populateRequestTypeDropdown() {
 
     $dropdown.find('option:not(:first)').remove();
     Array.from(knownEndpoints).sort().forEach(type => {
-        $dropdown.append(new Option(type, type));
+        var endpoint = getMethodBadgeHtml(type);
+        $dropdown.append(new Option(endpoint.method + " " + endpoint.action, type));
     });
 
     if (currentVal && knownEndpoints.has(currentVal)) {
@@ -344,15 +345,15 @@ function getMethodBadgeHtml(requestType) {
 
     const parts = requestType.trim().split(/\s+/);
     const method = parts[0].toUpperCase();
-    const action = parts[1].split("/").pop();
+    const action = parts[1].split("/").slice(-2).join("/");
     const cls = method.toLowerCase();
-
 
     const actions = {
         method: method,
         action: action,
         cls: cls
-    }
+    };
+
     return actions;
 }
 

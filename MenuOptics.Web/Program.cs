@@ -18,18 +18,15 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Register DataProtection with matching application name to decrypt the auth cookie
-builder.Services.AddDataProtection()
-    .SetApplicationName("MenuOptics");
-
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+
+// Register DataProtection with matching application name to decrypt the auth cookie across Web and API
 builder.Services.AddDataProtection()
     .SetApplicationName("MenuOptics")
     .PersistKeysToFileSystem(new DirectoryInfo(@"C:\MenuOptics-SharedKeys")); // same path on server
-
 
 // Register the HttpClient named Client for proxying
 builder.Services.AddHttpClient("ApiClient", client =>
@@ -37,7 +34,8 @@ builder.Services.AddHttpClient("ApiClient", client =>
     // Configuration here if needed, e.g. Timeout
 }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 {
-    AllowAutoRedirect = false
+    AllowAutoRedirect = false,
+    UseCookies = false // CRITICAL: Disable server-side cookie sharing across users in proxy
 });
 
 // Configure Cookie Authentication to match API's cookie setup
