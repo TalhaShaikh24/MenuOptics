@@ -16,5 +16,6 @@ namespace MenuOptics.Services
 
         Task<DataTablesResponseDto<ActivityLogDto>> GetAllUserActivityLogsAsync(ActivityLogFilterDto? filter = null);
         Task<ActivityLogDto?> GetUserActivityLogByIdAsync(int logId);
+        Task<IEnumerable<string>> GetRestaurantEndpointsAsync();
     }
 }

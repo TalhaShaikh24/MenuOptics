@@ -30,6 +30,14 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
+        [HttpPut("UpdateSale")]
+        [Authorize]
+        public async Task<IActionResult> UpdateSale([FromBody] Sale model)
+        {
+            var responseData = await _salesService.UpdateSaleAsync(model, CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
         [HttpGet("GetAllSales")]
         [Authorize]
         public async Task<IActionResult> GetAllSales()

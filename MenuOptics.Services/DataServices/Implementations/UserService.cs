@@ -1,6 +1,4 @@
 using Dapper;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using MenuOptics.Data;
 using MenuOptics.Models;
 using Stripe;
@@ -701,11 +699,9 @@ namespace MenuOptics.Services
                 var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
                     "sp_UserCRUD", selectParams, commandType: CommandType.StoredProcedure);
 
-                // 4. Sign in with cookie + issue JWT (same as Login)
+                // Issue JWT
                 var effectiveUserId = user.ParentId.HasValue ? user.ParentId.Value : user.UserId;
                 var isParent = !user.ParentId.HasValue;
-
-                await _authService.SignInWithCookieAsync(user, effectiveUserId, isParent);
 
                 var tokenString = _tokenService.GenerateAccessToken(user);
                 var refreshTokenString = _tokenService.GenerateRefreshToken();

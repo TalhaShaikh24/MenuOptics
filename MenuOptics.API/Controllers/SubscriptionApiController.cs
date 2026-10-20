@@ -1,7 +1,6 @@
 using MenuOptics.Models;
 using MenuOptics.Models.DTOs.Subscription;
 using MenuOptics.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -10,7 +9,7 @@ namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [Authorize]
     public class SubscriptionApiController : ControllerBase
     {
         private readonly ISubscriptionService _subscriptionService;

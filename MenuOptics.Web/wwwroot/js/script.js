@@ -631,30 +631,3 @@ function showDeleteConfirmation() {
     });
 }
 
-// ── Background Session Heartbeat & Tab Focus Monitor ─────────────────────────
-$(document).ready(function () {
-    const path = (window.location.pathname || '').toLowerCase();
-    const isPublic = path.includes('/user/login') || path.includes('/user/register') ||
-                     path === '/' || path === '/home' || path === '/home/index';
-    if (isPublic) return;
-
-    function verifySession() {
-        if (window._sessionExpiredHandled) return;
-        ajaxRequest({
-            url: '/api/UserApi/CheckSession',
-            method: 'GET',
-            showMessage: false,
-            onError: function () {
-                // Handled automatically by globalAjax.js 401 handler
-            }
-        });
-    }
-
-    // Verify when user switches back to this browser tab
-    $(window).on('focus', function () {
-        verifySession();
-    });
-
-    // Check periodically every 2 minutes while dashboard remains open
-    setInterval(verifySession, 2 * 60 * 1000);
-});

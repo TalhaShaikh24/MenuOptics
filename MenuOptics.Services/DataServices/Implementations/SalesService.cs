@@ -30,7 +30,7 @@ namespace MenuOptics.Services
                 var saleItemsTable = new DataTable();
                 saleItemsTable.Columns.Add("MenuItemId", typeof(int));
                 saleItemsTable.Columns.Add("Quantity", typeof(decimal));
-                saleItemsTable.Columns.Add("SellingPrice", typeof(decimal));
+                saleItemsTable.Columns.Add("Revenue", typeof(decimal));
                 saleItemsTable.Columns.Add("Cost", typeof(decimal));
 
                 foreach (var item in model.Items)
@@ -38,7 +38,7 @@ namespace MenuOptics.Services
                     saleItemsTable.Rows.Add(
                         item.MenuItemId,
                         item.Quantity,
-                        item.SellingPrice,
+                        item.Revenue,
                         item.Cost
                     );
                 }
@@ -59,6 +59,78 @@ namespace MenuOptics.Services
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Sale created successfully.";
+                ResponseDto.Data = new
+                {
+                    saleId,
+                    model.StartDate,
+                    model.EndDate,
+                    model.Subtotal,
+                    model.Tax,
+                    model.Total,
+                    Items = model.Items
+                };
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx)
+            {
+                ResponseDto.Status = 400;
+                ResponseDto.ResponseMsg = sqlEx.Message;
+                return ResponseDto;
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = $"{ex.Message}";
+                return ResponseDto;
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+        public async Task<ResponseDto> UpdateSaleAsync(Sale model, int currentUserId)
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+            try
+            {
+                var saleItemsTable = new DataTable();
+                saleItemsTable.Columns.Add("MenuItemId", typeof(int));
+                saleItemsTable.Columns.Add("Quantity", typeof(decimal));
+                saleItemsTable.Columns.Add("Revenue", typeof(decimal));
+                saleItemsTable.Columns.Add("Cost", typeof(decimal));
+
+                if (model.Items != null)
+                {
+                    foreach (var item in model.Items)
+                    {
+                        saleItemsTable.Rows.Add(
+                            item.MenuItemId,
+                            item.Quantity,
+                            item.Revenue,
+                            item.Cost
+                        );
+                    }
+                }
+                
+                // Insert Sale
+                var saleParameters = new DynamicParameters();
+                saleParameters.Add("@SaleId", model.SaleId);
+                saleParameters.Add("@RestaurantId", currentUserId);
+                saleParameters.Add("@StartDate", model.StartDate);
+                saleParameters.Add("@EndDate", model.EndDate);
+                saleParameters.Add("@Subtotal", model.Subtotal);
+                saleParameters.Add("@Tax", model.Tax);
+                saleParameters.Add("@Total", model.Total);
+                saleParameters.Add("@ModifiedBy", currentUserId);
+                saleParameters.Add("@SaleItems", saleItemsTable.AsTableValuedParameter("SaleItemsType"));
+                saleParameters.Add("@Action", "UPDATE");
+
+                int saleId = await connection.ExecuteScalarAsync<int>("sp_SaleCRUD", saleParameters, commandType: CommandType.StoredProcedure);
+
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = "Sale updated successfully.";
                 ResponseDto.Data = new
                 {
                     saleId,
@@ -192,7 +264,7 @@ namespace MenuOptics.Services
                     {
                         MenuItemId = menuItemId,
                         Quantity = quantity,
-                        SellingPrice = menuItem.SellingPrice * quantity,
+                        Revenue = menuItem.SellingPrice * quantity,
                         Cost = menuItem.Cost * quantity
                     });
                 }
@@ -208,12 +280,12 @@ namespace MenuOptics.Services
                     saleItemsTable.Rows.Add(
                         item.MenuItemId,
                         item.Quantity,
-                        item.SellingPrice,
+                        item.Revenue,
                         item.Cost
                     );
                 }
 
-                sale.Subtotal = sale.Items.Sum(si => si.SellingPrice);
+                sale.Subtotal = sale.Items.Sum(si => si.Revenue);
                 sale.Tax = 0;
                 sale.Total = sale.Subtotal + sale.Tax;
 

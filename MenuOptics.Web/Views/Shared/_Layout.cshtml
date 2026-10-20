@@ -446,7 +446,7 @@
         let imageBaseUrl;
         $(document).ready(function () {
             imageBaseUrl = $("#imageBaseUrl").val();
-            var token = Cookies.get('JwtToken');
+            var token = Cookies.get('JwtToken') || localStorage.getItem('jwtToken');
 
             if (token && token.trim() !== '') {
                 $.ajaxSetup({
@@ -567,7 +567,7 @@
             processData: false,
             onSuccess: function (response) {
                 Cookies.remove('JwtToken', { path: '/' });
-                Cookies.remove('WasLoggedIn', { path: '/' });
+                localStorage.removeItem("jwtToken");
                 localStorage.removeItem("profilePic");
                 showNotification('Logout successfully!', 'success');
                 window.location.href = '/User/login';

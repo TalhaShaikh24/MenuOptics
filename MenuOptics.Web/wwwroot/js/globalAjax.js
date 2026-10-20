@@ -6,11 +6,19 @@
  * global error popup. Do not change the request/response contract.
  * ==========================================================================*/
 
-// Setup global AJAX headers
+// Setup global AJAX defaults and automatically attach JWT Bearer token
 (function setupAjaxDefaults() {
-    $.ajaxSetup({
-        xhrFields: {
-            withCredentials: true
+    $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+        // Retrieve token from Cookies or localStorage
+        var token = (typeof Cookies !== 'undefined' ? Cookies.get('JwtToken') : null);
+
+        if (token && token.trim() !== '') {
+            if (!options.headers) {
+                options.headers = {};
+            }
+            if (!options.headers['Authorization'] && !options.headers['authorization']) {
+                jqXHR.setRequestHeader('Authorization', 'Bearer ' + token.trim());
+            }
         }
     });
 })();
@@ -143,8 +151,15 @@ function executeAjaxRequest({
 
             // ── 401: Session / Token expired — auto logout ─────────────────
             const isLoginRequest = (url && url.toLowerCase().includes('/login')) || 
-                                   (window.location.pathname.toLowerCase().includes('/user/login'));
+                (window.location.pathname.toLowerCase().includes('/user/login'));
+
+            
             if (statusCode === 401 && !isLoginRequest) {
+                // Clear tokens
+                if (typeof Cookies !== 'undefined') {
+                    Cookies.remove('JwtToken', { path: '/' });
+                }
+
                 // Guard against multiple concurrent 401s triggering duplicate redirects
                 if (window._sessionExpiredHandled) return;
                 window._sessionExpiredHandled = true;

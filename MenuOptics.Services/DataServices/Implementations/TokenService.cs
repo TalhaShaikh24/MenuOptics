@@ -38,17 +38,25 @@ namespace MenuOptics.Services
             var isParent = !user.ParentId.HasValue;
 
             var isVendorCreated = user.VendorId.HasValue && user.VendorId.Value > 0;
+            var stripeSubscriptionId = user.StripeSubscriptionId ?? "";
+            var subscriptionType = user.SubscriptionType ?? "";
+            var paidBy = user.PaidBy?.ToString() ?? "";
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.Username!),
+                new Claim(ClaimTypes.Name, user.Username ?? ""),
                 new Claim(ClaimTypes.NameIdentifier, effectiveUserId.ToString()),
                 new Claim(ClaimTypes.Role, user.Roles ?? "User"),
+                new Claim(ClaimTypes.Email, user.Email ?? ""),
                 new Claim("FirstName", user.FirstName ?? ""),
                 new Claim("LastName", user.LastName ?? ""),
                 new Claim("ActualUserId", user.UserId.ToString()),
                 new Claim("IsParent", isParent.ToString().ToLower()),
+                new Claim("isParent", isParent.ToString().ToLower()),
                 new Claim("IsVendorCreated", isVendorCreated.ToString().ToLower()),
+                new Claim("StripeSubscriptionId", stripeSubscriptionId),
+                new Claim("SubscriptionType", subscriptionType.ToUpper()),
+                new Claim("PaidBy", paidBy),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -56,7 +64,7 @@ namespace MenuOptics.Services
                 issuer: issuer,
                 audience: audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(expiryHours),
+                expires: DateTime.Now.AddHours(expiryHours),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

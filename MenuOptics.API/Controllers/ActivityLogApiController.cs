@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using MenuOptics.Models;
 using MenuOptics.Models.DTOs.ActivityLog;
@@ -10,7 +9,7 @@ namespace MenuOptics.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme, Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public class ActivityLogApiController : ControllerBase
     {
         private readonly IActivityLogService _activityLogService;
@@ -127,6 +126,54 @@ namespace MenuOptics.API.Controllers
                     Status = 200,
                     ResponseMsg = "Vendor activity log retrieved successfully.",
                     Data = log
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseDto
+                {
+                    Status = 500,
+                    ResponseMsg = ex.Message,
+                    Data = null
+                });
+            }
+        }
+
+        [HttpGet("GetRestaurantEndpoints")]
+        public async Task<IActionResult> GetRestaurantEndpoints()
+        {
+            try
+            {
+                var endpoints = await _activityLogService.GetRestaurantEndpointsAsync();
+                return Ok(new ResponseDto
+                {
+                    Status = 200,
+                    ResponseMsg = "Restaurant endpoints retrieved successfully.",
+                    Data = endpoints
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseDto
+                {
+                    Status = 500,
+                    ResponseMsg = ex.Message,
+                    Data = null
+                });
+            }
+        }
+
+        [HttpGet("GetVendorEndpoints")]
+        public async Task<IActionResult> GetVendorEndpoints()
+        {
+            try
+            {
+                var endpoints = await _vendorActivityLogService.GetVendorEndpointsAsync();
+                return Ok(new ResponseDto
+                {
+                    Status = 200,
+                    ResponseMsg = "Vendor endpoints retrieved successfully.",
+                    Data = endpoints
                 });
             }
             catch (Exception ex)

@@ -1,5 +1,4 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
 using MenuOptics.Services.EmailTemplates;
@@ -16,7 +15,6 @@ namespace MenuOptics.API.Controllers.VendorApi
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     [Authorize(Roles = "Vendor")]
     public class RestaurantApiController : ControllerBase
     {

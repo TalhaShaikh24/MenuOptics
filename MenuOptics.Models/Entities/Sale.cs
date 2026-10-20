@@ -31,7 +31,7 @@ namespace MenuOptics.Models
         public string? MenuItemName { get; set; }
         public string? Name { get; set; }
         public int Quantity { get; set; }
-        public decimal SellingPrice { get; set; }
+        public decimal Revenue { get; set; }
         public decimal Cost { get; set; }
         public DateTime CreatedOn { get; set; }
         public int? CreatedBy { get; set; }

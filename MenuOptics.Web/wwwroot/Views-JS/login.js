@@ -23,10 +23,7 @@ $(document).ready(function () {
         showNotification('Your session has expired. Please log in again.', 'error');
         // Clean URL so refresh does not keep showing the alert
         window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (urlParams.get('loginRequired') === 'true') {
-        showNotification('Please log in to continue.', 'error');
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    } 
 
     updateCompleteSetupState();
 

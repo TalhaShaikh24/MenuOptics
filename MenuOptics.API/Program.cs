@@ -1,14 +1,11 @@
 using MenuOptics.API.Middleware;
 using MenuOptics.Data;
-using MenuOptics.Middleware;
 using MenuOptics.Services;
 using MenuOptics.Services.VendorApi;
 using MenuOptics.Services.VendorApiServices.Implementations;
 using MenuOptics.Services.VendorApiServices.Interfaces;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -35,12 +32,6 @@ builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddSingleton<DapperContext>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
-
-// Register DataProtection with identical application name so the Web project can decrypt the auth cookie
-builder.Services.AddDataProtection()
-    .SetApplicationName("MenuOptics")
-    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\MenuOptics-SharedKeys")); // same path on server
-
 
 // Infrastructure services
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
@@ -73,42 +64,19 @@ builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IMenuAiAnalysisService, MenuAiAnalysisService>();
 
-
-
-// 1. Read JWT settings from configuration (appsettings.json) and create a key for token validation
+// Read JWT settings from configuration (appsettings.json) and create key for token validation
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var key = Encoding.UTF8.GetBytes(jwtSection["Key"]);
-var expiryHours = double.TryParse(jwtSection["ExpiryInHours"], out var hours) && hours > 0 ? hours : 1;
-var cookieExpiry = TimeSpan.FromHours(expiryHours);
+var key = Encoding.UTF8.GetBytes(jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured."));
 
-// Configure Cookie Authentication
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/User/Login";
-        options.AccessDeniedPath = "/User/AccessDenied";
-        options.Cookie.Name = "RestaurantAuthCookie";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.None;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.ExpireTimeSpan = cookieExpiry;
-        options.Events.OnRedirectToLogin = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/json";
-            return context.Response.WriteAsync("{\"status\":401,\"responseMsg\":\"Your session has expired. Please log in again.\",\"data\":null}");
-        };
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            context.Response.ContentType = "application/json";
-            return context.Response.WriteAsync("{\"status\":403,\"responseMsg\":\"Forbidden. Access denied.\",\"data\":null}");
-        };
-    })
-// 2. JWT Bearer configure karein
+// Configure JWT Bearer as the default and only authentication scheme
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
-
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -117,12 +85,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-
-        //Bypass bydefault expiry of JWT Token
+        IssuerSigningKey = new SymmetricSecurityKey(key),
         ClockSkew = TimeSpan.Zero
     };
-
 
     options.Events = new JwtBearerEvents
     {
@@ -141,7 +106,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             await context.Response.WriteAsync(jsonResponse);
         },
 
-        // Optional: if user is authenticated but does not have required permissions, return 403 Forbidden instead of redirecting to AccessDeniedPath
         OnForbidden = async context =>
         {
             context.Response.StatusCode = 403;
@@ -158,14 +122,37 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             await context.Response.WriteAsync(jsonResponse);
         }
     };
-    // -------------------------------
 });
 
-
-// Configure Swagger
+// Configure Swagger with JWT Bearer support
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Restaurant API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter JWT Bearer token: Bearer {token}"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 var allowedOrigins = builder.Configuration

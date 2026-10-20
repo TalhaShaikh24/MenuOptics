@@ -252,9 +252,12 @@
             <option value="Warning">Warning</option>
         </select>
 
-        <select class="filter-select" id="vendorLogRequestFilter" style="width: 180px; height: 40px; flex-shrink: 0; padding: 0 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; background: #fff; color: #374151;">
-            <option value="all">All Endpoints</option>
-        </select>
+        <!-- Endpoint Select2 Filter -->
+        <div class="endpoint-filter-wrapper" style="width: 210px; flex-shrink: 0;">
+            <select class="filter-select" id="vendorLogRequestFilter" style="width: 100%;">
+                <option value="all">All Endpoints</option>
+            </select>
+        </div>
 
         <button class="btn btn-outline" id="clearVendorLogFiltersBtn" style="height: 40px; padding: 0 16px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
             <i class="fas fa-times"></i> Clear

@@ -1,126 +1,92 @@
 /* ============================================================================
- * sales.js — Point-of-sale page (Views/Sales/Index.cshtml)
- * Menu grid, order cart, sale completion, sales history and Excel import.
+ * sales.js — Sales Records & POS Entries (Views/Sales/Index.cshtml)
+ * Table form layout matching Invoice entry, with Add, Edit, View, and Import.
  *
- * Project convention — every Views-JS file follows this section order:
+ * Project convention — section order:
  *   1. Constants  2. State  3. Initialization  4. Event bindings
  *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
+ * Functions stay global: referenced by inline handlers.
  * ==========================================================================*/
+
+/* ── 2. State ─────────────────────────────────────────────────────────── */
+
+let table = null;
+let allSales = [];
+let menuItems = [];
+let currentSaleItems = [];
+let editSaleItems = [];
 
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
-    initializeSalesPage();
-    loadMenuItems();
-    refreshCategoryTabs(); // Add this to initialize dynamic category filters
+    initDataTable();
 
-    // Set today's date as default
-    const today = new Date().toISOString().split('T')[0];
-    $('#salesDate').val(today);
-    $('#endSalesDate').val(today); // Set default for end date as well
-    $('#importStartDate').val(today);
-    $('#importEndDate').val(today);
-
-    // Category filter
-    $('.menu-categories').on('click', '.category-btn', function () {
-        $('.category-btn').removeClass('active');
-        $(this).addClass('active');
-
-        const category = $(this).data('category');
-        filterMenuItems(category);
+    // Event handler for Add Sale button
+    $('#addSaleBtn').on('click', function () {
+        openAddSaleModal();
     });
 
-    // Clear order
-    $('#clearOrderBtn').on('click', function () {
-        clearOrder();
+    // Search filter
+    $('#salesSearch').on('input', function () {
+        if (table) table.search(this.value).draw();
     });
 
-    // Complete sale
-    $('#completeSaleBtn').on('click', function () {
-        completeSale();
+    // Clear filter
+    $('#clearFilterBtn').on('click', function () {
+        $('#salesSearch').val('');
+        if (table) table.search('').draw();
     });
 
-    // Sales history button
-    $('#salesHistoryBtn').on('click', function () {
-        loadSalesHistory();
-    });
-
-    // Import sales button
+    // Import sales modal button
     $('#importSalesBtn').on('click', function () {
+        const today = new Date().toISOString().split('T')[0];
+        $('#importStartDate').val(today);
+        $('#importEndDate').val(today);
         openModal('importSalesModal');
     });
 
-    // Download sample sales file button
-    $(document).on('click', '#downloadSampleBtn, #importSalesModal a[download], a[href*="Sales_Import_Sample"]', function (e) {
+    // Download sample sales file
+    $(document).on('click', '#downloadSampleBtn', function (e) {
         e.preventDefault();
         downloadSampleSalesFile();
     });
 
     // Import sales form submission
     $('#importSalesSubmitBtn').on('click', function () {
-        if (!isFormValid('#importSalesForm')) {
-            showNotification('Please fill in all required fields.', 'error');
-            return;
-        }
-
-        const fileInput = $('#salesFile')[0];
-        const startDate = $('#importStartDate').val();
-        const endDate = $('#importEndDate').val();
-
-        debugger;
-
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        formData.append('startDate', startDate);
-        formData.append('endDate', endDate);
-
-        const importBtn = $('#importSalesSubmitBtn');
-        const originalText = importBtn.html();
-        importBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Importing...');
-
-        ajaxRequest({
-            url: '/api/SalesApi/ImportSales',
-            method: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            onSuccess: function (response) {
-                importBtn.prop('disabled', false).html(originalText);
-                $('#importSalesForm')[0].reset();
-                const today = new Date().toISOString().split('T')[0];
-                $('#importStartDate').val(today);
-                $('#importEndDate').val(today);
-                closeModal('importSalesModal');
-                loadSalesHistory(); // Refresh sales history
-            },
-            onError: function (xhr, status, error) {
-                console.error('Failed to import sales:', error);
-                importBtn.prop('disabled', false).html(originalText);
-            }
-        });
+        handleImportSales();
     });
+
+    // Initial load
+    loadMenuItems();
+    refreshSalesTable();
 });
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
-
-let currentOrder = [];
-let menuItems = [];
-
-function initializeSalesPage() {
-    // Initialize any additional setup if needed
-}
 
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
-function loadMenuItems() {
+function refreshSalesTable() {
     ajaxRequest({
-        url: `/api/MenuApi/GetAllMenuItems?isActive=${true}`,
+        url: '/api/SalesApi/GetAllSales',
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            menuItems = response.data;
-            displayMenuItems(menuItems);
+            allSales = response.data || [];
+            updateStats();
+            renderSalesTable(allSales);
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to load sales:', error);
+        }
+    });
+}
+
+function loadMenuItems() {
+    ajaxRequest({
+        url: '/api/MenuApi/GetAllMenuItems?isActive=true',
+        method: 'GET',
+        showMessage: false,
+        onSuccess: function (response) {
+            menuItems = response.data || [];
+            initMenuItemSelectors();
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch menu items:', error);
@@ -128,358 +94,661 @@ function loadMenuItems() {
     });
 }
 
-function refreshCategoryTabs() {
+function submitAddSale() {
+    const startDate = $('#newSaleStartDate').val();
+    const endDate = $('#newSaleEndDate').val();
+
+    if (!startDate) {
+        showNotification('Please select a start date.', 'error');
+        return;
+    }
+    if (!endDate) {
+        showNotification('Please select an end date.', 'error');
+        return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+        showNotification('Start Date cannot be greater than End Date.', 'error');
+        return;
+    }
+    if (!currentSaleItems || currentSaleItems.length === 0) {
+        showNotification('Please add at least one menu item.', 'error');
+        return;
+    }
+
+    for (const item of currentSaleItems) {
+        if (!item.quantity || isNaN(item.quantity) || item.quantity <= 0) {
+            showNotification(`Please enter a valid quantity for "${item.name}".`, 'error');
+            return;
+        }
+    }
+
+    const subtotal = currentSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
+    const payload = {
+        startDate: startDate,
+        endDate: endDate,
+        subtotal: subtotal,
+        tax: 0,
+        total: subtotal,
+        items: currentSaleItems.map(i => ({
+            menuItemId: i.menuItemId,
+            quantity: i.quantity,
+            revenue: i.unitPrice * i.quantity,
+            cost: (i.cost || 0) * i.quantity
+        }))
+    };
+
+    const $btn = $('#submitSaleBtn');
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+
     ajaxRequest({
-        url: '/api/CategoryApi/GetAllCategories',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: function (response) {
-            const tabContainer = $('.menu-categories');
-            tabContainer.empty();
-            tabContainer.append('<button class="category-btn active" data-category="all">All</button>');
-            response.data.forEach(cat => {
-                tabContainer.append(`<button class="category-btn" data-category="${cat.categoryId}">${cat.name}</button>`);
-            });
+        url: '/api/SalesApi/CreateSale',
+        method: 'POST',
+        data: payload,
+        showMessage: true,
+        onSuccess: function () {
+            closeAddSaleModal();
+            refreshSalesTable();
         },
         onError: function (xhr, status, error) {
-            console.error('Failed to fetch categories:', error);
+            console.error('Failed to create sale:', error);
+            $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Save Sale');
+        }
+    });
+}
+
+function submitEditSale() {
+    const saleId = parseInt($('#editSaleId').val());
+    const startDate = $('#editSaleStartDate').val();
+    const endDate = $('#editSaleEndDate').val();
+
+    if (!saleId) {
+        showNotification('Invalid Sale ID.', 'error');
+        return;
+    }
+    if (!startDate) {
+        showNotification('Please select a start date.', 'error');
+        return;
+    }
+    if (!endDate) {
+        showNotification('Please select an end date.', 'error');
+        return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+        showNotification('Start Date cannot be greater than End Date.', 'error');
+        return;
+    }
+    if (!editSaleItems || editSaleItems.length === 0) {
+        showNotification('Please add at least one menu item.', 'error');
+        return;
+    }
+
+    for (const item of editSaleItems) {
+        if (!item.quantity || isNaN(item.quantity) || item.quantity <= 0) {
+            showNotification(`Please enter a valid quantity for "${item.name}".`, 'error');
+            return;
+        }
+    }
+
+    const subtotal = editSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
+    const payload = {
+        saleId: saleId,
+        startDate: startDate,
+        endDate: endDate,
+        subtotal: subtotal,
+        tax: 0,
+        total: subtotal,
+        items: editSaleItems.map(i => ({
+            saleId: saleId,
+            menuItemId: i.menuItemId,
+            quantity: i.quantity,
+            revenue: i.unitPrice * i.quantity,
+            cost: (i.cost || 0) * i.quantity
+        }))
+    };
+
+    const $btn = $('#updateSaleBtn');
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
+
+    ajaxRequest({
+        url: '/api/SalesApi/UpdateSale',
+        method: 'PUT',
+        data: payload,
+        showMessage: true,
+        onSuccess: function () {
+            closeEditSaleModal();
+            refreshSalesTable();
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to update sale:', error);
+            $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Update Sale');
+        }
+    });
+}
+
+function handleImportSales() {
+    const fileInput = $('#salesFile')[0];
+    const startDate = $('#importStartDate').val();
+    const endDate = $('#importEndDate').val();
+
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showNotification('Please select a sales file to import.', 'error');
+        return;
+    }
+    if (!startDate || !endDate) {
+        showNotification('Please fill in both start and end dates.', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('startDate', startDate);
+    formData.append('endDate', endDate);
+
+    const $btn = $('#importSalesSubmitBtn');
+    const originalText = $btn.html();
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Importing...');
+
+    ajaxRequest({
+        url: '/api/SalesApi/ImportSales',
+        method: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        showMessage: true,
+        onSuccess: function () {
+            $btn.prop('disabled', false).html(originalText);
+            $('#importSalesForm')[0].reset();
+            closeModal('importSalesModal');
+            refreshSalesTable();
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to import sales:', error);
+            $btn.prop('disabled', false).html(originalText);
         }
     });
 }
 
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
 
-function displayMenuItems(items) {
-    const grid = $('#menuItemsGrid');
-    grid.empty();
-
-    if (items.length === 0) {
-        grid.append(`
-            <div class="no-items-message" style="text-align: center; padding: 40px; color: #6b7280; font-size: 1.2rem;">
-                <i class="fas fa-utensils" style="font-size: 2rem; color: #9ca3af; margin-bottom: 10px;"></i>
-                <h2 style="font-size: 1.5rem; font-weight: 500; margin-bottom: 10px;">No Menu Items Available</h2>
-                <p style="color: #9ca3af;">It looks like there are no menu items available. Try adding a new item or selecting a different category.</p>
-            </div>
-        `);
-        return;
-    }
-
-    items.forEach(item => {
-        const menuItemHtml = `
-            <div class="menu-item" data-id="${item.menuItemId}" data-category="${item.categoryId}">
-                <div class="menu-item-image">
-                    <img src="${imageBaseUrl+item.featuredImage || '/placeholder.svg?height=120&width=280&text=' + encodeURIComponent(item.name)}" alt="${item.name}">
-                </div>
-                <div class="menu-item-content">
-                    <h4 class="menu-item-name">${item.name}</h4>
-                    <p class="menu-item-description">${item.description}</p>
-                    <div class="menu-item-footer">
-                        <span class="menu-item-price">$${item.sellingPrice.toFixed(2)}</span>
-                        <button class="add-to-order-btn" onclick="addToOrder(${item.menuItemId})">
-                            <i class="fas fa-plus"></i> Add
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        grid.append(menuItemHtml);
+function initDataTable() {
+    table = $('#salesTable').DataTable({
+        paging: true,
+        searching: true,
+        ordering: false,
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        language: {
+            search: '',
+            searchPlaceholder: 'Search sales...',
+            info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+            paginate: {
+                previous: '<i class="fas fa-chevron-left"></i>',
+                next: '<i class="fas fa-chevron-right"></i>'
+            }
+        }
     });
 }
 
-function filterMenuItems(category) {
-    let visibleItems = 0;
-    if (category === 'all') {
-        displayMenuItems(menuItems);
-        visibleItems = menuItems.length;
-    } else {
-        const filteredItems = menuItems.filter(item => item.categoryId == category);
-        displayMenuItems(filteredItems);
-        visibleItems = filteredItems.length;
-    }
+function updateStats() {
+    const totalCount = allSales.length;
+    let totalRevenue = 0;
+    let totalItemsSold = 0;
 
-    const grid = $('#menuItemsGrid');
-    grid.find('.no-items-message').remove();
-
-    if (visibleItems === 0) {
-        ajaxRequest({
-            url: '/api/CategoryApi/GetAllCategories',
-            method: 'GET',
-            showMessage: false,
-            onSuccess: function (response) {
-                const categoryName = category === 'all' ? 'All' : response.data.find(cat => cat.categoryId == category)?.name || 'This Category';
-                const message = `
-                    <div class="no-items-message" style="text-align: center; padding: 40px; color: #6b7280; font-size: 1.2rem;">
-                        <i class="fas fa-utensils" style="font-size: 2rem; color: #9ca3af; margin-bottom: 10px;"></i>
-                        <h2 style="font-size: 1.5rem; font-weight: 500; margin-bottom: 10px;">No Menu Items in ${categoryName}</h2>
-                        <p style="color: #9ca3af;">It looks like there are no menu items available for this category. Try adding a new item or selecting a different category.</p>
-                    </div>
-                `;
-                grid.append(message);
-            },
-            onError: function (xhr, status, error) {
-                console.error('Failed to fetch categories:', error);
-                const message = `
-                    <div class="no-items-message" style="text-align: center; padding: 40px; color: #6b7280; font-size: 1.2rem;">
-                        <i class="fas fa-utensils" style="font-size: 2rem; color: #9ca3af; margin-bottom: 10px;"></i>
-                        <h2 style="font-size: 1.5rem; font-weight: 500; margin-bottom: 10px;">No Menu Items Available</h2>
-                        <p style="color: #9ca3af;">It looks like there are no menu items available. Try adding a new item or selecting a different category.</p>
-                    </div>
-                `;
-                grid.append(message);
-            }
+    allSales.forEach(sale => {
+        
+        totalRevenue += (Number(sale.total) || 0);
+        const items = parseItems(sale.itemsJson);
+        items.forEach(i => {
+            totalItemsSold += (Number(i.Quantity || i.quantity) || 0);
         });
-    }
+    });
+
+    $('#statTotalSales').text(totalCount);
+    $('#statTotalRevenue').text(formatCurrency(totalRevenue));
+    $('#statTotalItemsSold').text(Math.round(totalItemsSold));
 }
 
-function addToOrder(itemId) {
-    const menuItem = menuItems.find(item => item.menuItemId == itemId);
+function renderSalesTable(sales) {
+    table.clear();
+    sales.forEach(sale => {
+        table.row.add($(buildSaleRow(sale)));
+    });
+    table.draw();
+}
+
+function buildSaleRow(sale) {
+    const items = parseItems(sale.itemsJson);
+    const itemsCount = items.length;
+    const startDateDisplay = sale.startDate ? formatDateDisplay(sale.startDate) : '-';
+    const endDateDisplay = sale.endDate ? formatDateDisplay(sale.endDate) : '-';
+
+    const itemsPreview = items.slice(0, 3).map(i => {
+        const name = i.Name || i.name || 'Item';
+        const qty = i.Quantity || i.quantity || 1;
+        return `<span class="category-badge" style="font-size: 11px; margin-right: 4px; display: inline-block;">${escapeHtml(name)} (x${qty})</span>`;
+    }).join(' ');
+
+    const moreBadge = items.length > 3
+        ? `<span class="status-badge" style="background: #f1f5f9; color: #475569; font-size: 11px;">+${items.length - 3} more</span>`
+        : '';
+
+    return `
+        <tr>
+            <td>
+                <div class="category-info">
+                    <p class="category-name" style="color: #0f172a;">${sale.saleId}</p>
+                </div>
+            </td>
+            <td>
+                <i class="fas fa-calendar-alt" style="color: #6b7280; margin-right: 6px;"></i>
+                ${startDateDisplay}
+            </td>
+            <td>
+                <i class="fas fa-calendar-check" style="color: #6b7280; margin-right: 6px;"></i>
+                ${endDateDisplay}
+            </td>
+            <td class="text-right" style="color: #0f172a;">
+                ${formatCurrency(sale.total)}
+            </td>
+            <td class="text-center">
+                <span class="status-badge good">${itemsCount} Items</span>
+            </td>
+            <td class="hidden">
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    ${itemsPreview} ${moreBadge}
+                </div>
+            </td>
+            <td class="text-center">
+                <div class="dropdown">
+                    <button class="dropdown-toggle" type="button">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a href="javascript:void(0)" onclick="viewSaleDetails(${sale.saleId}); return false;">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                        <a href="javascript:void(0)" onclick="editSale(${sale.saleId}); return false;">
+                            <i class="fas fa-edit"></i> Edit Sale
+                        </a>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+function initMenuItemSelectors() {
+    
+    const options = [{ id: '', text: '-- Select Menu Item --' }].concat(
+        menuItems.map(m => ({
+            
+            id: m.menuItemId,
+            text: `${m.name} (${formatCurrency(m.sellingPrice)})`
+        }))
+    );
+
+    if ($('#menuItemSelector').hasClass('select2-hidden-accessible')) {
+        $('#menuItemSelector').select2('destroy');
+    }
+    $('#menuItemSelector').empty().select2({
+        data: options,
+        placeholder: '-- Select Menu Item --',
+        width: '100%',
+        dropdownParent: $('#addSaleModal')
+    });
+
+    if ($('#editMenuItemSelector').hasClass('select2-hidden-accessible')) {
+        $('#editMenuItemSelector').select2('destroy');
+    }
+    $('#editMenuItemSelector').empty().select2({
+        data: options,
+        placeholder: '-- Select Menu Item --',
+        width: '100%',
+        dropdownParent: $('#editSaleModal')
+    });
+}
+
+/* ── Add Sale Modal Handlers ──────────────────────────────────────────── */
+
+function openAddSaleModal() {
+    currentSaleItems = [];
+    const today = new Date().toISOString().split('T')[0];
+    $('#newSaleStartDate').val(today);
+    $('#newSaleEndDate').val(today);
+
+    $('#menuItemSelector').val('').trigger('change.select2');
+    syncSaleItemsView();
+
+    $('#submitSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Sale');
+    openModal('addSaleModal');
+}
+
+function closeAddSaleModal() {
+    closeModal('addSaleModal');
+}
+
+function addSaleItemRow() {
+    const selectedId = parseInt($('#menuItemSelector').val());
+    if (!selectedId) {
+        showNotification('Please select a menu item.', 'warning');
+        return;
+    }
+
+    const menuItem = menuItems.find(m => m.menuItemId === selectedId);
     if (!menuItem) return;
 
-    const existingItem = currentOrder.find(item => item.menuItemId == itemId);
-
-    if (existingItem) {
-        existingItem.quantity += 1;
+    const existing = currentSaleItems.find(i => i.menuItemId === selectedId);
+    if (existing) {
+        existing.quantity += 1;
     } else {
-        currentOrder.push({
+        currentSaleItems.push({
             menuItemId: menuItem.menuItemId,
             name: menuItem.name,
-            description: menuItem.description,
-            sellingPrice: menuItem.sellingPrice,
-            cost: menuItem.cost,
-            categoryId: menuItem.categoryId,
+            unitPrice: Number(menuItem.sellingPrice) || 0,
+            cost: Number(menuItem.cost) || 0,
             quantity: 1
         });
     }
 
-    updateOrderDisplay();
-    showNotification(`${menuItem.name} added to order`, 'success');
+    syncSaleItemsView();
+    $('#menuItemSelector').val('').trigger('change.select2');
 }
 
-function removeFromOrder(itemId) {
-    currentOrder = currentOrder.filter(item => item.menuItemId !== itemId);
-    updateOrderDisplay();
-}
-
-function updateQuantity(itemId, change) {
-    const item = currentOrder.find(item => item.menuItemId == itemId);
+function updateSaleItemQty(menuItemId, value) {
+    const qty = parseFloat(value);
+    const item = currentSaleItems.find(i => i.menuItemId === menuItemId);
     if (!item) return;
 
-    item.quantity += change;
-
-    if (item.quantity <= 0) {
-        removeFromOrder(itemId);
+    if (isNaN(qty) || qty <= 0) {
+        removeSaleItem(menuItemId);
     } else {
-        updateOrderDisplay();
+        item.quantity = qty;
+        $(`#line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
+        updateAddSaleTotal();
     }
 }
 
-function updateOrderDisplay() {
-    const orderItemsContainer = $('#orderItems');
+function removeSaleItem(menuItemId) {
+    currentSaleItems = currentSaleItems.filter(i => i.menuItemId !== menuItemId);
+    syncSaleItemsView();
+}
 
-    if (currentOrder.length === 0) {
-        orderItemsContainer.html(`
-            <div class="empty-order">
-                <i class="fas fa-shopping-cart"></i>
-                <p>No items in order</p>
-                <small>Select items from the menu to add them here</small>
-            </div>
+function syncSaleItemsView() {
+    const $body = $('#saleItemsBody');
+    $body.empty();
+
+    if (currentSaleItems.length === 0) {
+        $('#saleItemsWrapper').hide();
+        $('#saleItemsEmpty').show();
+        $('#newSaleTotalDisplay').text('$0.00');
+        return;
+    }
+
+    $('#saleItemsEmpty').hide();
+    $('#saleItemsWrapper').show();
+
+    currentSaleItems.forEach(item => {
+        const revenue = item.unitPrice * item.quantity;
+        $body.append(`
+            <tr class="sale-item-row" id="sale_row_${item.menuItemId}">
+                <td style="font-weight: 600; color: #1e293b;">
+                    <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
+                    ${escapeHtml(item.name)}
+                </td>
+                <td style="text-align: right; color: #64748b; font-weight: 500;">
+                    ${formatCurrency(item.cost)}
+                </td>
+                <td style="text-align: center;">
+                    <input type="number" min="1" step="1" value="${item.quantity}" onchange="updateSaleItemQty(${item.menuItemId}, this.value)" oninput="updateSaleItemQty(${item.menuItemId}, this.value)">
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #0f172a;" id="line_total_${item.menuItemId}">
+                    ${formatCurrency(revenue)}
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="sale-remove-btn" onclick="removeSaleItem(${item.menuItemId})" title="Remove item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
         `);
-        $('#completeSaleBtn').prop('disabled', true);
-    } else {
-        let orderHtml = '';
+    });
 
-        currentOrder.forEach(item => {
-            const itemTotal = item.sellingPrice * item.quantity;
-            orderHtml += `
-                <div class="order-item">
-                    <div class="order-item-info">
-                        <h5 class="order-item-name">${item.name}</h5>
-                        <p class="order-item-price">$${item.sellingPrice.toFixed(2)} each</p>
-                    </div>
-                    <div class="quantity-controls">
-                        <button class="quantity-btn" onclick="updateQuantity(${item.menuItemId}, -1)">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <input type="number" class="quantity-display" min="1" value="${item.quantity}" onchange="changeQuantityDirectly(${item.menuItemId}, this.value)">
-                        <button class="quantity-btn" onclick="updateQuantity(${item.menuItemId}, 1)">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="remove-item-btn" onclick="removeFromOrder(${item.menuItemId})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
+    updateAddSaleTotal();
+}
+
+function updateAddSaleTotal() {
+    const total = currentSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
+    $('#newSaleTotalDisplay').text(formatCurrency(total));
+}
+
+/* ── Edit Sale Modal Handlers ─────────────────────────────────────────── */
+
+function editSale(saleId) {
+    const sale = allSales.find(s => s.saleId === saleId);
+    ;
+    if (!sale) {
+        showNotification('Sale not found.', 'error');
+        return;
+    }
+
+    $('#editSaleId').val(sale.saleId);
+    $('#editSaleStartDate').val(formatDateForInput(sale.startDate));
+    $('#editSaleEndDate').val(formatDateForInput(sale.endDate));
+
+    const rawItems = parseItems(sale.itemsJson);
+    editSaleItems = rawItems.map(raw => {
+        const menuItemId = raw.MenuItemId || raw.menuItemId;
+        const matchedMenu = menuItems.find(m => m.menuItemId === menuItemId);
+
+        const qty = Number(raw.quantity ?? raw.Quantity) || 1;
+        const totalLinePrice = Number(raw.Revenue ?? raw.revenue) || 0;
+        const totalLineCost = Number(raw.cost ?? raw.Cost) || 0;
+
+        const unitPrice = matchedMenu
+            ? Number(matchedMenu.sellingPrice)
+            : (qty > 0 ? (totalLinePrice / qty) : totalLinePrice);
+
+        const unitCost = matchedMenu
+            ? Number(matchedMenu.cost)
+            : (qty > 0 ? (totalLineCost / qty) : totalLineCost);
+
+        return {
+            menuItemId: menuItemId,
+            name: raw.Name || raw.name || matchedMenu?.name || `Item #${menuItemId}`,
+            unitPrice: unitPrice,
+            cost: unitCost,
+            quantity: qty
+        };
+    });
+
+    $('#editMenuItemSelector').val('').trigger('change.select2');
+    syncEditSaleItemsView();
+
+    $('#updateSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Update Sale');
+    openModal('editSaleModal');
+}
+
+function closeEditSaleModal() {
+    closeModal('editSaleModal');
+}
+
+function addEditSaleItemRow() {
+    const selectedId = parseInt($('#editMenuItemSelector').val());
+    if (!selectedId) {
+        showNotification('Please select a menu item.', 'warning');
+        return;
+    }
+
+    const menuItem = menuItems.find(m => m.menuItemId === selectedId);
+    if (!menuItem) return;
+
+    const existing = editSaleItems.find(i => i.menuItemId === selectedId);
+    
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        editSaleItems.push({
+            menuItemId: menuItem.menuItemId,
+            name: menuItem.name,
+            unitPrice: Number(menuItem.sellingPrice) || 0,
+            cost: Number(menuItem.cost) || 0,
+            quantity: 1
         });
-
-        orderItemsContainer.html(orderHtml);
-        $('#completeSaleBtn').prop('disabled', false);
     }
 
-    updateOrderSummary();
+    syncEditSaleItemsView();
+    $('#editMenuItemSelector').val('').trigger('change.select2');
 }
 
-function changeQuantityDirectly(itemId, value) {
-    const quantity = parseInt(value);
-    if (isNaN(quantity) || quantity <= 0) {
-        removeFromOrder(itemId);
+function updateEditSaleItemQty(menuItemId, value) {
+    const qty = parseFloat(value);
+    const item = editSaleItems.find(i => i.menuItemId === menuItemId);
+    if (!item) return;
+
+    if (isNaN(qty) || qty <= 0) {
+        removeEditSaleItem(menuItemId);
     } else {
-        const item = currentOrder.find(item => item.menuItemId == itemId);
-        if (item) {
-            item.quantity = quantity;
-            updateOrderDisplay();
-        }
+        item.quantity = qty;
+        $(`#edit_line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
+        updateEditSaleTotal();
     }
 }
 
-function updateOrderSummary() {
-    const total = currentOrder.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
-    $('#total').text('$' + total.toFixed(2));
+function removeEditSaleItem(menuItemId) {
+    editSaleItems = editSaleItems.filter(i => i.menuItemId !== menuItemId);
+    syncEditSaleItemsView();
 }
 
-function clearOrder() {
-    if (currentOrder.length === 0) return;
+function syncEditSaleItemsView() {
+    const $body = $('#editSaleItemsBody');
+    $body.empty();
 
-    if (confirm('Are you sure you want to clear the current order?')) {
-        currentOrder = [];
-        updateOrderDisplay();
-        showNotification('Order cleared', 'info');
-    }
-}
-
-function completeSale() {
-    if (currentOrder.length === 0) {
-        showNotification('Please add items to the order first', 'error');
+    if (editSaleItems.length === 0) {
+        $('#editSaleItemsWrapper').hide();
+        $('#editSaleItemsEmpty').show();
+        $('#editSaleTotalDisplay').text('$0.00');
         return;
     }
 
-    const startSalesDate = $('#salesDate').val();
-    if (!salesDate) {
-        showNotification('Please select a start date', 'error');
-        return;
-    }
-    const endSalesDate = $('#endSalesDate').val();
-    if (!endSalesDate) {
-        showNotification('Please select an end date', 'error');
-        return;
-    }
-
-    const subTotal = currentOrder.reduce((sum, item) => sum + (item.sellingPrice * item.quantity), 0);
-    const tax = 0;
+    $('#editSaleItemsEmpty').hide();
+    $('#editSaleItemsWrapper').show();
     debugger
-    const saleData = {
-        startDate: startSalesDate,
-        endDate: endSalesDate,
-        subTotal: subTotal,
-        tax: tax,
-        total: subTotal + tax,
-        items: currentOrder.map(item => ({
-            menuItemId: item.menuItemId,
-            quantity: item.quantity,
-            sellingPrice: item.sellingPrice * item.quantity,
-            cost: item.cost * item.quantity
-        }))
-    };
+    editSaleItems.forEach(item => {
+        $body.append(`
+            <tr class="sale-item-row" id="edit_sale_row_${item.menuItemId}">
+                <td style="font-weight: 600; color: #1e293b;">
+                    <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
+                    ${escapeHtml(item.name)}
+                </td>
+                <td style="text-align: right; color: #64748b; font-weight: 500;">
+                    ${formatCurrency(item.cost)}
+                </td>
+                <td style="text-align: center;">
+                    <input type="number" min="1" step="1" value="${item.quantity}" onchange="updateEditSaleItemQty(${item.menuItemId}, this.value)" oninput="updateEditSaleItemQty(${item.menuItemId}, this.value)">
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #0f172a;" id="edit_line_total_${item.menuItemId}">
+                    ${formatCurrency(item.unitPrice * item.quantity)}
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="sale-remove-btn" onclick="removeEditSaleItem(${item.menuItemId})" title="Remove item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
+    });
 
-    const completeBtn = $('#completeSaleBtn');
-    const originalText = completeBtn.html();
-    completeBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+    updateEditSaleTotal();
+}
 
-    ajaxRequest({
-        url: '/api/SalesApi/CreateSale',
-        method: 'POST',
-        data: saleData,
-        onSuccess: function (response) {
-            currentOrder = [];
-            updateOrderDisplay();
-            completeBtn.prop('disabled', false).html(originalText);
-            showNotification(`Sale completed successfully! Total: $${total.toFixed(2)}`, 'success');
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to complete sale:', error);
-            completeBtn.prop('disabled', false).html(originalText);
+function updateEditSaleTotal() {
+    const total = editSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
+    $('#editSaleTotalDisplay').text(formatCurrency(total));
+}
+
+/* ── View Details Modal Handler ───────────────────────────────────────── */
+
+
+function viewSaleDetails(saleId) {
+    const sale = allSales.find(s => s.saleId === saleId);
+    if (!sale) return;
+    debugger
+    $('#modalSaleTitle').text(`Sale #${sale.saleId}`);
+    $('#modalSaleSubtitle').text(
+        `${formatDateDisplay(sale.startDate)} - ${formatDateDisplay(sale.endDate)}`
+    );
+    $('#modalSaleId').text(`${sale.saleId}`);
+    $('#modalSaleStartDate').text(formatDateDisplay(sale.startDate));
+    $('#modalSaleEndDate').text(formatDateDisplay(sale.endDate));
+    $('#modalSaleTotal').text(formatCurrency(sale.total));
+
+    // Parse menu items from itemsJson
+    let items = [];
+
+    try {
+        if (Array.isArray(sale.items)) {
+            items = sale.items;
+        } else if (sale.itemsJson) {
+            items = typeof sale.itemsJson === 'string'
+                ? JSON.parse(sale.itemsJson)
+                : sale.itemsJson;
         }
-    });
+    } catch (error) {
+        console.error('Failed to parse sale items:', error);
+    }
+
+    if (!Array.isArray(items)) {
+        items = [];
+    }
+
+    $('#modalItemsCount').text(items.length);
+
+    const $tbody = $('#modalItemsTableBody');
+    $tbody.empty();
+
+    if (items.length === 0) {
+        $tbody.html(`
+            <tr>
+                <td colspan="4" class="text-center"
+                    style="padding: 24px; color: #6b7280;">
+                    No line items available for this sale.
+                </td>
+            </tr>
+        `);
+    } else {
+        items.forEach(item => {
+            const name = item.Name ?? 'Menu Item';
+            const qty = Number(item.Quantity) || 0;
+            const total = Number(item.Revenue) || 0;
+            const cost = Number(item.Cost) || 0;
+
+            $tbody.append(`
+                <tr>
+                    <td style="font-weight: 600; color: #1e293b;">
+                        <i class="fas fa-utensils"
+                           style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
+                        ${escapeHtml(String(name).trim())}
+                    </td>
+                    <td class="text-right" style="color: #64748b;">
+                        ${formatCurrency(cost)}
+                    </td>
+                    <td class="text-center" style="font-weight: 600;">
+                        ${qty}
+                    </td>
+                    <td class="text-right"
+                        style="font-weight: 700; color: #0f172a;">
+                        ${formatCurrency(total)}
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    openModal('saleDetailModal');
 }
 
-function loadSalesHistory() {
-    ajaxRequest({
-        url: '/api/SalesApi/GetAllSales',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: function (response) {
-            const sales = response.data;
-            const tbody = $('#salesHistoryTableBody');
-            tbody.empty();
 
-            if (sales.length === 0) {
-                tbody.append(`
-                    <tr>
-                        <td colspan="5" class="text-center">No sales found.</td>
-                    </tr>
-                `);
-            } else {
-                sales.forEach(sale => {
-                    const items = JSON.parse(sale.itemsJson || '[]');
-                    const itemList = items.map(item =>
-                        `<span class="status-badge good">${item.Name} (x${item.Quantity})</span>`
-                    ).join(' ');
-                    const row = `
-                        <tr>
-                            <td>${DateFormatter.formatWithComma(sale.endDate)}</td>
-                            <td>$${sale.total.toFixed(2)}</td>
-                            <td>${itemList || 'N/A'}</td>
-                        </tr>
-                    `;
-                    tbody.append(row);
-                });
-            }
-
-            openModal('salesHistoryModal');
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch sales history:', error);
-        }
-    });
-}
-
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
-function showNotification(message, type = 'info') {
-    const icons = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-exclamation-circle',
-        info: 'fas fa-info-circle'
-    };
-
-    const notification = $(`
-        <div class="notification notification-${type}">
-            <i class="${icons[type]}"></i>
-            <span>${message}</span>
-            <button class="notification-close">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `);
-
-    $('body').append(notification);
-
-    setTimeout(() => {
-        notification.remove();
-    }, 5000);
-
-    notification.find('.notification-close').on('click', () => {
-        notification.remove();
-    });
-}
-
-function openModal(modalId) {
-    $(`#${modalId}`).addClass('active');
-}
-
-function closeModal(modalId) {
-    $(`#${modalId}`).removeClass('active');
-}
+/* ── Sample CSV Download ──────────────────────────────────────────────── */
 
 function downloadSampleSalesFile() {
     function generateCsv(items) {
@@ -506,7 +775,7 @@ function downloadSampleSalesFile() {
         generateCsv(menuItems);
     } else {
         ajaxRequest({
-            url: '/api/MenuApi/GetAllMenuItems',
+            url: '/api/MenuApi/GetAllMenuItems?isActive=true',
             method: 'GET',
             showMessage: false,
             onSuccess: function (response) {
@@ -517,10 +786,65 @@ function downloadSampleSalesFile() {
                     showNotification('No menu items available for sample export.', 'error');
                 }
             },
-            onError: function (xhr, status, error) {
-                console.error('Failed to fetch menu items for sample download:', error);
+            onError: function () {
                 showNotification('Failed to download sample file.', 'error');
             }
         });
     }
 }
+
+/* ── 7. Utilities ─────────────────────────────────────────────────────── */
+
+function parseItems(itemsJson) {
+    if (!itemsJson) return [];
+    if (typeof itemsJson === 'object' && Array.isArray(itemsJson)) return itemsJson;
+    try {
+        return JSON.parse(itemsJson) || [];
+    } catch {
+        return [];
+    }
+}
+
+function formatCurrency(val) {
+    const num = parseFloat(val);
+    if (isNaN(num)) return '$0.00';
+    return '$' + num.toFixed(2);
+}
+
+function formatDateDisplay(dateStr) {
+    if (!dateStr) return '-';
+    if (window.DateFormatter && typeof window.DateFormatter.formatWithComma === 'function') {
+        return window.DateFormatter.formatWithComma(dateStr);
+    }
+    try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+        return dateStr;
+    }
+}
+
+function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '';
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    } catch {
+        return '';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+

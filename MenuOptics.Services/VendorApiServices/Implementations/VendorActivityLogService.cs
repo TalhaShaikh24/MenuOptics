@@ -48,11 +48,19 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             var pageNumber = filter?.PageNumber > 0 ? filter.PageNumber : 1;
             var pageSize = filter?.PageSize ?? 10;
 
+            var requestType = string.IsNullOrWhiteSpace(filter?.RequestType) || filter.RequestType.Equals("all", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : filter.RequestType.Trim();
+
+            var logLevel = string.IsNullOrWhiteSpace(filter?.LogLevel) || filter.LogLevel.Equals("all", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : filter.LogLevel.Trim();
+
             var parameters = new DynamicParameters();
             parameters.Add("@Action", "SELECT_ALL");
             parameters.Add("@VendorId", filter?.VendorId);
-            parameters.Add("@RequestType", filter?.RequestType);
-            parameters.Add("@LogLevel", filter?.LogLevel);
+            parameters.Add("@RequestType", requestType);
+            parameters.Add("@LogLevel", logLevel);
             parameters.Add("@SearchValue", filter?.SearchValue);
             parameters.Add("@StartDate", filter?.StartDate);
             parameters.Add("@EndDate", filter?.EndDate);
@@ -61,7 +69,7 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
             parameters.Add("@TotalSuccessCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
             parameters.Add("@TotalErrorCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
-            parameters.Add("@TotalPendingCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
+            parameters.Add("@TotalWarningCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
             var logs = await connection.QueryAsync<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>(
                 "sp_VendorActivityLogCRUD",
@@ -72,7 +80,7 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             int totalCount = parameters.Get<int?>("@TotalCount") ?? 0;
             int totalSuccessCount = parameters.Get<int?>("@TotalSuccessCount") ?? 0;
             int totalErrorCount = parameters.Get<int?>("@TotalErrorCount") ?? 0;
-            int totalPendingCount = parameters.Get<int?>("@TotalPendingCount") ?? 0;
+            int totalWarningCount = parameters.Get<int?>("@TotalWarningCount") ?? 0;
 
             return new MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>
             {
@@ -81,7 +89,7 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
                 RecordsFiltered = totalCount,
                 TotalSuccessCount = totalSuccessCount,
                 TotalErrorCount = totalErrorCount,
-                TotalPendingCount = totalPendingCount,
+                TotalWarningCount = totalWarningCount,
                 Data = logs
             };
         }
@@ -100,6 +108,21 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             );
 
             return log;
+        }
+
+        public async Task<IEnumerable<string>> GetVendorEndpointsAsync()
+        {
+            using var connection = _context.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@Action", "GET_REQUEST_TYPES");
+
+            var endpoints = await connection.QueryAsync<string>(
+                "sp_VendorActivityLogCRUD",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return endpoints;
         }
     }
 }

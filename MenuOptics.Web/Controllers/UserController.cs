@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using MenuOptics.Filters;
 using MenuOptics.Models;
 
@@ -30,10 +28,9 @@ namespace MenuOptics.Controllers
             return View();
         }
 
-        public async Task<IActionResult> Logout()
+        public IActionResult Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            Response.Cookies.Delete("WasLoggedIn");
+            Response.Cookies.Delete("JwtToken", new CookieOptions { Path = "/" });
             return RedirectToAction("Login", "User");
         }
 

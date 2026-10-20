@@ -13,6 +13,5 @@ namespace MenuOptics.Services
         Task<ResponseDto> CheckUserAsync(CheckUserDto model);
         Task<ResponseDto> SendOtpAsync(SendOtpDto model);
         Task<ResponseDto> VerifyOtpAsync(VerifyOtpDto model);
-        Task SignInWithCookieAsync(UserDto user, int effectiveUserId, bool isParent);
     }
 }

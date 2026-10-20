@@ -60,6 +60,7 @@ $(document).ready(function () {
     });
 
     loadRestaurantsDropdown();
+    loadEndpointsDropdown();
     initRestaurantActivityTable();
 
     
@@ -76,7 +77,12 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 
-    $('#restaurantLogRequestFilter').on('change', function () {
+    // Initialize Select2 filter for Endpoints
+    $('#restaurantLogRequestFilter').select2({
+        placeholder: 'All Endpoints',
+        allowClear: false,
+        width: '100%'
+    }).on('change', function () {
         currentFilters.requestType = $(this).val();
         if (table) table.draw();
     });
@@ -85,7 +91,7 @@ $(document).ready(function () {
         $('#restaurantLogSearch').val('');
         $('#restaurantFilter').val('all').trigger('change.select2');
         $('#restaurantLogLevelFilter').val('all');
-        $('#restaurantLogRequestFilter').val('all');
+        $('#restaurantLogRequestFilter').val('all').trigger('change.select2');
         $('#activityDateRange').trigger('resetFilter.customRangeFilter');
         const def = getDefaultDateRange();
         currentFilters = { userId: 'all', logLevel: 'all', requestType: 'all', startDate: def.startDate, endDate: def.endDate };
@@ -188,7 +194,6 @@ function initRestaurantActivityTable() {
                         }
                     });
 
-                    populateRequestTypeDropdown();
                     updateStatsCards(logs, total, result);
 
                     callback({
@@ -285,7 +290,7 @@ function updateStatsCards(logs, total, counts) {
     if (counts && counts.totalSuccessCount !== undefined) {
         successCount = counts.totalSuccessCount ?? 0;
         errorCount = counts.totalErrorCount ?? 0;
-        warningCount = counts.totalPendingCount ?? 0;
+        warningCount = counts.totalWarningCount ?? 0;
     } else {
         logs.forEach(log => {
             const level = (log.logLevel || '').toLowerCase();
@@ -305,18 +310,46 @@ function updateStatsCards(logs, total, counts) {
     $('#statWarningRestaurantLogs').text(warningCount.toLocaleString());
 }
 
-function populateRequestTypeDropdown() {
-    const $dropdown = $('#restaurantLogRequestFilter');
-    const currentVal = $dropdown.val();
-    $dropdown.find('option:not(:first)').remove();
-    Array.from(knownEndpoints).sort().forEach(type => {
-        var endpoint = getMethodBadgeHtml(type);
-        $dropdown.append(new Option(endpoint.method + " " + endpoint.action, type));
-    });
+function loadEndpointsDropdown() {
+    ajaxRequest({
+        url: '/api/ActivityLogApi/GetRestaurantEndpoints',
+        method: 'GET',
+        showMessage: false,
+        onSuccess: function (response) {
+            const endpoints = response.data || [];
+            const $dropdown = $('#restaurantLogRequestFilter');
+            $dropdown.empty().append('<option value="all">All Endpoints</option>');
 
-    if (currentVal && knownEndpoints.has(currentVal)) {
-        $dropdown.val(currentVal);
-    }
+            const uniqueOptions = new Map();
+
+            endpoints.forEach(type => {
+                if (!type) return;
+                const endpoint = getMethodBadgeHtml(type);
+                const filterValue = type.trim().replace(/\/\d+$/, '');
+                const label = (endpoint.method && endpoint.action)
+                    ? `${endpoint.action}`
+                    : filterValue;
+
+                if (!uniqueOptions.has(filterValue)) {
+                    uniqueOptions.set(filterValue, label);
+                }
+            });
+
+            Array.from(uniqueOptions.entries())
+                .sort((a, b) => a[1].localeCompare(b[1]))
+                .forEach(([val, lbl]) => {
+                    $dropdown.append(new Option(lbl, val));
+                });
+
+            if (currentFilters.requestType && currentFilters.requestType !== 'all') {
+                $dropdown.val(currentFilters.requestType);
+            }
+            $dropdown.trigger('change.select2');
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to load restaurant endpoints:', error);
+        }
+    });
 }
 
 function viewRestaurantLogDetails(logId) {
@@ -353,15 +386,17 @@ function getMethodBadgeHtml(requestType) {
 
     const parts = requestType.trim().split(/\s+/);
     const method = parts[0].toUpperCase();
-    const action = parts[1].split("/").slice(-2).join("/");
+
+    const segments = parts[1].split('/').filter(Boolean);
+    const action = segments.findLast(segment => !/^\d+$/.test(segment));
     const cls = method.toLowerCase();
+
 
     const actions = {
         method: method,
         action: action,
         cls: cls
-    };
-
+    }
     return actions;
 }
 

@@ -1,5 +1,4 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

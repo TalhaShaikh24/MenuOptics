@@ -1,12 +1,12 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.DataProtection;
+using Microsoft.IdentityModel.Tokens;
 using MenuOptics.Middleware;
 using MenuOptics.Web.Middleware;
-
 using Microsoft.AspNetCore.HttpOverrides;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,11 +23,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
-// Register DataProtection with matching application name to decrypt the auth cookie across Web and API
-builder.Services.AddDataProtection()
-    .SetApplicationName("MenuOptics")
-    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\MenuOptics-SharedKeys")); // same path on server
-
 // Register the HttpClient named Client for proxying
 builder.Services.AddHttpClient("ApiClient", client =>
 {
@@ -35,36 +30,50 @@ builder.Services.AddHttpClient("ApiClient", client =>
 }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 {
     AllowAutoRedirect = false,
-    UseCookies = false // CRITICAL: Disable server-side cookie sharing across users in proxy
+    UseCookies = false // Disable server-side cookie sharing across users in proxy
 });
 
-// Configure Cookie Authentication to match API's cookie setup
-var expiryHours = double.TryParse(builder.Configuration["Jwt:ExpiryInHours"], out var hours) && hours > 0 ? hours : 1;
-var cookieExpiry = TimeSpan.FromHours(expiryHours);
+// Configure JWT Bearer Authentication for Web (validates token from header or JwtToken cookie)
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSection["Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured."));
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.LoginPath = "/User/Login";
-        options.AccessDeniedPath = "/User/AccessDenied";
-        options.Cookie.Name = "RestaurantAuthCookie";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.None;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.ExpireTimeSpan = cookieExpiry;
-        options.Events.OnRedirectToLogin = context =>
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSection["Issuer"],
+        ValidAudience = jwtSection["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
         {
-            bool wasLoggedIn = context.Request.Cookies.ContainsKey("WasLoggedIn")
-                            || context.Request.Cookies.ContainsKey("RestaurantAuthCookie");
-
-            var redirectUri = wasLoggedIn
-                ? "/User/Login?sessionExpired=true"
-                : "/User/Login?loginRequired=true";
-
-            context.Response.Redirect(redirectUri);
+            // 1. If Authorization header already provided, use it
+            if (string.IsNullOrEmpty(context.Token))
+            {
+                // 2. Otherwise extract from the JwtToken cookie (for standard browser page navigation requests)
+                if (context.Request.Cookies.TryGetValue("JwtToken", out var token) && !string.IsNullOrWhiteSpace(token))
+                {
+                    context.Token = token;
+                }
+            }
             return Task.CompletedTask;
-        };
-    });
+        }
+    };
+});
 
 var app = builder.Build();
 

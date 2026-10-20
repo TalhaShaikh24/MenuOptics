@@ -3,8 +3,6 @@ using MenuOptics.Data;
 using MenuOptics.Models;
 using MenuOptics.Models.Enums;
 using MenuOptics.Services.VendorApiServices.Interfaces;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Stripe;
 using Stripe.Checkout;
 using System.Data;
@@ -77,8 +75,6 @@ namespace MenuOptics.Services
                 var effectiveUserId = user.ParentId.HasValue ? user.ParentId.Value : user.UserId;
                 var isParent = !user.ParentId.HasValue;
 
-                await SignInWithCookieAsync(user, effectiveUserId, isParent);
-
                 var tokenString = _tokenService.GenerateAccessToken(user);
                 var refreshTokenString = _tokenService.GenerateRefreshToken();
                 await _tokenService.SaveRefreshTokenAsync(user.UserId, refreshTokenString);
@@ -145,21 +141,10 @@ namespace MenuOptics.Services
         public async Task<ResponseDto> LogoutAsync()
         {
             var ResponseDto = new ResponseDto();
-            var httpContext = _httpContextAccessor.HttpContext;
-            if (httpContext != null)
-            {
-                await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                httpContext.Response.Cookies.Delete("WasLoggedIn", new CookieOptions
-                {
-                    SameSite = SameSiteMode.Lax,
-                    Secure = httpContext.Request.IsHttps
-                });
-            }
-
             ResponseDto.Status = 200;
             ResponseDto.ResponseMsg = "Logout successful.";
             ResponseDto.Data = null;
-            return ResponseDto;
+            return await Task.FromResult(ResponseDto);
         }
 
         public (string SessionId, string? Url) CreateCheckoutSession(string? plan, int userId)
@@ -499,52 +484,6 @@ namespace MenuOptics.Services
             finally
             {
                 connection.Close();
-            }
-        }
-
-        public async Task SignInWithCookieAsync(UserDto user, int effectiveUserId, bool isParent)
-        {
-            var stripeSubscriptionId = user.StripeSubscriptionId ?? "";
-            var subscriptionType = user.SubscriptionType ?? "";
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                // CurrentUserId is the ID of the user whose data is being accessed, which may be different from effectiveUserId if the user is a child account.
-                new Claim(ClaimTypes.NameIdentifier, effectiveUserId.ToString()),
-                new Claim(ClaimTypes.Role, user.Roles ?? ""),
-                new Claim("FirstName", user.FirstName ?? ""),
-                new Claim("LastName", user.LastName ?? ""),
-                // ActualUserId is the ID of the user who logged in, which may be different from effectiveUserId if the user is a child account.
-                new Claim("ActualUserId", user.UserId.ToString()),
-                new Claim("IsParent", isParent.ToString()),
-                new Claim("StripeSubscriptionId", stripeSubscriptionId.ToString()),
-                new Claim("SubscriptionType", subscriptionType.ToString().ToUpper()),
-                new Claim("PaidBy", user.PaidBy?.ToString() ?? "")
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true
-            };
-
-            var httpContext = _httpContextAccessor.HttpContext;
-            if (httpContext != null)
-            {
-                httpContext.Response.Cookies.Append("WasLoggedIn", "true", new CookieOptions
-                {
-                    Expires = DateTimeOffset.UtcNow.AddDays(30),
-                    HttpOnly = false,
-                    SameSite = SameSiteMode.Lax,
-                    Secure = httpContext.Request.IsHttps
-                });
-
-                await httpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(claimsIdentity),
-                    authProperties);
             }
         }
     }

@@ -1,8 +1,6 @@
 using MenuOptics.API.Utility;
-using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,7 +9,7 @@ namespace MenuOptics.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+    [Authorize]
     public class UserApiController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -52,16 +50,6 @@ namespace MenuOptics.Controllers.Api
                 detectedIp,
                 remoteIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 headers
-            });
-        }
-
-        [HttpGet("CheckSession")]
-        public IActionResult CheckSession()
-        {
-            return Ok(new ResponseDto
-            {
-                Status = 200,
-                ResponseMsg = "Session is valid."
             });
         }
 

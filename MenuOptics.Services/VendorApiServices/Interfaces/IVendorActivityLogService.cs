@@ -15,5 +15,6 @@ namespace MenuOptics.Services.VendorApiServices.Interfaces
 
         Task<DataTablesResponseDto<VendorActivityLogDto>> GetAllVendorActivityLogsAsync(ActivityLogFilterDto? filter = null);
         Task<VendorActivityLogDto?> GetVendorActivityLogByIdAsync(int logId);
+        Task<IEnumerable<string>> GetVendorEndpointsAsync();
     }
 }

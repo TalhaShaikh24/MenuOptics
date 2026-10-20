@@ -60,6 +60,7 @@ $(document).ready(function () {
     });
 
     loadVendorsDropdown();
+    loadVendorEndpointsDropdown();
     initVendorActivityTable();
 
     $('#refreshVendorLogsBtn').on('click', function () {
@@ -78,7 +79,12 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 
-    $('#vendorLogRequestFilter').on('change', function () {
+    // Initialize Select2 filter for Endpoints
+    $('#vendorLogRequestFilter').select2({
+        placeholder: 'All Endpoints',
+        allowClear: false,
+        width: '100%'
+    }).on('change', function () {
         currentFilters.requestType = $(this).val();
         if (table) table.draw();
     });
@@ -87,7 +93,7 @@ $(document).ready(function () {
         $('#vendorLogSearch').val('');
         $('#vendorFilter').val('all').trigger('change.select2');
         $('#vendorLogLevelFilter').val('all');
-        $('#vendorLogRequestFilter').val('all');
+        $('#vendorLogRequestFilter').val('all').trigger('change.select2');
         $('#vendorActivityDateRange').trigger('resetFilter.customRangeFilter');
         const def = getDefaultDateRange();
         currentFilters = { vendorId: 'all', logLevel: 'all', requestType: 'all', startDate: def.startDate, endDate: def.endDate };
@@ -190,7 +196,6 @@ function initVendorActivityTable() {
                         }
                     });
 
-                    populateRequestTypeDropdown();
                     updateStatsCards(logs, total, result);
 
                     callback({
@@ -279,7 +284,7 @@ function updateStatsCards(logs, total, counts) {
     if (counts && counts.totalSuccessCount !== undefined) {
         successCount = counts.totalSuccessCount ?? 0;
         errorCount = counts.totalErrorCount ?? 0;
-        warningCount = counts.totalPendingCount ?? 0;
+        warningCount = counts.totalWarningCount ?? 0;
     } else {
         logs.forEach(log => {
             const level = (log.logLevel || '').toLowerCase();
@@ -299,19 +304,46 @@ function updateStatsCards(logs, total, counts) {
     $('#statWarningRestaurantLogs').text(warningCount.toLocaleString());
 }
 
-function populateRequestTypeDropdown() {
-    const $dropdown = $('#vendorLogRequestFilter');
-    const currentVal = $dropdown.val();
+function loadVendorEndpointsDropdown() {
+    ajaxRequest({
+        url: '/api/ActivityLogApi/GetVendorEndpoints',
+        method: 'GET',
+        showMessage: false,
+        onSuccess: function (response) {
+            const endpoints = response.data || [];
+            const $dropdown = $('#vendorLogRequestFilter');
+            $dropdown.empty().append('<option value="all">All Endpoints</option>');
 
-    $dropdown.find('option:not(:first)').remove();
-    Array.from(knownEndpoints).sort().forEach(type => {
-        var endpoint = getMethodBadgeHtml(type);
-        $dropdown.append(new Option(endpoint.method + " " + endpoint.action, type));
+            const uniqueOptions = new Map();
+
+            endpoints.forEach(type => {
+                if (!type) return;
+                const endpoint = getMethodBadgeHtml(type);
+                const filterValue = type.trim().replace(/\/\d+$/, '');
+                const label = (endpoint.method && endpoint.action)
+                    ? `${endpoint.action}`
+                    : filterValue;
+
+                if (!uniqueOptions.has(filterValue)) {
+                    uniqueOptions.set(filterValue, label);
+                }
+            });
+
+            Array.from(uniqueOptions.entries())
+                .sort((a, b) => a[1].localeCompare(b[1]))
+                .forEach(([val, lbl]) => {
+                    $dropdown.append(new Option(lbl, val));
+                });
+
+            if (currentFilters.requestType && currentFilters.requestType !== 'all') {
+                $dropdown.val(currentFilters.requestType);
+            }
+            $dropdown.trigger('change.select2');
+        },
+        onError: function (xhr, status, error) {
+            console.error('Failed to load vendor endpoints:', error);
+        }
     });
-
-    if (currentVal && knownEndpoints.has(currentVal)) {
-        $dropdown.val(currentVal);
-    }
 }
 
 function viewVendorLogDetails(logId) {
@@ -345,15 +377,17 @@ function getMethodBadgeHtml(requestType) {
 
     const parts = requestType.trim().split(/\s+/);
     const method = parts[0].toUpperCase();
-    const action = parts[1].split("/").slice(-2).join("/");
+
+    const segments = parts[1].split('/').filter(Boolean);
+    const action = segments.findLast(segment => !/^\d+$/.test(segment));
     const cls = method.toLowerCase();
+
 
     const actions = {
         method: method,
         action: action,
         cls: cls
-    };
-
+    }
     return actions;
 }
 

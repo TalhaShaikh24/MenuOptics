@@ -1,5 +1,4 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services.VendorApi;
 using MenuOptics.Services.VendorApiServices.Interfaces;
@@ -10,7 +9,7 @@ using System.Security.Claims;
 
 namespace MenuOptics.Controllers.VendorApi
 {
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+    [Authorize]
     [Route("api/[controller]")]
     [SubscriptionRequired]
     [ApiController]
@@ -27,7 +26,6 @@ namespace MenuOptics.Controllers.VendorApi
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPost("InvoiceInventory")]

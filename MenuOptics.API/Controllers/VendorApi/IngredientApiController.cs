@@ -1,5 +1,4 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Middleware;
 using MenuOptics.Models;
 using MenuOptics.Services.VendorApi;
 using MenuOptics.Services.VendorApiServices.Interfaces;
@@ -25,7 +24,6 @@ namespace MenuOptics.Controllers.VendorApi
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPost("CreateIngredientByVendor")]
@@ -47,7 +45,6 @@ namespace MenuOptics.Controllers.VendorApi
             return StatusCode(statusCode, body);
         }
 
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPut("UpdateIngredientPrices")]
@@ -59,7 +56,6 @@ namespace MenuOptics.Controllers.VendorApi
 
         // PATCH api/Ingredient/PatchIngredientDetails
         // Updates one or more of: Name, Unit, IsActive. Only provided (non-null) fields are applied.
-        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPatch("PatchIngredientDetails")]
