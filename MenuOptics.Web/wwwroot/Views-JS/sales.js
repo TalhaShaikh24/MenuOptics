@@ -37,23 +37,22 @@ $(document).ready(function () {
         if (table) table.search('').draw();
     });
 
-    // Import sales modal button
-    $('#importSalesBtn').on('click', function () {
-        const today = new Date().toISOString().split('T')[0];
-        $('#importStartDate').val(today);
-        $('#importEndDate').val(today);
-        openModal('importSalesModal');
+    // CSV Import and Sample Download bindings in Add Sale modal
+    $('#importSaleCsvBtn').on('click', function () {
+        if (!menuItems || menuItems.length === 0) {
+            showNotification('Menu items are not loaded yet. Please wait a moment and try again.', 'warning');
+            return;
+        }
+        $('#saleCsvFileInput').val('').trigger('click');
     });
 
-    // Download sample sales file
-    $(document).on('click', '#downloadSampleBtn', function (e) {
+    $('#saleCsvFileInput').on('change', function (e) {
+        handleSaleCsvUpload(e);
+    });
+
+    $('#downloadSaleSampleBtn').on('click', function (e) {
         e.preventDefault();
         downloadSampleSalesFile();
-    });
-
-    // Import sales form submission
-    $('#importSalesSubmitBtn').on('click', function () {
-        handleImportSales();
     });
 
     // Initial load
@@ -225,47 +224,182 @@ function submitEditSale() {
     });
 }
 
-function handleImportSales() {
-    const fileInput = $('#salesFile')[0];
-    const startDate = $('#importStartDate').val();
-    const endDate = $('#importEndDate').val();
+function handleSaleCsvUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
 
-    if (!fileInput.files || fileInput.files.length === 0) {
-        showNotification('Please select a sales file to import.', 'error');
-        return;
-    }
-    if (!startDate || !endDate) {
-        showNotification('Please fill in both start and end dates.', 'error');
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showNotification('Please upload a valid .csv file.', 'error');
+        $('#saleCsvFileInput').val('');
         return;
     }
 
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    formData.append('startDate', startDate);
-    formData.append('endDate', endDate);
-
-    const $btn = $('#importSalesSubmitBtn');
-    const originalText = $btn.html();
-    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Importing...');
-
-    ajaxRequest({
-        url: '/api/SalesApi/ImportSales',
-        method: 'POST',
-        data: formData,
-        contentType: false,
-        processData: false,
-        showMessage: true,
-        onSuccess: function () {
-            $btn.prop('disabled', false).html(originalText);
-            $('#importSalesForm')[0].reset();
-            closeModal('importSalesModal');
-            refreshSalesTable();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to import sales:', error);
-            $btn.prop('disabled', false).html(originalText);
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        try {
+            processSaleCsv(event.target.result);
+        } catch (err) {
+            console.error('Error parsing CSV:', err);
+            showNotification('Error processing CSV file. Please check file structure.', 'error');
+        } finally {
+            $('#saleCsvFileInput').val('');
         }
-    });
+    };
+    reader.readAsText(file);
+}
+
+function parseCsvText(text) {
+    const lines = [];
+    let row = [];
+    let inQuotes = false;
+    let currentCell = '';
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                currentCell += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if ((char === ',' || char === '\t') && !inQuotes) {
+            row.push(currentCell.trim());
+            currentCell = '';
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+            if (char === '\r' && nextChar === '\n') {
+                i++;
+            }
+            row.push(currentCell.trim());
+            currentCell = '';
+            if (row.some(c => c !== '')) {
+                lines.push(row);
+            }
+            row = [];
+        } else {
+            currentCell += char;
+        }
+    }
+
+    if (currentCell.length > 0 || row.length > 0) {
+        row.push(currentCell.trim());
+        if (row.some(c => c !== '')) {
+            lines.push(row);
+        }
+    }
+
+    return lines;
+}
+
+function processSaleCsv(csvText) {
+    if (!csvText || !csvText.trim()) {
+        showNotification('The uploaded CSV file is empty.', 'error');
+        return;
+    }
+
+    if (!menuItems || menuItems.length === 0) {
+        showNotification('Menu items are not loaded yet. Please wait a moment and try again.', 'warning');
+        return;
+    }
+
+    const rows = parseCsvText(csvText);
+    if (rows.length < 2) {
+        showNotification('The CSV file does not contain any item data.', 'error');
+        return;
+    }
+
+    // Map headers (case and punctuation insensitive)
+    const headerRow = rows[0].map(h => (h || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''));
+
+    const idxId = headerRow.findIndex(h => h.includes('itemid') || h.includes('productid') || h === 'id' || h === 'menuitemid');
+    const idxName = headerRow.findIndex(h => h.includes('name') || h.includes('item') || h.includes('menuitem') || h.includes('description'));
+    const idxQty = headerRow.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('sold'));
+
+    let importedCount = 0;
+    let skippedZeroCount = 0;
+
+    for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row || row.length === 0 || row.every(c => !c || !c.trim())) continue;
+
+        let cellId = idxId !== -1 ? (row[idxId] || '').trim() : '';
+        let cellName = idxName !== -1 ? (row[idxName] || '').trim() : '';
+        let cellQty = idxQty !== -1 ? (row[idxQty] || '').trim() : '';
+
+        // Fallback if headers were not recognized
+        if (idxId === -1 && idxName === -1 && idxQty === -1 && row.length >= 3) {
+            cellName = (row[0] || '').trim();
+            cellId = (row[1] || '').trim();
+            cellQty = (row[2] || '').trim();
+        }
+
+        const cleanPriceOrQty = cellQty.replace(/[^0-9.]/g, '');
+        const qty = parseFloat(cleanPriceOrQty);
+        if (isNaN(qty) || qty <= 0) {
+            skippedZeroCount++;
+            continue;
+        }
+
+        // Matching strategy:
+        // 1. By menuItemId
+        let matched = null;
+        if (cellId) {
+            const parsedId = parseInt(cellId, 10);
+            if (!isNaN(parsedId)) {
+                matched = menuItems.find(m => m.menuItemId === parsedId || m.id === parsedId);
+            }
+        }
+
+        // 2. By Name
+        if (!matched && cellName) {
+            const cleanName = cellName.toLowerCase().replace(/['"]/g, '').trim();
+            matched = menuItems.find(m => {
+                const mName = (m.name || '').toLowerCase().replace(/['"]/g, '').trim();
+                return mName === cleanName;
+            });
+
+            if (!matched) {
+                matched = menuItems.find(m => {
+                    const mName = (m.name || '').toLowerCase().replace(/['"]/g, '').trim();
+                    return mName.includes(cleanName) || cleanName.includes(mName);
+                });
+            }
+        }
+
+        if (!matched) {
+            continue;
+        }
+
+        // Upsert into currentSaleItems
+        const existing = currentSaleItems.find(i => i.menuItemId === matched.menuItemId);
+        if (existing) {
+            existing.quantity = qty;
+        } else {
+            currentSaleItems.push({
+                menuItemId: matched.menuItemId,
+                name: matched.name,
+                unitPrice: Number(matched.sellingPrice) || 0,
+                cost: Number(matched.cost) || 0,
+                quantity: qty
+            });
+        }
+
+        importedCount++;
+    }
+
+    syncSaleItemsView();
+
+    if (importedCount > 0) {
+        showNotification(`Successfully imported all ${importedCount} items from CSV!`, 'success');
+    } else {
+        if (skippedZeroCount > 0) {
+            showNotification('No items with quantity greater than 0 found in the CSV file.', 'warning');
+        } else {
+            showNotification('No matching menu items found in CSV file.', 'warning');
+        }
+    }
 }
 
 /* ── 6. Helpers ───────────────────────────────────────────────────────── */
@@ -409,7 +543,6 @@ function initMenuItemSelectors() {
 }
 
 /* ── Add Sale Modal Handlers ──────────────────────────────────────────── */
-
 function openAddSaleModal() {
     currentSaleItems = [];
     const today = new Date().toISOString().split('T')[0];
@@ -417,6 +550,7 @@ function openAddSaleModal() {
     $('#newSaleEndDate').val(today);
 
     $('#menuItemSelector').val('').trigger('change.select2');
+    $('#saleCsvFileInput').val('');
     syncSaleItemsView();
 
     $('#submitSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Sale');
@@ -430,7 +564,7 @@ function closeAddSaleModal() {
 function addSaleItemRow() {
     const selectedId = parseInt($('#menuItemSelector').val());
     if (!selectedId) {
-        showNotification('Please select a menu item.', 'warning');
+        showNotification('Please select a menu item.', 'info');
         return;
     }
 
@@ -439,16 +573,17 @@ function addSaleItemRow() {
 
     const existing = currentSaleItems.find(i => i.menuItemId === selectedId);
     if (existing) {
-        existing.quantity += 1;
-    } else {
-        currentSaleItems.push({
-            menuItemId: menuItem.menuItemId,
-            name: menuItem.name,
-            unitPrice: Number(menuItem.sellingPrice) || 0,
-            cost: Number(menuItem.cost) || 0,
-            quantity: 1
-        });
+        showNotification('This menu item is already added.', 'info');
+        return;
     }
+
+    currentSaleItems.push({
+        menuItemId: menuItem.menuItemId,
+        name: menuItem.name,
+        unitPrice: Number(menuItem.sellingPrice) || 0,
+        cost: Number(menuItem.cost) || 0,
+        quantity: 1
+    });
 
     syncSaleItemsView();
     $('#menuItemSelector').val('').trigger('change.select2');
@@ -463,6 +598,7 @@ function updateSaleItemQty(menuItemId, value) {
         removeSaleItem(menuItemId);
     } else {
         item.quantity = qty;
+        $(`#line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
         $(`#line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
         updateAddSaleTotal();
     }
@@ -495,11 +631,11 @@ function syncSaleItemsView() {
                     <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
                     ${escapeHtml(item.name)}
                 </td>
-                <td style="text-align: right; color: #64748b; font-weight: 500;">
-                    ${formatCurrency(item.cost)}
-                </td>
                 <td style="text-align: center;">
                     <input type="number" min="1" step="1" value="${item.quantity}" onchange="updateSaleItemQty(${item.menuItemId}, this.value)" oninput="updateSaleItemQty(${item.menuItemId}, this.value)">
+                </td>
+                <td style="text-align: right; color: #64748b; font-weight: 500;" id="line_cost_${item.menuItemId}">
+                    ${formatCurrency(item.cost)}
                 </td>
                 <td style="text-align: right; font-weight: 700; color: #0f172a;" id="line_total_${item.menuItemId}">
                     ${formatCurrency(revenue)}
@@ -583,18 +719,18 @@ function addEditSaleItemRow() {
     if (!menuItem) return;
 
     const existing = editSaleItems.find(i => i.menuItemId === selectedId);
-    
     if (existing) {
-        existing.quantity += 1;
-    } else {
-        editSaleItems.push({
-            menuItemId: menuItem.menuItemId,
-            name: menuItem.name,
-            unitPrice: Number(menuItem.sellingPrice) || 0,
-            cost: Number(menuItem.cost) || 0,
-            quantity: 1
-        });
+        showNotification('This menu item is already added.', 'warning');
+        return;
     }
+
+    editSaleItems.push({
+        menuItemId: menuItem.menuItemId,
+        name: menuItem.name,
+        unitPrice: Number(menuItem.sellingPrice) || 0,
+        cost: Number(menuItem.cost) || 0,
+        quantity: 1
+    });
 
     syncEditSaleItemsView();
     $('#editMenuItemSelector').val('').trigger('change.select2');
@@ -609,6 +745,8 @@ function updateEditSaleItemQty(menuItemId, value) {
         removeEditSaleItem(menuItemId);
     } else {
         item.quantity = qty;
+        debugger
+        $(`#edit_line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
         $(`#edit_line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
         updateEditSaleTotal();
     }
@@ -640,11 +778,11 @@ function syncEditSaleItemsView() {
                     <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
                     ${escapeHtml(item.name)}
                 </td>
-                <td style="text-align: right; color: #64748b; font-weight: 500;">
-                    ${formatCurrency(item.cost)}
-                </td>
                 <td style="text-align: center;">
                     <input type="number" min="1" step="1" value="${item.quantity}" onchange="updateEditSaleItemQty(${item.menuItemId}, this.value)" oninput="updateEditSaleItemQty(${item.menuItemId}, this.value)">
+                </td>
+                <td style="text-align: right; color: #64748b; font-weight: 500;" id="edit_line_cost_${item.menuItemId}"">
+                    ${formatCurrency(item.cost * item.quantity)}
                 </td>
                 <td style="text-align: right; font-weight: 700; color: #0f172a;" id="edit_line_total_${item.menuItemId}">
                     ${formatCurrency(item.unitPrice * item.quantity)}
@@ -667,8 +805,6 @@ function updateEditSaleTotal() {
 }
 
 /* ── View Details Modal Handler ───────────────────────────────────────── */
-
-
 function viewSaleDetails(saleId) {
     const sale = allSales.find(s => s.saleId === saleId);
     if (!sale) return;
@@ -729,11 +865,11 @@ function viewSaleDetails(saleId) {
                            style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
                         ${escapeHtml(String(name).trim())}
                     </td>
-                    <td class="text-right" style="color: #64748b;">
-                        ${formatCurrency(cost)}
-                    </td>
                     <td class="text-center" style="font-weight: 600;">
                         ${qty}
+                    </td>
+                    <td class="text-right" style="color: #64748b;">
+                        ${formatCurrency(cost)}
                     </td>
                     <td class="text-right"
                         style="font-weight: 700; color: #0f172a;">
@@ -749,7 +885,6 @@ function viewSaleDetails(saleId) {
 
 
 /* ── Sample CSV Download ──────────────────────────────────────────────── */
-
 function downloadSampleSalesFile() {
     function generateCsv(items) {
         let csvContent = "Menu Item Name,Menu Item ID,Quantity Sold\n";
@@ -847,4 +982,8 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+window.downloadSampleSalesFile = downloadSampleSalesFile;
+window.downloadSaleSampleCsv = downloadSampleSalesFile;
+
 
