@@ -17,9 +17,13 @@ let currentFilters = { cuisine: 'all', status: 'all', search: '' };
 
 $(document).ready(function () {
 
+    // Initialize DataTable once on page load
+    initDataTable();
+
     // Load stats and restaurants
     refreshRestaurantStats();
     refreshRestaurantTable();
+
 
     // Event handler for add restaurant
     $('#saveRestaurantBtn').on('click', function () {
@@ -230,6 +234,23 @@ function refreshRestaurantStats() {
     });
 }
 
+// Initialize DataTable
+function initDataTable() {
+    table = $('#restaurantTable').DataTable({
+        paging: true,
+        searching: true,
+        ordering: false,
+        order: [[0, 'asc']], // Sort by Name column by default
+        pageLength: 10,
+        lengthMenu: [10, 25, 50, 100],
+        language: {
+            search: '',
+            searchPlaceholder: 'Search restaurant...'
+        }
+    });
+}
+
+
 // Refresh restaurant table
 function refreshRestaurantTable() {
     
@@ -244,6 +265,7 @@ function refreshRestaurantTable() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch restaurants:', error);
+            showNotification('Failed to load restaurants.', 'error');
         }
     });
 }
@@ -266,8 +288,8 @@ function filterAndRenderRestaurants() {
         return matchesSearch && matchesCuisine && matchesStatus;
     });
 
-    const tableBody = $('#restaurantTableBody');
-    tableBody.empty();
+    // Clear existing rows
+    table.clear();
 
     filteredRestaurants.forEach(restaurant => {
         const status = restaurant.isActive ? 'active' : 'critical';
@@ -301,8 +323,10 @@ function filterAndRenderRestaurants() {
                 </td>
             </tr>
         `;
-        tableBody.append(row);
+        table.row.add($(row));
     });
+    // Redraw the table
+    table.draw();
 }
 
 // Filter restaurants by cuisine or status
@@ -310,6 +334,5 @@ window.filterRestaurants = function (type, value) {
     currentFilters[type] = value;
     $('#' + type + 'FilterLabel').text(value.charAt(0).toUpperCase() + value.slice(1));
     filterAndRenderRestaurants();
-    $('.dropdown-menu').removeClass('active');
 };
 

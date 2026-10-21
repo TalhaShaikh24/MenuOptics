@@ -517,7 +517,7 @@ function initMenuItemSelectors() {
         menuItems.map(m => ({
             
             id: m.menuItemId,
-            text: `${m.name} (${formatCurrency(m.sellingPrice)})`
+            text: `${m.name}`
         }))
     );
 
@@ -735,7 +735,6 @@ function addEditSaleItemRow() {
     syncEditSaleItemsView();
     $('#editMenuItemSelector').val('').trigger('change.select2');
 }
-
 function updateEditSaleItemQty(menuItemId, value) {
     const qty = parseFloat(value);
     const item = editSaleItems.find(i => i.menuItemId === menuItemId);
@@ -751,7 +750,6 @@ function updateEditSaleItemQty(menuItemId, value) {
         updateEditSaleTotal();
     }
 }
-
 function removeEditSaleItem(menuItemId) {
     editSaleItems = editSaleItems.filter(i => i.menuItemId !== menuItemId);
     syncEditSaleItemsView();
