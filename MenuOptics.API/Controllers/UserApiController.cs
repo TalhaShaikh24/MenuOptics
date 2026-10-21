@@ -14,11 +14,13 @@ namespace MenuOptics.Controllers.Api
     {
         private readonly IUserService _userService;
         private readonly IAuthService _authService;
+        private readonly IPaymentService _paymentService;
 
-        public UserApiController(IUserService userService, IAuthService authService)
+        public UserApiController(IUserService userService, IAuthService authService, IPaymentService paymentService)
         {
             _userService = userService;
             _authService = authService;
+            _paymentService = paymentService;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
@@ -209,7 +211,7 @@ namespace MenuOptics.Controllers.Api
         [HttpPost("CreateCheckoutSession")]
         public IActionResult CreateCheckoutSession([FromBody] PlanRequest request)
         {
-            var (sessionId, url) = _authService.CreateCheckoutSession(request.Plan, request.UserId);
+            var (sessionId, url) = _paymentService.CreateCheckoutSession(request.Plan, request.UserId);
             return Ok(new { sessionId, url });
         }
 

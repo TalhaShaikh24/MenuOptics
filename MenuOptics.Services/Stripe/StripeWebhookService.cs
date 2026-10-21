@@ -235,34 +235,6 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> GetAllUsersAsync()
-        {
-            var responseDto = new ResponseDto();
-            using var connection = _context.CreateConnection();
-            connection.Open();
-            try
-            {
-                var parameters = new DynamicParameters();
-                parameters.Add("@Action", "SELECT_ALL");
-
-                var users = await connection.QueryAsync<UserDto>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
-                responseDto.Status = 200;
-                responseDto.ResponseMsg = "Users retrieved successfully.";
-                responseDto.Data = users;
-                return responseDto;
-            }
-            catch (Exception ex)
-            {
-                responseDto.Status = 500;
-                responseDto.ResponseMsg = $"Server error: {ex.Message}";
-                return responseDto;
-            }
-            finally
-            {
-                connection.Close();
-            }
-        }
-
         private static string MapStripeSubscriptionStatus(string? stripeStatus)
         {
             return (stripeStatus?.ToLower()) switch

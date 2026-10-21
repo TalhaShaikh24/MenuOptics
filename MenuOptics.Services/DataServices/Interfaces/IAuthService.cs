@@ -7,7 +7,6 @@ namespace MenuOptics.Services
     {
         Task<ResponseDto> LoginAsync(LoginDto model, string? ipAddress);
         Task<ResponseDto> LogoutAsync();
-        (string SessionId, string? Url) CreateCheckoutSession(string? plan, int userId);
         Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model);
         Task<ResponseDto> RevokeTokenAsync(RefreshTokenRequestDto model);
         Task<ResponseDto> CheckUserAsync(CheckUserDto model);

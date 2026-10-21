@@ -6,10 +6,12 @@ using MenuOptics.Services;
 public class StripeWebhookController : ControllerBase
 {
     private readonly IStripeWebhookService _stripeWebhookService;
+    private readonly IUserService _userService;
 
-    public StripeWebhookController(IStripeWebhookService stripeWebhookService)
-    {
+    public StripeWebhookController(IStripeWebhookService stripeWebhookService, IUserService userService)
+    {   
         _stripeWebhookService = stripeWebhookService;
+        _userService = userService;
     }
 
     [HttpPost("Webhook")]
@@ -18,12 +20,5 @@ public class StripeWebhookController : ControllerBase
         var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
         var (statusCode, body) = await _stripeWebhookService.HandleWebhookAsync(json, Request.Headers["Stripe-Signature"]);
         return body == null ? StatusCode(statusCode) : StatusCode(statusCode, body);
-    }
-
-    [HttpGet("GetAllUsers")]
-    public async Task<IActionResult> GetAllUsers()
-    {
-        var responseData = await _stripeWebhookService.GetAllUsersAsync();
-        return StatusCode(responseData.Status, responseData);
     }
 }

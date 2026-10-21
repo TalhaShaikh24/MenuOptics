@@ -22,7 +22,6 @@ namespace MenuOptics.Services
         private readonly ITokenService _tokenService;
         private readonly ISmtpEmailService _emailService;
         private readonly IFileUploadService _fileService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
 
         public AuthService(
@@ -33,7 +32,6 @@ namespace MenuOptics.Services
             ITokenService tokenService,
             ISmtpEmailService emailService,
             IFileUploadService fileService,
-            IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration)
         {
             _context = context;
@@ -43,7 +41,6 @@ namespace MenuOptics.Services
             _tokenService = tokenService;
             _emailService = emailService;
             _fileService = fileService;
-            _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
         }
 
@@ -145,62 +142,6 @@ namespace MenuOptics.Services
             ResponseDto.ResponseMsg = "Logout successful.";
             ResponseDto.Data = null;
             return await Task.FromResult(ResponseDto);
-        }
-
-        public (string SessionId, string? Url) CreateCheckoutSession(string? plan, int userId)
-        {
-            var stripeKey = _configuration["Stripe:SecretKey"];
-            StripeConfiguration.ApiKey = stripeKey;
-
-            var starterPrice = _configuration["Stripe:StarterPriceId"];
-            var proPrice = _configuration["Stripe:ProfessionalPriceId"];
-
-            var priceId = (plan?.ToLower()) switch
-            {
-                "starter" => starterPrice,
-                _ => proPrice
-            };
-
-            // Dynamically resolve client Web Base URL from Origin or Referer header
-            var httpContext = _httpContextAccessor.HttpContext;
-            string? origin = httpContext?.Request.Headers["Origin"].FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(origin))
-            {
-                var referer = httpContext?.Request.Headers["Referer"].FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var uri))
-                {
-                    origin = $"{uri.Scheme}://{uri.Authority}";
-                }
-            }
-
-            var baseUrl = !string.IsNullOrWhiteSpace(origin)
-                ? origin.TrimEnd('/')
-                : (_configuration["WebUrl"] ?? "https://localhost:7103").TrimEnd('/');
-
-            var options = new SessionCreateOptions
-            {
-                PaymentMethodTypes = new List<string> { "card" },
-                Mode = "subscription",
-                LineItems = new List<SessionLineItemOptions>
-                {
-                    new SessionLineItemOptions
-                    {
-                        Price = priceId,
-                        Quantity = 1,
-                    },
-                },
-                Metadata = new Dictionary<string, string>
-                {
-                    { "UserId", userId.ToString() }
-                },
-                SuccessUrl = $"{baseUrl}/Payment/successpayment?session_id={{CHECKOUT_SESSION_ID}}&user_id={userId}",
-                CancelUrl = $"{baseUrl}/Payment/Cancel",
-            };
-
-            var service = new SessionService();
-            var session = service.Create(options);
-
-            return (session.Id, session.Url);
         }
 
         public async Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model)
