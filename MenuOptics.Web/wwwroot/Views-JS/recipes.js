@@ -454,11 +454,12 @@ function getRecipeById(id) {
             const ingredientIds = (recipe.ingredients || []).map(ing => ing.ingredientId);
             $('#editIngredientsSelect').val(ingredientIds).trigger('change');
 
-            // If calculated cost is 0 (e.g. no ingredients) but recipe had a saved cost, preserve it
-            const currentCostVal = parseFloat($('#editRecipeCost').val()) || 0;
-            if (currentCostVal === 0 && parseFloat(initialCost) > 0) {
-                $('#editRecipeCost').val(initialCost);
-            }
+            // The modal must show the cost returned by the API for this
+            // recipe — NOT the total the row renders just recalculated from
+            // today's ingredient prices (which overwrote the field above).
+            // Restore the API cost; live recalculation still happens when
+            // the user edits quantities.
+            $('#editRecipeCost').val(initialCost);
 
             // Open modal only after all inputs, prices, and totals are synchronously rendered
             openModal('editRecipeModal');
