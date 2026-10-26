@@ -12,13 +12,13 @@
 
 $(document).ready(function () {
 
-    // Initialize Select2 for ingredients, recipes and categories
-    initializeIngredientsSelect('#ingredientsSelect', '#addMenuItemModal', '#ingredientsDetails', '#menuCost');
-    initializeIngredientsSelect('#editIngredientsSelect', '#editMenuItemModal', '#editIngredientsDetails', '#editMenuCost');
-    initializeRecipesSelect('#recipesSelect', '#addMenuItemModal', '#recipesDetails', '#menuCost');
-    initializeRecipesSelect('#editRecipesSelect', '#editMenuItemModal', '#editRecipesDetails', '#editMenuCost');
-    initializeCategorySelect('#menuCategory', '#addMenuItemModal');
-    initializeCategorySelect('#editMenuCategory', '#editMenuItemModal');
+    // Initialize Select2 for ingredients, recipes and categories.
+    // Each endpoint is fetched ONCE and initializes both the Add and Edit
+    // selects (previously one call per select — see the loaders below).
+    // The single categories fetch also renders the category tabs.
+    initializeIngredientsSelects();
+    initializeRecipesSelects();
+    initializeCategorySelects();
 
     // Event handler for add menu item
     $('#saveMenuItemBtn').on('click', function () {
@@ -41,8 +41,9 @@ $(document).ready(function () {
         }
     });
 
-    // Category tabs filter
-    refreshCategoryTabs();
+    // Category tabs are rendered by initializeCategorySelects() above from
+    // the same categories response — no separate fetch on page load.
+    // (refreshCategoryTabs() is still used after a new category is added.)
 
     // Search filter
     $('#menuSearch').on('input', function () {
@@ -100,7 +101,7 @@ async function getImageAsPngBase64(url) {
 // Initialize Select2 for ingredients
 /* ── 6. Helpers — Select2 setup / cost calculations ───────────────────── */
 
-function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) {
+function initializeIngredientsSelects() {
     ajaxRequest({
         url: '/api/IngredientApi/GetAllActiveIngredientsByUserId',
         method: 'GET',
@@ -119,49 +120,8 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
                 vendorProductId: ing.vendorProductId
             }));
 
-            $(selectId).select2({
-                data: ingredientsWithPrices,
-                placeholder: 'Select ingredients',
-                width: '100%',
-                dropdownParent: $(modalId),
-                matcher: function (param, data) {
-                    var searchText = ($.trim(param.term) || '').toLowerCase();
-
-                    // No search term typed yet -> show everything
-                    if (searchText === '') {
-                        return data;
-                    }
-
-                    var text = (data.text || '').toLowerCase();
-                    var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
-
-                    var searchWords = searchText.split(/\s+/);
-                    var nameMatches = searchWords.every(function (word) {
-                        return text.includes(word);
-                    });
-
-                    // VendorProductId: search using the ENTIRE search text 
-                    var vendorProductIdMatches = vendorProductId.includes(searchText);
-                    if (nameMatches || vendorProductIdMatches) {
-                        return data;
-                    }
-
-                    return null;
-                }
-            });
-
-            $(selectId).on('change', function () {
-                const selected = $(this).val() || [];
-                renderIngredientDetails(selected, detailsId, costInputId);
-            });
-
-            $(detailsId).on('input', 'input[name^="ingredient_quantity_"]', function () {
-                updateIngredientPrice($(this).closest('.ingredient-detail-row'), detailsId, costInputId);
-            });
-
-            $(detailsId).on('change', 'select[name^="ingredient_uom_"]', function () {
-                updateIngredientPrice($(this).closest('.ingredient-detail-row'), detailsId, costInputId);
-            });
+            setupIngredientsSelect('#ingredientsSelect', '#addMenuItemModal', '#ingredientsDetails', '#menuCost');
+            setupIngredientsSelect('#editIngredientsSelect', '#editMenuItemModal', '#editIngredientsDetails', '#editMenuCost');
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch ingredients:', error);
@@ -169,8 +129,54 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, costInputId) 
     });
 }
 
+// Initialize a single ingredients select from the already-fetched data (no API call in this function).
+function setupIngredientsSelect(selectId, modalId, detailsId, costInputId) {
+    $(selectId).select2({
+        data: ingredientsWithPrices,
+        placeholder: 'Select ingredients',
+        width: '100%',
+        dropdownParent: $(modalId),
+        matcher: function (param, data) {
+            var searchText = ($.trim(param.term) || '').toLowerCase();
+
+            // No search term typed yet -> show everything
+            if (searchText === '') {
+                return data;
+            }
+
+            var text = (data.text || '').toLowerCase();
+            var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
+
+            var searchWords = searchText.split(/\s+/);
+            var nameMatches = searchWords.every(function (word) {
+                return text.includes(word);
+            });
+
+            // VendorProductId: search using the ENTIRE search text 
+            var vendorProductIdMatches = vendorProductId.includes(searchText);
+            if (nameMatches || vendorProductIdMatches) {
+                return data;
+            }
+
+            return null;
+        }
+    });
+
+    $(selectId).on('change', function () {
+        const selected = $(this).val() || [];
+        renderIngredientDetails(selected, detailsId, costInputId);
+    });
+
+    $(detailsId).on('input', 'input[name^="ingredient_quantity_"]', function () {
+        updateIngredientPrice($(this).closest('.ingredient-detail-row'), detailsId, costInputId);
+    });
+
+    $(detailsId).on('change', 'select[name^="ingredient_uom_"]', function () {
+        updateIngredientPrice($(this).closest('.ingredient-detail-row'), detailsId, costInputId);
+    });
+}
 // Initialize Select2 for recipes
-function initializeRecipesSelect(selectId, modalId, detailsId, costInputId) {
+function initializeRecipesSelects() {
     ajaxRequest({
         url: '/api/RecipeApi/GetAllRecipes',
         method: 'GET',
@@ -186,21 +192,8 @@ function initializeRecipesSelect(selectId, modalId, detailsId, costInputId) {
                 size: recipe.size
             }));
 
-            $(selectId).select2({
-                data: recipesWithPrices,
-                placeholder: 'Select recipes',
-                width: '100%',
-                dropdownParent: $(modalId)
-            });
-
-            $(selectId).on('change', function () {
-                const selected = $(this).val() || [];
-                renderRecipeDetails(selected, detailsId, costInputId);
-            });
-
-            $(detailsId).on('input', 'input[name^="recipe_quantity_"]', function () {
-                updateRecipePrice($(this), detailsId, costInputId);
-            });
+            setupRecipesSelect('#recipesSelect', '#addMenuItemModal', '#recipesDetails', '#menuCost');
+            setupRecipesSelect('#editRecipesSelect', '#editMenuItemModal', '#editRecipesDetails', '#editMenuCost');
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch recipes:', error);
@@ -208,6 +201,24 @@ function initializeRecipesSelect(selectId, modalId, detailsId, costInputId) {
     });
 }
 
+// Initialize a single recipes select from the already-fetched data (no API call in this function).
+function setupRecipesSelect(selectId, modalId, detailsId, costInputId) {
+    $(selectId).select2({
+        data: recipesWithPrices,
+        placeholder: 'Select recipes',
+        width: '100%',
+        dropdownParent: $(modalId)
+    });
+
+    $(selectId).on('change', function () {
+        const selected = $(this).val() || [];
+        renderRecipeDetails(selected, detailsId, costInputId);
+    });
+
+    $(detailsId).on('input', 'input[name^="recipe_quantity_"]', function () {
+        updateRecipePrice($(this), detailsId, costInputId);
+    });
+}
 // Build <option> HTML for the ingredient-detail-row "Unit of Measure" dropdown.
 // Restricted to the ALLOWED_UNIT_OF_MEASURE_LABELS set AND to units convertible
 // with the ingredient's base unit (e.g. an ingredient stocked in KG offers the
@@ -282,7 +293,7 @@ function updateRecipePrice($quantityInput, detailsId, costInputId) {
 }
 
 // Initialize Select2 for categories
-function initializeCategorySelect(selectId, modalId) {
+function initializeCategorySelects() {
     ajaxRequest({
         url: `/api/CategoryApi/GetAllCategories/${true}`,
         method: 'GET',
@@ -293,45 +304,9 @@ function initializeCategorySelect(selectId, modalId) {
                 text: cat.name
             }));
 
-            $(selectId).select2({
-                tags: true,
-                data: categories,
-                placeholder: 'Select or add category',
-                width: '100%',
-                dropdownParent: $(modalId),
-                createTag: function (params) {
-                    return {
-                        id: params.term,
-                        text: params.term,
-                        newTag: true
-                    };
-                }
-            });
-
-            $(selectId).on('select2:select', function (e) {
-                const data = e.params.data;
-                if (data.newTag) {
-                    const categoryName = data.text;
-                    const modalHtml = `
-                        <div class="modal" id="categoryModal" style="display:flex;">
-                            <div class="modal-content" style="max-width:400px;">
-                                <div class="modal-header">
-                                    <h3>Add New Category</h3>
-                                    <button class="modal-close" onclick="closeCategoryModal('${selectId}')">&times;</button>
-                                </div>
-                                <div class="modal-body">
-                                    <p>Do you want to add "${categoryName}" as a new category?</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <button class="btn btn-outline" onclick="closeCategoryModal('${selectId}')">Cancel</button>
-                                    <button class="btn btn-primary" onclick="addNewCategory('${categoryName}', '${selectId}')">Add Category</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    $('body').append(modalHtml);
-                }
-            });
+            setupCategorySelect('#menuCategory', '#addMenuItemModal');
+            setupCategorySelect('#editMenuCategory', '#editMenuItemModal');
+            renderCategoryTabs(response.data || []);
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch categories:', error);
@@ -339,6 +314,48 @@ function initializeCategorySelect(selectId, modalId) {
     });
 }
 
+// Initialize a single category select from the already-fetched data (no API call in this function).
+function setupCategorySelect(selectId, modalId) {
+    $(selectId).select2({
+        tags: true,
+        data: categories,
+        placeholder: 'Select or add category',
+        width: '100%',
+        dropdownParent: $(modalId),
+        createTag: function (params) {
+            return {
+                id: params.term,
+                text: params.term,
+                newTag: true
+            };
+        }
+    });
+
+    $(selectId).on('select2:select', function (e) {
+        const data = e.params.data;
+        if (data.newTag) {
+            const categoryName = data.text;
+            const modalHtml = `
+                <div class="modal" id="categoryModal" style="display:flex;">
+                    <div class="modal-content" style="max-width:400px;">
+                        <div class="modal-header">
+                            <h3>Add New Category</h3>
+                            <button class="modal-close" onclick="closeCategoryModal('${selectId}')">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Do you want to add "${categoryName}" as a new category?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-outline" onclick="closeCategoryModal('${selectId}')">Cancel</button>
+                            <button class="btn btn-primary" onclick="addNewCategory('${categoryName}', '${selectId}')">Add Category</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('body').append(modalHtml);
+        }
+    });
+}
 // Render ingredient details with unit conversion dropdown
 function renderIngredientDetails(selected, detailsId, costInputId) {
     let existingData = {};
@@ -739,25 +756,30 @@ function refreshCategoryTabs() {
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            const currentActiveCategory = $('.tab-btn.active').data('category') || 'all';
-            const tabContainer = $('#categoryTabs');
-            tabContainer.empty();
-            tabContainer.append(`<button class="tab-btn ${currentActiveCategory == 'all' ? 'active' : ''}" data-category="all">All</button>`);
-            response.data.forEach(cat => {
-                const isActive = (String(cat.categoryId) === String(currentActiveCategory));
-                tabContainer.append(`<button class="tab-btn ${isActive ? 'active' : ''}" data-category="${cat.categoryId}">${cat.name}</button>`);
-            });
-
-            $('.tab-btn').on('click', function () {
-                $('.tab-btn').removeClass('active');
-                $(this).addClass('active');
-                const categoryId = $(this).data('category');
-                filterMenuItems(categoryId);
-            });
+            renderCategoryTabs(response.data || []);
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch categories:', error);
         }
+    });
+}
+
+// Build the category tab buttons from a raw categories list (no API call here)
+function renderCategoryTabs(categoryList) {
+    const currentActiveCategory = $('.tab-btn.active').data('category') || 'all';
+    const tabContainer = $('#categoryTabs');
+    tabContainer.empty();
+    tabContainer.append(`<button class="tab-btn ${currentActiveCategory == 'all' ? 'active' : ''}" data-category="all">All</button>`);
+    categoryList.forEach(cat => {
+        const isActive = (String(cat.categoryId) === String(currentActiveCategory));
+        tabContainer.append(`<button class="tab-btn ${isActive ? 'active' : ''}" data-category="${cat.categoryId}">${cat.name}</button>`);
+    });
+
+    $('.tab-btn').on('click', function () {
+        $('.tab-btn').removeClass('active');
+        $(this).addClass('active');
+        const categoryId = $(this).data('category');
+        filterMenuItems(categoryId);
     });
 }
 
