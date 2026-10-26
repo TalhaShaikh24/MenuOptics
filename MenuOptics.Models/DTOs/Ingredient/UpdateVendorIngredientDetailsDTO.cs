@@ -1,6 +1,6 @@
 namespace MenuOptics.Models
 {
-    public class UpdateIngredientDetailsDto
+    public class UpdateVendorIngredientDetailsDTO
     {
         public int IngredientId { get; set; }
         public string? Name { get; set; }

@@ -2,10 +2,10 @@ using System.Collections.Generic;
 
 namespace MenuOptics.Models
 {
-    public class InvoiceInventoryRequestDto
+    public class CreateVendorInvoiceInventoryDTO
     {
         public int RestaurantId { get; set; }
         public string? InvoiceId { get; set; } // Optional
-        public List<InvoiceItemDto> Items { get; set; } = new();
+        public List<VendorInvoiceItemDTO> Items { get; set; } = new();
     }
 }

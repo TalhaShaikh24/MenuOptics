@@ -30,7 +30,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("CreateInvoice")]
-        public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceRequestDto model)
+        public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceInventoryDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -46,7 +46,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPut("UpdateInvoice")]
-        public async Task<IActionResult> UpdateInvoice([FromBody] UpdateInvoiceRequestDto model)
+        public async Task<IActionResult> UpdateInvoice([FromBody] UpdateInvoiceInventoryDTO model)
         {
             if (!ModelState.IsValid)
             {

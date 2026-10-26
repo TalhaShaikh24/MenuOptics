@@ -1,7 +1,9 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Services.VendorApiServices.Interfaces;
+using MenuOptics.Models.DTOs.ActivityLog;
 using System.Data;
+using MenuOptics.Models;
 
 namespace MenuOptics.Services
 {
@@ -44,7 +46,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto>> GetAllUserActivityLogsAsync(MenuOptics.Models.DTOs.ActivityLog.ActivityLogFilterDto? filter = null)
+        public async Task<DataTablesResponseDTO<GetActivityLogDTO>> GetAllUserActivityLogsAsync(FilterActivityLogDTO? filter = null)
         {
             using var connection = _context.CreateConnection();
             var pageNumber = filter?.PageNumber > 0 ? filter.PageNumber : 1;
@@ -73,7 +75,7 @@ namespace MenuOptics.Services
             parameters.Add("@TotalErrorCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
             parameters.Add("@TotalWarningCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            var logs = await connection.QueryAsync<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto>(
+            var logs = await connection.QueryAsync<GetActivityLogDTO>(
                 "sp_ActivityLogCRUD",
                 parameters,
                 commandType: CommandType.StoredProcedure
@@ -84,7 +86,7 @@ namespace MenuOptics.Services
             int totalErrorCount = parameters.Get<int?>("@TotalErrorCount") ?? 0;
             int totalWarningCount = parameters.Get<int?>("@TotalWarningCount") ?? 0;
 
-            return new MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto>
+            return new MenuOptics.Models.DataTablesResponseDTO<GetActivityLogDTO>
             {
                 Draw = filter?.Draw ?? 0,
                 RecordsTotal = totalCount,
@@ -96,14 +98,14 @@ namespace MenuOptics.Services
             };
         }
 
-        public async Task<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto?> GetUserActivityLogByIdAsync(int logId)
+        public async Task<GetActivityLogDTO?> GetUserActivityLogByIdAsync(int logId)
         {
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@Action", "SELECT");
             parameters.Add("@LogId", logId);
 
-            var log = await connection.QueryFirstOrDefaultAsync<MenuOptics.Models.DTOs.ActivityLog.ActivityLogDto>(
+            var log = await connection.QueryFirstOrDefaultAsync<GetActivityLogDTO>(
                 "sp_ActivityLogCRUD",
                 parameters,
                 commandType: CommandType.StoredProcedure

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace MenuOptics.Models
 {
-    public class InventoryInvoiceDto
+    public class GetInventoryInvoiceDTO
     {
         public int InventoryInvoiceId { get; set; }
         public long RestaurantId { get; set; }
@@ -16,10 +16,10 @@ namespace MenuOptics.Models
         public decimal? Tax { get; set; }
         public decimal? Total { get; set; }
         public string? ItemsJson { get; set; }
-        public List<InventoryInvoiceItemDetailDto> Items { get; set; } = new List<InventoryInvoiceItemDetailDto>();
+        public List<InventoryInvoiceItemDetailDTO> Items { get; set; } = new List<InventoryInvoiceItemDetailDTO>();
     }
 
-    public class InventoryInvoiceItemDetailDto
+    public class InventoryInvoiceItemDetailDTO
     {
         public int? IngredientId { get; set; }
         public string? IngredientName { get; set; }

@@ -2,7 +2,7 @@ using System;
 
 namespace MenuOptics.Models.DTOs.ActivityLog
 {
-    public class ActivityLogFilterDto
+    public class FilterActivityLogDTO
     {
         public int Draw { get; set; }
         public long? UserId { get; set; }

@@ -28,7 +28,7 @@ namespace MenuOptics.Services.VendorApi
             _vendorActivityLog = activityLog;
             _mainIngredientService = mainIngredientService;
         }
-        public async Task<(int StatusCode, object Body)> CreateIngredientByVendorAsync(VendorIngredientDto model, int currentUserId)
+        public async Task<(int StatusCode, object Body)> CreateIngredientByVendorAsync(CreateVendorIngredientDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
@@ -132,7 +132,7 @@ namespace MenuOptics.Services.VendorApi
                 return (400, ResponseDto);
             }
         }
-        public async Task<(int StatusCode, object Body)> UpdateIngredientPricesAsync(UpdateIngredientPriceDto model, int currentUserId)
+        public async Task<(int StatusCode, object Body)> UpdateIngredientPricesAsync(UpdateVendorIngredientPriceDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
@@ -238,7 +238,7 @@ namespace MenuOptics.Services.VendorApi
                 return (400, ResponseDto);
             }
         }
-        public async Task<(int StatusCode, object Body)> PatchIngredientDetailsAsync(UpdateIngredientDetailsDto model, int currentUserId)
+        public async Task<(int StatusCode, object Body)> PatchIngredientDetailsAsync(UpdateVendorIngredientDetailsDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);

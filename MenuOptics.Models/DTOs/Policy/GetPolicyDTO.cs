@@ -2,7 +2,7 @@ using System;
 
 namespace MenuOptics.Models
 {
-    public class PolicyDto
+    public class GetPolicyDTO
     {
         public int PolicyId { get; set; }
         public string PolicyType { get; set; } = string.Empty; // "Privacy", "Terms", "DataExport"

@@ -27,7 +27,7 @@ namespace MenuOptics.Controllers.VendorApi
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPost("CreateIngredientByVendor")]
-        public async Task<IActionResult> CreateIngredientByVendor([FromBody] VendorIngredientDto model)
+        public async Task<IActionResult> CreateIngredientByVendor([FromBody] CreateVendorIngredientDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -48,7 +48,7 @@ namespace MenuOptics.Controllers.VendorApi
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPut("UpdateIngredientPrices")]
-        public async Task<IActionResult> UpdateIngredientPrices([FromBody] UpdateIngredientPriceDto model)
+        public async Task<IActionResult> UpdateIngredientPrices([FromBody] UpdateVendorIngredientPriceDTO model)
         {
             var (statusCode, body) = await _ingredientService.UpdateIngredientPricesAsync(model, CurrentUserId);
             return StatusCode(statusCode, body);
@@ -59,7 +59,7 @@ namespace MenuOptics.Controllers.VendorApi
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPatch("PatchIngredientDetails")]
-        public async Task<IActionResult> PatchIngredientDetails([FromBody] UpdateIngredientDetailsDto model)
+        public async Task<IActionResult> PatchIngredientDetails([FromBody] UpdateVendorIngredientDetailsDTO model)
         {
             var (statusCode, body) = await _ingredientService.PatchIngredientDetailsAsync(model, CurrentUserId);
             return StatusCode(statusCode, body);

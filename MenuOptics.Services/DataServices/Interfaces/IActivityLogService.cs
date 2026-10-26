@@ -14,8 +14,8 @@ namespace MenuOptics.Services
             string? ipAddress = null
         );
 
-        Task<DataTablesResponseDto<ActivityLogDto>> GetAllUserActivityLogsAsync(ActivityLogFilterDto? filter = null);
-        Task<ActivityLogDto?> GetUserActivityLogByIdAsync(int logId);
+        Task<DataTablesResponseDTO<GetActivityLogDTO>> GetAllUserActivityLogsAsync(FilterActivityLogDTO? filter = null);
+        Task<GetActivityLogDTO?> GetUserActivityLogByIdAsync(int logId);
         Task<IEnumerable<string>> GetRestaurantEndpointsAsync();
     }
 }

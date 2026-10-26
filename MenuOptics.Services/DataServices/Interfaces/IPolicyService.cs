@@ -6,6 +6,6 @@ namespace MenuOptics.Services
     {
         Task<ResponseDto> GetAllPoliciesAsync();
         Task<ResponseDto> GetPolicyByTypeAsync(string type);
-        Task<ResponseDto> SavePolicyAsync(PolicyDto model, int currentUserId);
+        Task<ResponseDto> SavePolicyAsync(SavePolicyDTO model, int currentUserId);
     }
 }

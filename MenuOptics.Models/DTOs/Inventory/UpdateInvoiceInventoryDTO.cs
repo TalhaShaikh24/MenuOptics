@@ -1,11 +1,14 @@
+using MenuOptics.Models.DTOs.Inventory;
+
 namespace MenuOptics.Models
 {
-    public class CreateInvoiceRequestDto
+    public class UpdateInvoiceInventoryDTO
     {
+        public int InventoryInvoiceId { get; set; }
         public int PrivateVendorId { get; set; }
         public string? InvoiceId { get; set; }
         public DateTime? InvoiceDate { get; set; }
-        public List<InvoiceItemDto> Items { get; set; } = new();
+        public List<SaveInvoiceItemDTO> Items { get; set; } = new();
         public bool UpdatePrices { get; set; } = false;
     }
 }

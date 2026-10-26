@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.Ingredient;
 using Stripe.Forwarding;
 using System.Data;
 using System.Data.SqlClient;
@@ -26,7 +27,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<(int StatusCode, object Body)> CreateIngredientAsync(Ingredient model, int currentUserId, int actualUserId)
+        public async Task<(int StatusCode, object Body)> CreateIngredientAsync(CreateIngredientDTO model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
 
@@ -44,7 +45,7 @@ namespace MenuOptics.Services
             {
                 var parameters = new DynamicParameters();
                 parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@Name", model.Brand + " " + model.Name);
+                parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);
@@ -82,7 +83,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<(int StatusCode, object Body)> UpdateIngredientAsync(Ingredient model, int currentUserId, int actualUserId)
+        public async Task<(int StatusCode, object Body)> UpdateIngredientAsync(UpdateIngredientDTO model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -93,7 +94,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@IngredientId", model.IngredientId);
                 parameters.Add("@RestaurantId", currentUserId);
-                parameters.Add("@Name", model.Brand + " " + model.Name);
+                parameters.Add("@Name", model.Name);
                 parameters.Add("@Price", model.Price);
                 parameters.Add("@Unit", model.Unit.ToUpper());
                 parameters.Add("@Size", model.Size);
@@ -140,7 +141,7 @@ namespace MenuOptics.Services
                 parameters.Add("@IngredientId", id);
                 parameters.Add("@Action", "SELECT");
 
-                var ingredient = await connection.QueryFirstOrDefaultAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var ingredient = await connection.QueryFirstOrDefaultAsync<GetIngredientDTO>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Ingredient retrieved successfully.";
@@ -186,12 +187,12 @@ namespace MenuOptics.Services
                     parameters.Add("@SearchValue", dt.SearchValue);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                    var ingredients = await connection.QueryAsync<Ingredient>(
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>(
                         "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                     int totalCount = parameters.Get<int>("@TotalCount");
 
-                    var dtResponse = new DataTablesResponseDto<Ingredient>
+                    var dtResponse = new DataTablesResponseDTO<GetIngredientDTO>
                     {
                         Draw = dt.Draw,
                         RecordsTotal = totalCount,
@@ -210,7 +211,7 @@ namespace MenuOptics.Services
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
-                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
                     ResponseDto.Status = 200;
                     ResponseDto.ResponseMsg = "Ingredients retrieved successfully.";
                     ResponseDto.Data = ingredients;
@@ -222,7 +223,7 @@ namespace MenuOptics.Services
                 if (query.ContainsKey("draw"))
                 {
                     int draw = int.Parse(query["draw"].FirstOrDefault() ?? "1");
-                    return (200, new DataTablesResponseDto<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                    return (200, new DataTablesResponseDTO<GetIngredientDTO> { Draw = draw, Data = Enumerable.Empty<GetIngredientDTO>() });
                 }
                 return (400, new ResponseDto { Status = 400, ResponseMsg = sqlEx.Message });
             }
@@ -257,12 +258,12 @@ namespace MenuOptics.Services
                     parameters.Add("@SearchValue", dt.SearchValue);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                    var ingredients = await connection.QueryAsync<Ingredient>(
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>(
                         "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                     int totalCount = parameters.Get<int>("@TotalCount");
 
-                    var dtResponse = new DataTablesResponseDto<Ingredient>
+                    var dtResponse = new DataTablesResponseDTO<GetIngredientDTO>
                     {
                         Draw = dt.Draw,
                         RecordsTotal = totalCount,
@@ -280,7 +281,7 @@ namespace MenuOptics.Services
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
-                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
                     ResponseDto.Status = 200;
                     ResponseDto.ResponseMsg = "Ingredients retrieved successfully.";
                     ResponseDto.Data = ingredients;
@@ -292,7 +293,7 @@ namespace MenuOptics.Services
                 if (query.ContainsKey("draw"))
                 {
                     int draw = int.Parse(query["draw"].FirstOrDefault() ?? "1");
-                    return (200, new DataTablesResponseDto<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                    return (200, new DataTablesResponseDTO<GetIngredientDTO> { Draw = draw, Data = Enumerable.Empty<GetIngredientDTO>() });
                 }
                 return (400, new ResponseDto { Status = 400, ResponseMsg = sqlEx.Message });
             }
@@ -330,12 +331,12 @@ namespace MenuOptics.Services
                     parameters.Add("@SearchValue", dt.SearchValue);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                    var ingredients = await connection.QueryAsync<Ingredient>(
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>(
                         "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                     int totalCount = parameters.Get<int>("@TotalCount");
 
-                    var dtResponse = new DataTablesResponseDto<Ingredient>
+                    var dtResponse = new DataTablesResponseDTO<GetIngredientDTO>
                     {
                         Draw = dt.Draw,
                         RecordsTotal = totalCount,
@@ -357,7 +358,7 @@ namespace MenuOptics.Services
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
-                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                     ResponseDto.Status = 200;
                     ResponseDto.ResponseMsg = "Ingredients retrieved successfully.";
@@ -370,7 +371,7 @@ namespace MenuOptics.Services
                 if (query.ContainsKey("draw"))
                 {
                     int draw = int.Parse(query["draw"].FirstOrDefault() ?? "1");
-                    return (200, new DataTablesResponseDto<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                    return (200, new DataTablesResponseDTO<GetIngredientDTO> { Draw = draw, Data = Enumerable.Empty<GetIngredientDTO>() });
                 }
                 return (400, new ResponseDto { Status = 400, ResponseMsg = sqlEx.Message });
             }
@@ -404,12 +405,12 @@ namespace MenuOptics.Services
                     parameters.Add("@SearchValue", dt.SearchValue);
                     parameters.Add("@TotalCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-                    var ingredients = await connection.QueryAsync<Ingredient>(
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>(
                         "sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                     int totalCount = parameters.Get<int>("@TotalCount");
 
-                    var dtResponse = new DataTablesResponseDto<Ingredient>
+                    var dtResponse = new DataTablesResponseDTO<GetIngredientDTO>
                     {
                         Draw = dt.Draw,
                         RecordsTotal = totalCount,
@@ -427,7 +428,7 @@ namespace MenuOptics.Services
                     parameters.Add("@Action", "SELECT_ALL");
                     parameters.Add("@PageSize", -1); // Return all rows
 
-                    var ingredients = await connection.QueryAsync<Ingredient>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+                    var ingredients = await connection.QueryAsync<GetIngredientDTO>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                     ResponseDto.Status = 200;
                     ResponseDto.ResponseMsg = "Ingredients retrieved successfully.";
@@ -440,7 +441,7 @@ namespace MenuOptics.Services
                 if (query.ContainsKey("draw"))
                 {
                     int draw = int.Parse(query["draw"].FirstOrDefault() ?? "1");
-                    return (200, new DataTablesResponseDto<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                    return (200, new DataTablesResponseDTO<GetIngredientDTO> { Draw = draw, Data = Enumerable.Empty<GetIngredientDTO>() });
                 }
                 return (400, new ResponseDto { Status = 400, ResponseMsg = sqlEx.Message });
             }
@@ -533,7 +534,7 @@ namespace MenuOptics.Services
             if (query.ContainsKey("draw"))
             {
                 int draw = int.Parse(query["draw"].FirstOrDefault() ?? "1");
-                return (200, new DataTablesResponseDto<Ingredient> { Draw = draw, Data = Enumerable.Empty<Ingredient>() });
+                return (200, new DataTablesResponseDTO<GetIngredientDTO> { Draw = draw, Data = Enumerable.Empty<GetIngredientDTO>() });
             }
             return (500, new ResponseDto { Status = 500, ResponseMsg = $"{ex.Message}" });
         }

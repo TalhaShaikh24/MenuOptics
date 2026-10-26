@@ -33,7 +33,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("SavePolicy")]
-        public async Task<IActionResult> SavePolicy([FromBody] PolicyDto model)
+        public async Task<IActionResult> SavePolicy([FromBody] SavePolicyDTO model)
         {
             var responseData = await _policyService.SavePolicyAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);

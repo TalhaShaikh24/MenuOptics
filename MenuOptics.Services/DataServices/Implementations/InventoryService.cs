@@ -28,7 +28,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var invoices = (await connection.QueryAsync<InventoryInvoiceDto>(
+                var invoices = (await connection.QueryAsync<GetInventoryInvoiceDTO>(
                     "sp_InventoryInvoiceCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure
@@ -40,19 +40,19 @@ namespace MenuOptics.Services
                     {
                         try
                         {
-                            inv.Items = System.Text.Json.JsonSerializer.Deserialize<List<InventoryInvoiceItemDetailDto>>(
+                            inv.Items = System.Text.Json.JsonSerializer.Deserialize<List<InventoryInvoiceItemDetailDTO>>(
                                 inv.ItemsJson,
                                 new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                            ) ?? new List<InventoryInvoiceItemDetailDto>();
+                            ) ?? new List<InventoryInvoiceItemDetailDTO>();
                         }
                         catch
                         {
-                            inv.Items = new List<InventoryInvoiceItemDetailDto>();
+                            inv.Items = new List<InventoryInvoiceItemDetailDTO>();
                         }
                     }
                     else
                     {
-                        inv.Items = new List<InventoryInvoiceItemDetailDto>();
+                        inv.Items = new List<InventoryInvoiceItemDetailDTO>();
                     }
                 }
 
@@ -78,7 +78,7 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-        public async Task<ResponseDto> CreateInvoiceAsync(CreateInvoiceRequestDto model, int currentUserId)
+        public async Task<ResponseDto> CreateInvoiceAsync(CreateInvoiceInventoryDTO model, int currentUserId)
         {
             var responseDto = new ResponseDto();
 
@@ -193,7 +193,7 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-        public async Task<ResponseDto> UpdateInvoiceAsync(UpdateInvoiceRequestDto model, int currentUserId)
+        public async Task<ResponseDto> UpdateInvoiceAsync(UpdateInvoiceInventoryDTO model, int currentUserId)
         {
             var responseDto = new ResponseDto();
 
@@ -227,7 +227,7 @@ namespace MenuOptics.Services
                 foreach (var item in model.Items)
                 {
                     decimal quantity = 0;
-                    decimal unitPrice = item.UnitPrice ?? item.Price;
+                    decimal unitPrice = 0;
 
                     if (item.Weight != null && item.Weight != 0)
                     {

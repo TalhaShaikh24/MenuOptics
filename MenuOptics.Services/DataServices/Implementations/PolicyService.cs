@@ -25,10 +25,10 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var policies = await connection.QueryAsync<PolicyDto>("sp_PolicyCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var policies = await connection.QueryAsync<GetPolicyDTO>("sp_PolicyCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
-                ResponseDto.Data = policies ?? new List<PolicyDto>();
+                ResponseDto.Data = policies ?? new List<GetPolicyDTO>();
                 return ResponseDto;
             }
             catch (SqlException sqlEx)
@@ -60,10 +60,10 @@ namespace MenuOptics.Services
                 parameters.Add("@PolicyType", type);
                 parameters.Add("@Action", "SELECT_BY_TYPE");
 
-                var policy = await connection.QuerySingleOrDefaultAsync<PolicyDto>("sp_PolicyCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var policy = await connection.QuerySingleOrDefaultAsync<GetPolicyDTO>("sp_PolicyCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
-                ResponseDto.Data = policy ?? new PolicyDto { PolicyType = type, Content = "" };
+                ResponseDto.Data = policy ?? new GetPolicyDTO { PolicyType = type, Content = "" };
                 return ResponseDto;
             }
             catch (SqlException sqlEx)
@@ -84,7 +84,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> SavePolicyAsync(PolicyDto model, int currentUserId)
+        public async Task<ResponseDto> SavePolicyAsync(SavePolicyDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();

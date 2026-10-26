@@ -13,8 +13,8 @@ namespace MenuOptics.Services.VendorApiServices.Interfaces
             string logLevel // "Success" | "Error" | "Warning"
         );
 
-        Task<DataTablesResponseDto<VendorActivityLogDto>> GetAllVendorActivityLogsAsync(ActivityLogFilterDto? filter = null);
-        Task<VendorActivityLogDto?> GetVendorActivityLogByIdAsync(int logId);
+        Task<DataTablesResponseDTO<GetVendorActivityLogDTO>> GetAllVendorActivityLogsAsync(FilterActivityLogDTO? filter = null);
+        Task<GetVendorActivityLogDTO?> GetVendorActivityLogByIdAsync(int logId);
         Task<IEnumerable<string>> GetVendorEndpointsAsync();
     }
 }

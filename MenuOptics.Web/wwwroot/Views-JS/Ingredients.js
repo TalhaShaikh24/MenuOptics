@@ -441,8 +441,7 @@ function addIngredient(ingredientData) {
         url: '/api/IngredientApi/CreateIngredient',
         method: 'POST',
         data: {
-            Brand: ingredientData.brand,
-            Name: ingredientData.name,
+            Name: ingredientData.brand + " " + ingredientData.name,
             Price: ingredientData.price,
             Unit: ingredientData.unit,
             Size: ingredientData.size,
@@ -526,8 +525,7 @@ function updateIngredient(ingredientData) {
         method: 'PUT',
         data: {
             IngredientId: ingredientData.ingredientId,
-            Brand: ingredientData.brand,
-            Name: ingredientData.name,
+            Name: ingredientData.brand + " " + ingredientData.name,
             Price: ingredientData.price,
             Unit: ingredientData.unit,
             Size: ingredientData.size,

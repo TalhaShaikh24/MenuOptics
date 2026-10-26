@@ -4,6 +4,6 @@ namespace MenuOptics.Services.VendorApi
 {
     public interface IInventoryService
     {
-        Task<ResponseDto> InvoiceInventoryAsync(InvoiceInventoryRequestDto model, int currentUserId);
+        Task<ResponseDto> InvoiceInventoryAsync(CreateVendorInvoiceInventoryDTO model, int currentUserId);
     }
 }

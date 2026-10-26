@@ -175,7 +175,7 @@ function initRestaurantActivityTable() {
             }
 
             $.ajax({
-                url: '/api/ActivityLogApi/GetRestaurantActivityLogs',
+                url: '/api/ActivityLogApi/GetUserActivityLogs',
                 method: 'GET',
                 data: queryData,
                 success: function (response) {
@@ -312,7 +312,7 @@ function updateStatsCards(logs, total, counts) {
 
 function loadEndpointsDropdown() {
     ajaxRequest({
-        url: '/api/ActivityLogApi/GetRestaurantEndpoints',
+        url: '/api/ActivityLogApi/GetUserEndpoints',
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {

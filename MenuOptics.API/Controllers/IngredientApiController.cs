@@ -1,5 +1,6 @@
 using MenuOptics.API.Middleware;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.Ingredient;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -25,7 +26,7 @@ namespace MenuOptics.Controllers.Api
 
         [HttpPost("CreateIngredient")]
         [HttpPost]
-        public async Task<IActionResult> CreateIngredient([FromBody] Ingredient model)
+        public async Task<IActionResult> CreateIngredient([FromBody] CreateIngredientDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -42,7 +43,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPut("UpdateIngredient")]
-        public async Task<IActionResult> UpdateIngredient([FromBody] Ingredient model)
+        public async Task<IActionResult> UpdateIngredient([FromBody] UpdateIngredientDTO model)
         {
             var (statusCode, body) = await _ingredientService.UpdateIngredientAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(statusCode, body);

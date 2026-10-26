@@ -29,7 +29,7 @@ namespace MenuOptics.Controllers.VendorApi
         [Authorize(Roles = "Vendor")]
         [IgnoreSubscription]
         [HttpPost("InvoiceInventory")]
-        public async Task<IActionResult> InvoiceInventory([FromBody] InvoiceInventoryRequestDto model)
+        public async Task<IActionResult> InvoiceInventory([FromBody] CreateVendorInvoiceInventoryDTO model)
         {
             if (!ModelState.IsValid)
             {

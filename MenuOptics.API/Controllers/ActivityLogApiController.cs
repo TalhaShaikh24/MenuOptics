@@ -23,8 +23,8 @@ namespace MenuOptics.API.Controllers
             _vendorActivityLogService = vendorActivityLogService;
         }
 
-        [HttpGet("GetRestaurantActivityLogs")]
-        public async Task<IActionResult> GetRestaurantActivityLogs([FromQuery] ActivityLogFilterDto filter)
+        [HttpGet("GetUserActivityLogs")]
+        public async Task<IActionResult> GetUserActivityLogs([FromQuery] FilterActivityLogDTO filter)
         {
             try
             {
@@ -47,8 +47,8 @@ namespace MenuOptics.API.Controllers
             }
         }
 
-        [HttpGet("GetRestaurantActivityLog/{id}")]
-        public async Task<IActionResult> GetRestaurantActivityLog(int id)
+        [HttpGet("GetUserActivityLog/{id}")]
+        public async Task<IActionResult> GetUserActivityLog(int id)
         {
             try
             {
@@ -82,7 +82,7 @@ namespace MenuOptics.API.Controllers
         }
 
         [HttpGet("GetVendorActivityLogs")]
-        public async Task<IActionResult> GetVendorActivityLogs([FromQuery] ActivityLogFilterDto filter)
+        public async Task<IActionResult> GetVendorActivityLogs([FromQuery] FilterActivityLogDTO filter)
         {
             try
             {
@@ -139,8 +139,8 @@ namespace MenuOptics.API.Controllers
             }
         }
 
-        [HttpGet("GetRestaurantEndpoints")]
-        public async Task<IActionResult> GetRestaurantEndpoints()
+        [HttpGet("GetUserEndpoints")]
+        public async Task<IActionResult> GetUserEndpoints()
         {
             try
             {

@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace MenuOptics.Models
 {
-    public class DataTablesResponseDto<T>
+    public class DataTablesResponseDTO<T>
     {
         public int Draw { get; set; }
         public int RecordsTotal { get; set; }

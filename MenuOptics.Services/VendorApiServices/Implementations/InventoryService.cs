@@ -20,7 +20,7 @@ namespace MenuOptics.Services.VendorApi
 
         }
 
-        public async Task<ResponseDto> InvoiceInventoryAsync(InvoiceInventoryRequestDto model, int currentUserId)
+        public async Task<ResponseDto> InvoiceInventoryAsync(CreateVendorInvoiceInventoryDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(model);

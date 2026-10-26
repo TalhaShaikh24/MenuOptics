@@ -1,7 +1,9 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Services.VendorApiServices.Interfaces;
+using MenuOptics.Models.DTOs.ActivityLog;
 using System.Data;
+using MenuOptics.Models;
 
 namespace MenuOptics.Services.VendorApiServices.Implementations
 {
@@ -42,7 +44,7 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             }
         }
 
-        public async Task<MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>> GetAllVendorActivityLogsAsync(MenuOptics.Models.DTOs.ActivityLog.ActivityLogFilterDto? filter = null)
+        public async Task<DataTablesResponseDTO<GetVendorActivityLogDTO>> GetAllVendorActivityLogsAsync(FilterActivityLogDTO? filter = null)
         {
             using var connection = _context.CreateConnection();
             var pageNumber = filter?.PageNumber > 0 ? filter.PageNumber : 1;
@@ -71,7 +73,7 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             parameters.Add("@TotalErrorCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
             parameters.Add("@TotalWarningCount", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-            var logs = await connection.QueryAsync<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>(
+            var logs = await connection.QueryAsync<GetVendorActivityLogDTO>(
                 "sp_VendorActivityLogCRUD",
                 parameters,
                 commandType: CommandType.StoredProcedure
@@ -82,7 +84,7 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             int totalErrorCount = parameters.Get<int?>("@TotalErrorCount") ?? 0;
             int totalWarningCount = parameters.Get<int?>("@TotalWarningCount") ?? 0;
 
-            return new MenuOptics.Models.DataTablesResponseDto<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>
+            return new MenuOptics.Models.DataTablesResponseDTO<GetVendorActivityLogDTO>
             {
                 Draw = filter?.Draw ?? 0,
                 RecordsTotal = totalCount,
@@ -94,14 +96,14 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
             };
         }
 
-        public async Task<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto?> GetVendorActivityLogByIdAsync(int logId)
+        public async Task<GetVendorActivityLogDTO?> GetVendorActivityLogByIdAsync(int logId)
         {
             using var connection = _context.CreateConnection();
             var parameters = new DynamicParameters();
             parameters.Add("@Action", "SELECT");
             parameters.Add("@LogId", logId);
 
-            var log = await connection.QueryFirstOrDefaultAsync<MenuOptics.Models.DTOs.ActivityLog.VendorActivityLogDto>(
+            var log = await connection.QueryFirstOrDefaultAsync<GetVendorActivityLogDTO>(
                 "sp_VendorActivityLogCRUD",
                 parameters,
                 commandType: CommandType.StoredProcedure
