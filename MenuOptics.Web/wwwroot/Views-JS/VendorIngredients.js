@@ -72,6 +72,7 @@ function initIngredientsTable() {
     table = $('.ingredients-table').DataTable({
         serverSide: true,
         processing: true,
+        loadingMessage: 'Loading ingredients...',
         ajax: function (dtParams, callback) {
             const searchValue = dtParams.search ? dtParams.search.value : '';
             const orderCol    = dtParams.order && dtParams.order.length ? dtParams.order[0].column : 1;

@@ -285,6 +285,7 @@ function initIngredientsTable() {
     table = $('.ingredients-table').DataTable({
         serverSide: true,
         processing: true,
+        loadingMessage: 'Loading ingredients...',
         ordering: false,
         ajax: function (dtParams, callback, settings) {
             // Map DataTables params → our API query params

@@ -31,7 +31,14 @@
  *
  * Usage — automatic (server-side / ajax DataTables):
  *   Nothing to call. When this file is loaded after DataTables (it is, from
- *   Views/Shared/_Layout.cshtml, before the page's Scripts section):
+ *   Views/Shared/_Layout.cshtml, before the page's Scripts section).
+ *   The overlay text defaults to 'Loading...'. Give a table its own text
+ *   either in its DataTable init options:
+ *       $('#myTable').DataTable({ loadingMessage: 'Loading items...' });
+ *   or as an attribute on the <table> element:
+ *       <table data-loading-message="Loading items...">
+ *   (A message passed to show()/showForTable() takes precedence for manual
+ *   shows and is remembered for that table's automatic shows too.)
  *     1. `processing: true` becomes the default for every DataTable, and
  *        DataTables' processing markup becomes this component's card, so
  *        per-file `language.processing` strings are no longer needed.
@@ -94,13 +101,22 @@
         return $host;
     }
 
+    /* The message a table's overlay should show: an explicit message set
+     * via show()/the processing handler wins, then the table's
+     * data-loading-message attribute, then the default text. */
+    function messageFor($table) {
+        return $table.data('mo-loading-message')
+            || $table.attr('data-loading-message')
+            || DEFAULT_MESSAGE;
+    }
+
     function getOverlay($table) {
         var $host = resolveHost($table);
         var $overlay = $host.children('.mo-loading-overlay');
 
         if (!$overlay.length) {
             $overlay = $('<div class="mo-loading-overlay" aria-hidden="true"></div>')
-                .html(cardHtml(DEFAULT_MESSAGE))
+                .html(cardHtml(messageFor($table)))
                 .appendTo($host);
         }
 
@@ -119,6 +135,7 @@
             if (!$overlay.length) {
                 $overlay = getOverlay($table);
             }
+            $overlay.find('.mo-loading-text').text(messageFor($table));
             $overlay.addClass('mo-loading-visible').attr('aria-hidden', 'false');
         } else {
             $overlay.removeClass('mo-loading-visible').attr('aria-hidden', 'true');
@@ -133,6 +150,7 @@
             $table.data('mo-loading-count', ($table.data('mo-loading-count') || 0) + 1);
 
             if (message) {
+                $table.data('mo-loading-message', message);
                 getOverlay($table).find('.mo-loading-text').text(message);
             }
             updateVisibility($table);
@@ -189,6 +207,11 @@
                 return;
             }
             var $table = $(settings.nTable);
+            var initMessage = (settings.oInit && settings.oInit.loadingMessage)
+                || $table.attr('data-loading-message');
+            if (initMessage) {
+                $table.data('mo-loading-message', initMessage);
+            }
             $table.data('mo-loading-processing', !!processing);
             updateVisibility($table);
         });
