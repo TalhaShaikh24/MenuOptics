@@ -20,9 +20,9 @@ let pendingPreloadedIngredientData = {};
 /* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
-    // Initialize Select2 for ingredients
-    initializeIngredientsSelect('#ingredientsSelect', '#addRecipeModal', '#ingredientsDetails', '#recipeCost');
-    initializeIngredientsSelect('#editIngredientsSelect', '#editRecipeModal', '#editIngredientsDetails', '#editRecipeCost');
+    // Initialize Select2 for ingredients — one shared API call initializes
+    // both the Add and Edit selects (see initializeIngredientsSelects below)
+    initializeIngredientsSelects();
 
     // Initialize DataTable
     initRecipeTable();
@@ -114,8 +114,11 @@ function initRecipeTable() {
     });
 }
 
-// Initialize Select2 for ingredients
-function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId) {
+// Initialize Select2 for ingredients.
+// GetAllActiveIngredientsByUserId is fetched ONCE here and the same data
+// initializes both the Add and Edit selects — previously there was one API
+// call per select, so the endpoint was hit twice on every page load.
+function initializeIngredientsSelects() {
     ajaxRequest({
         url: '/api/IngredientApi/GetAllActiveIngredientsByUserId',
         method: 'GET',
@@ -136,63 +139,70 @@ function initializeIngredientsSelect(selectId, modalId, detailsId, priceInputId)
                 vendorProductId: ing.vendorProductId
             }));
 
-            if ($(selectId).hasClass('select2-hidden-accessible')) {
-                $(selectId).select2('destroy');
-            }
-
-            $(selectId).empty(); // existing options clear karo
-
-            $(selectId).select2({
-                tags: false,
-                data: ingredientsWithPrices,
-                placeholder: 'Select ingredients',
-                width: '100%',
-                dropdownParent: $(modalId),
-                matcher: function (param, data) {
-                    var searchText = ($.trim(param.term) || '').toLowerCase();
-
-                    // No search term typed yet -> show everything
-                    if (searchText === '') {
-                        return data;
-                    }
-
-                    var text = (data.text || '').toLowerCase();
-                    var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
-
-                    var searchWords = searchText.split(/\s+/);
-                    var nameMatches = searchWords.every(function (word) {
-                        return text.includes(word);
-                    });
-
-                    // VendorProductId: search using the ENTIRE search text 
-                    var vendorProductIdMatches = vendorProductId.includes(searchText);
-                    if (nameMatches || vendorProductIdMatches) {
-                        return data;
-                    }
-
-                    return null;
-                }
-
-            });
-
-
-
-            $(selectId).on('change', function () {
-                const selected = $(this).val() || [];
-                renderIngredientDetails(selected, detailsId, priceInputId);
-            });
-
-            $(detailsId).on('input', 'input[name^="ingredient_quantity_"]', function () {
-                updateIngredientPrice($(this), detailsId, priceInputId);
-            });
-
-            $(detailsId).on('change', 'select[name^="ingredient_uom_"]', function () {
-                updateIngredientPrice($(this), detailsId, priceInputId);
-            });
+            setupIngredientsSelect('#ingredientsSelect', '#addRecipeModal', '#ingredientsDetails', '#recipeCost');
+            setupIngredientsSelect('#editIngredientsSelect', '#editRecipeModal', '#editIngredientsDetails', '#editRecipeCost');
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch ingredients:', error);
         }
+    });
+}
+
+// Initialize a single ingredients Select2 from the already-fetched
+// ingredientsWithPrices data (no API call in this function).
+function setupIngredientsSelect(selectId, modalId, detailsId, priceInputId) {
+    if ($(selectId).hasClass('select2-hidden-accessible')) {
+        $(selectId).select2('destroy');
+    }
+
+    $(selectId).empty(); // existing options clear karo
+
+    $(selectId).select2({
+        tags: false,
+        data: ingredientsWithPrices,
+        placeholder: 'Select ingredients',
+        width: '100%',
+        dropdownParent: $(modalId),
+        matcher: function (param, data) {
+            var searchText = ($.trim(param.term) || '').toLowerCase();
+
+            // No search term typed yet -> show everything
+            if (searchText === '') {
+                return data;
+            }
+
+            var text = (data.text || '').toLowerCase();
+            var vendorProductId = (data.vendorProductId != null ? String(data.vendorProductId) : '').toLowerCase();
+
+            var searchWords = searchText.split(/\s+/);
+            var nameMatches = searchWords.every(function (word) {
+                return text.includes(word);
+            });
+
+            // VendorProductId: search using the ENTIRE search text 
+            var vendorProductIdMatches = vendorProductId.includes(searchText);
+            if (nameMatches || vendorProductIdMatches) {
+                return data;
+            }
+
+            return null;
+        }
+
+    });
+
+
+
+    $(selectId).on('change', function () {
+        const selected = $(this).val() || [];
+        renderIngredientDetails(selected, detailsId, priceInputId);
+    });
+
+    $(detailsId).on('input', 'input[name^="ingredient_quantity_"]', function () {
+        updateIngredientPrice($(this), detailsId, priceInputId);
+    });
+
+    $(detailsId).on('change', 'select[name^="ingredient_uom_"]', function () {
+        updateIngredientPrice($(this), detailsId, priceInputId);
     });
 }
 
