@@ -1,5 +1,5 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Models;
+using MenuOptics.Models.DTOs.Recipe;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -22,14 +22,14 @@ namespace MenuOptics.Controllers.API
         private int ActualUserId => int.Parse(User.FindFirst("ActualUserId")?.Value ?? "0");
 
         [HttpPost("CreateRecipe")]
-        public async Task<IActionResult> CreateRecipe([FromForm] Recipe model, [FromForm] string ingredients)
+        public async Task<IActionResult> CreateRecipe([FromForm] CreateRecipeDTO model, [FromForm] string ingredients)
         {
             var responseData = await _recipeService.CreateRecipeAsync(model, ingredients, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateRecipe")]
-        public async Task<IActionResult> UpdateRecipe([FromForm] Recipe model, [FromForm] string ingredients)
+        public async Task<IActionResult> UpdateRecipe([FromForm] UpdateRecipeDTO model, [FromForm] string ingredients)
         {
             var responseData = await _recipeService.UpdateRecipeAsync(model, ingredients, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);

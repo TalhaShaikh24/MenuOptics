@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.MenuItem;
 using Newtonsoft.Json;
 using Stripe;
 using System.Data;
@@ -21,7 +22,7 @@ namespace MenuOptics.Services
             _fileService = fileService;
         }
 
-        public async Task<ResponseDto> CreateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> CreateMenuItemAsync(CreateMenuItemDTO model, string ingredients, string recipes, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -30,11 +31,11 @@ namespace MenuOptics.Services
             {
                 if (!string.IsNullOrWhiteSpace(ingredients))
                 {
-                    model.Ingredients = JsonConvert.DeserializeObject<List<MenuItemIngredient>>(ingredients);
+                    model.Ingredients = JsonConvert.DeserializeObject<List<SaveMenuItemIngredientDTO>>(ingredients);
                 }
                 if (!string.IsNullOrWhiteSpace(recipes))
                 {
-                    model.Recipes = JsonConvert.DeserializeObject<List<MenuItemRecipe>>(recipes);
+                    model.Recipes = JsonConvert.DeserializeObject<List<SaveMenuItemRecipeDTO>>(recipes);
                 }
 
                 string? featuredImagePath = null;
@@ -108,7 +109,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> UpdateMenuItemAsync(UpdateMenuItemDTO model, string ingredients, string recipes, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -118,12 +119,12 @@ namespace MenuOptics.Services
                
                 if (!string.IsNullOrWhiteSpace(ingredients))
                 {
-                    model.Ingredients = JsonConvert.DeserializeObject<List<MenuItemIngredient>>(ingredients);
+                    model.Ingredients = JsonConvert.DeserializeObject<List<SaveMenuItemIngredientDTO>>(ingredients);
                 }
 
                 if (!string.IsNullOrWhiteSpace(recipes))
                 {
-                    model.Recipes = JsonConvert.DeserializeObject<List<MenuItemRecipe>>(recipes);
+                    model.Recipes = JsonConvert.DeserializeObject<List<SaveMenuItemRecipeDTO>>(recipes);
                 }
 
                 string? featuredImagePath = null;
@@ -210,16 +211,16 @@ namespace MenuOptics.Services
                 parameters.Add("@MenuItemId", id);
                 parameters.Add("@Action", "SELECT");
 
-                var results = await connection.QueryAsync<Menu, string, string, Menu>(
+                var results = await connection.QueryAsync<GetMenuItemDTO, string, string, GetMenuItemDTO>(
                     "sp_MenuCRUD",
                     (menu, ingredientsJson, recipesJson) =>
                     {
                         menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
-                            : new List<MenuItemIngredient>();
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<GetMenuItemIngredientDTO>>(ingredientsJson)
+                            : new List<GetMenuItemIngredientDTO>();
                         menu.Recipes = !string.IsNullOrEmpty(recipesJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemRecipe>>(recipesJson)
-                            : new List<MenuItemRecipe>();
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<GetMenuItemRecipeDTO>>(recipesJson)
+                            : new List<GetMenuItemRecipeDTO>();
                         return menu;
                     },
                     parameters,
@@ -263,17 +264,17 @@ namespace MenuOptics.Services
                 parameters.Add("@IsActive", isActive);
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var menuItems = await connection.QueryAsync<Menu, string, string, Menu>(
+                var menuItems = await connection.QueryAsync<GetMenuItemDTO, string, string, GetMenuItemDTO>(
                  "sp_MenuCRUD",
                  (menu, ingredientsJson, recipesJson) =>
                  {
                      menu.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
-                         ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemIngredient>>(ingredientsJson)
-                         : new List<MenuItemIngredient>();
+                         ? System.Text.Json.JsonSerializer.Deserialize<List<GetMenuItemIngredientDTO>>(ingredientsJson)
+                         : new List<GetMenuItemIngredientDTO>();
 
                      menu.Recipes = !string.IsNullOrEmpty(recipesJson)
-                         ? System.Text.Json.JsonSerializer.Deserialize<List<MenuItemRecipe>>(recipesJson)
-                         : new List<MenuItemRecipe>();
+                         ? System.Text.Json.JsonSerializer.Deserialize<List<GetMenuItemRecipeDTO>>(recipesJson)
+                         : new List<GetMenuItemRecipeDTO>();
                      return menu;
                  },
                  parameters,
