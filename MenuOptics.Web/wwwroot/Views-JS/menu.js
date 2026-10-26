@@ -720,11 +720,6 @@ function getMenuItemById(id) {
 
             updateTotalCost('#editIngredientsDetails', '#editMenuCost');
 
-            // The modal must show the cost returned by the API for this menu
-            // item — NOT the total updateTotalCost() just recalculated from
-            // today's ingredient/recipe prices (which overwrote the field
-            // during the renders above). Restore the API cost; live
-            // recalculation still happens when the user edits quantities.
             $('#editMenuCost').val(initialCost);
 
             openModal('editMenuItemModal');
