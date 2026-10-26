@@ -1,11 +1,12 @@
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.MenuItem;
 
 namespace MenuOptics.Services
 {
     public interface IMenuService
     {
-        Task<ResponseDto> CreateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId, int actualUserId);
-        Task<ResponseDto> UpdateMenuItemAsync(Menu model, string ingredients, string recipes, int currentUserId, int actualUserId);
+        Task<ResponseDto> CreateMenuItemAsync(CreateMenuItemDTO model, string ingredients, string recipes, int currentUserId, int actualUserId);
+        Task<ResponseDto> UpdateMenuItemAsync(UpdateMenuItemDTO model, string ingredients, string recipes, int currentUserId, int actualUserId);
         Task<ResponseDto> GetMenuItemAsync(int id);
         Task<ResponseDto> GetAllMenuItemsAsync(bool? isActive, int currentUserId);
         Task<ResponseDto> ToggleMenuActiveAsync(int id, int currentUserId, int actualUserId);

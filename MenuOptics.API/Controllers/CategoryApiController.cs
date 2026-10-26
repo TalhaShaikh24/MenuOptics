@@ -1,5 +1,5 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Models;
+using MenuOptics.Models.DTOs.Category;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,14 +37,14 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("CreateCategory")]
-        public async Task<IActionResult> CreateCategory([FromBody] Category model)
+        public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDTO model)
         {
             var responseData = await _categoryService.CreateCategoryAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateCategory")]
-        public async Task<IActionResult> UpdateCategory([FromBody] Category model)
+        public async Task<IActionResult> UpdateCategory([FromBody] UpdateCategoryDTO model)
         {
             var responseData = await _categoryService.UpdateCategoryAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);

@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.MenuItem;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
@@ -252,7 +253,7 @@ namespace MenuOptics.Services
                         return ResponseDto;
                     }
 
-                    var menuItem = (Menu?)(await _menuService.GetMenuItemAsync(menuItemId)).Data;
+                    var menuItem = (GetMenuItemDTO?)(await _menuService.GetMenuItemAsync(menuItemId)).Data;
                     if (menuItem == null)
                     {
                         ResponseDto.Status = 400;

@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.PrivateVendor;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -27,7 +28,7 @@ namespace MenuOptics.Services
                 parameters.Add("@IsActive", isActive);
                 parameters.Add("@RestaurantId", restaurantId);
 
-                var vendors = await connection.QueryAsync<PrivateVendor>(
+                var vendors = await connection.QueryAsync<GetPrivateVendorDTO>(
                     "sp_PrivateVendorCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 responseDto.Status = 200;
@@ -64,7 +65,7 @@ namespace MenuOptics.Services
                 parameters.Add("@PrivateVendorId", id);
                 parameters.Add("@Action", "SELECT");
 
-                var vendor = await connection.QuerySingleOrDefaultAsync<PrivateVendor>(
+                var vendor = await connection.QuerySingleOrDefaultAsync<GetPrivateVendorDTO>(
                     "sp_PrivateVendorCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 responseDto.Status = 200;
@@ -90,7 +91,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreatePrivateVendorAsync(PrivateVendor model, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> CreatePrivateVendorAsync(CreatePrivateVendorDTO model, int currentUserId, int actualUserId)
         {
             var responseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -129,7 +130,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdatePrivateVendorAsync(PrivateVendor model, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> UpdatePrivateVendorAsync(UpdatePrivateVendorDTO model, int currentUserId, int actualUserId)
         {
             var responseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -140,7 +141,6 @@ namespace MenuOptics.Services
                 parameters.Add("@PrivateVendorId", model.PrivateVendorId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@ModifiedBy", actualUserId);
-                parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Action", "UPDATE");
 
                 await connection.ExecuteAsync(

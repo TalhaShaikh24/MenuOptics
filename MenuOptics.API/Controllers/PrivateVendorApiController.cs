@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MenuOptics.Models;
 using MenuOptics.Services;
 using System.Security.Claims;
 using MenuOptics.API.Middleware;
+using MenuOptics.Models.DTOs.PrivateVendor;
 
 namespace MenuOptics.Controllers.Api
 {
@@ -38,14 +38,14 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("CreatePrivateVendor")]
-        public async Task<IActionResult> CreatePrivateVendor([FromBody] PrivateVendor model)
+        public async Task<IActionResult> CreatePrivateVendor([FromBody] CreatePrivateVendorDTO model)
         {
             var responseData = await _privateVendorService.CreatePrivateVendorAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdatePrivateVendor")]
-        public async Task<IActionResult> UpdatePrivateVendor([FromBody] PrivateVendor model)
+        public async Task<IActionResult> UpdatePrivateVendor([FromBody] UpdatePrivateVendorDTO model)
         {
             var responseData = await _privateVendorService.UpdatePrivateVendorAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);

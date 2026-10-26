@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.Category;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -27,7 +28,7 @@ namespace MenuOptics.Services
                 parameters.Add("@IsActive", isActive);
                 parameters.Add("@RestaurantId", restaurantId);
 
-                var categories = await connection.QueryAsync<Category>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var categories = await connection.QueryAsync<GetCategoryDTO>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Categories retrieved successfully.";
@@ -63,7 +64,7 @@ namespace MenuOptics.Services
                 parameters.Add("@CategoryId", id);
                 parameters.Add("@Action", "SELECT");
 
-                var category = await connection.QuerySingleOrDefaultAsync<Category>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var category = await connection.QuerySingleOrDefaultAsync<GetCategoryDTO>("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Category retrieved successfully.";
@@ -88,7 +89,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreateCategoryAsync(Category model, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> CreateCategoryAsync(CreateCategoryDTO model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -127,7 +128,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateCategoryAsync(Category model, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> UpdateCategoryAsync(UpdateCategoryDTO model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -138,7 +139,6 @@ namespace MenuOptics.Services
                 parameters.Add("@CategoryId", model.CategoryId);
                 parameters.Add("@Name", model.Name);
                 parameters.Add("@ModifiedBy", actualUserId);
-                parameters.Add("@IsActive", model.IsActive);
                 parameters.Add("@Action", "UPDATE");
 
                 await connection.ExecuteAsync("sp_CategoryCRUD", parameters, commandType: CommandType.StoredProcedure);

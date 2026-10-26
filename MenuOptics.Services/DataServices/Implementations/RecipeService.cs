@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs.Recipe;
 using Newtonsoft.Json;
 using System.Data;
 using System.Data.SqlClient;
@@ -15,7 +16,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<ResponseDto> CreateRecipeAsync(Recipe model, string ingredients, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> CreateRecipeAsync(CreateRecipeDTO model, string ingredients, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -24,14 +25,12 @@ namespace MenuOptics.Services
             {
                 if (!string.IsNullOrWhiteSpace(ingredients))
                 {
-                    var ingredientList = JsonConvert.DeserializeObject<List<RecipeIngredient>>(ingredients);
-                    model.Ingredients = ingredientList.Select(i => new RecipeIngredient
+                    var ingredientList = JsonConvert.DeserializeObject<List<SaveRecipeIngredientDTO>>(ingredients);
+                    model.Ingredients = ingredientList.Select(i => new SaveRecipeIngredientDTO
                     {
                         IngredientId = i.IngredientId,
                         Quantity = i.Quantity,
-                        Unit = i.Unit,
-                        UOM = i.UOM,
-                        IngredientName = null
+                        UOM = i.UOM
                     }).ToList();
                 }
 
@@ -84,7 +83,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateRecipeAsync(Recipe model, string ingredients, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> UpdateRecipeAsync(UpdateRecipeDTO model, string ingredients, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -93,14 +92,12 @@ namespace MenuOptics.Services
             {
                 if (!string.IsNullOrWhiteSpace(ingredients))
                 {
-                    var ingredientList = JsonConvert.DeserializeObject<List<RecipeIngredient>>(ingredients);
-                    model.Ingredients = ingredientList.Select(i => new RecipeIngredient
+                    var ingredientList = JsonConvert.DeserializeObject<List<SaveRecipeIngredientDTO>>(ingredients);
+                    model.Ingredients = ingredientList.Select(i => new SaveRecipeIngredientDTO
                     {
                         IngredientId = i.IngredientId,
                         Quantity = i.Quantity,
-                        UOM = i.UOM,
-                        Unit = i.Unit,
-                        IngredientName = null
+                        UOM = i.UOM
                     }).ToList();
                 }
 
@@ -167,8 +164,8 @@ namespace MenuOptics.Services
                 var multi = await connection.QueryMultipleAsync(
                     "sp_RecipeCRUD", parameters, commandType: CommandType.StoredProcedure);
 
-                var recipe = await multi.ReadFirstAsync<Recipe>();
-                recipe.Ingredients = (await multi.ReadAsync<RecipeIngredient>()).ToList();
+                var recipe = await multi.ReadFirstAsync<GetRecipeDTO>();
+                recipe.Ingredients = (await multi.ReadAsync<GetRecipeIngredientDTO>()).ToList();
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Recipe retrieved successfully.";
@@ -204,13 +201,13 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var recipes = await connection.QueryAsync<Recipe, string, Recipe>(
+                var recipes = await connection.QueryAsync<GetRecipeDTO, string, GetRecipeDTO>(
                     "sp_RecipeCRUD",
                     (recipe, ingredientsJson) =>
                     {
                         recipe.Ingredients = !string.IsNullOrEmpty(ingredientsJson)
-                            ? System.Text.Json.JsonSerializer.Deserialize<List<RecipeIngredient>>(ingredientsJson)
-                            : new List<RecipeIngredient>();
+                            ? System.Text.Json.JsonSerializer.Deserialize<List<GetRecipeIngredientDTO>>(ingredientsJson)
+                            : new List<GetRecipeIngredientDTO>();
                         return recipe;
                     },
                     parameters,
