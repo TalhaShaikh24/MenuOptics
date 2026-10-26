@@ -61,6 +61,8 @@ let recipesWithPrices = [];
 let allRecipesData = [];
 let categories = [];
 let cachedMenuItems = [];
+let pendingPreloadedIngredientData = {};
+let pendingPreloadedRecipeData = {};
 
 
 let isStaffFacing = false;
@@ -339,19 +341,24 @@ function initializeCategorySelect(selectId, modalId) {
 
 // Render ingredient details with unit conversion dropdown
 function renderIngredientDetails(selected, detailsId, costInputId) {
-    const existingData = {};
-    $(`${detailsId} .ingredient-detail-row`).each(function () {
-        const input = $(this).find('input[name^="ingredient_quantity_"]');
-        const uomSelect = $(this).find('select[name^="ingredient_uom_"]');
-        const ingredientId = input.attr('name').split('_')[2];
-        const quantity = input.val();
-        if (quantity) {
-            existingData[ingredientId] = {
-                quantity: quantity,
-                uom: uomSelect.val() || ''
-            };
-        }
-    });
+    let existingData = {};
+    if (pendingPreloadedIngredientData[detailsId]) {
+        existingData = pendingPreloadedIngredientData[detailsId];
+        delete pendingPreloadedIngredientData[detailsId];
+    } else {
+        $(`${detailsId} .ingredient-detail-row`).each(function () {
+            const input = $(this).find('input[name^="ingredient_quantity_"]');
+            const uomSelect = $(this).find('select[name^="ingredient_uom_"]');
+            const ingredientId = input.attr('name').split('_')[2];
+            const quantity = input.val();
+            if (quantity) {
+                existingData[ingredientId] = {
+                    quantity: quantity,
+                    uom: uomSelect.val() || ''
+                };
+            }
+        });
+    }
 
     let html = '';
     selected.forEach(function (ingredientId) {
@@ -403,15 +410,20 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
 
 // Render recipe details
 function renderRecipeDetails(selected, detailsId, costInputId) {
-    const existingData = {};
-    $(`${detailsId} .recipe-detail-row`).each(function () {
-        const input = $(this).find('input[name^="recipe_quantity_"]');
-        const recipeId = input.attr('name').split('_')[2];
-        const quantity = input.val();
-        if (quantity) {
-            existingData[recipeId] = quantity;
-        }
-    });
+    let existingData = {};
+    if (pendingPreloadedRecipeData[detailsId]) {
+        existingData = pendingPreloadedRecipeData[detailsId];
+        delete pendingPreloadedRecipeData[detailsId];
+    } else {
+        $(`${detailsId} .recipe-detail-row`).each(function () {
+            const input = $(this).find('input[name^="recipe_quantity_"]');
+            const recipeId = input.attr('name').split('_')[2];
+            const quantity = input.val();
+            if (quantity) {
+                existingData[recipeId] = quantity;
+            }
+        });
+    }
 
     let html = '';
     selected.forEach(function (recipeId) {
@@ -647,7 +659,8 @@ function getMenuItemById(id) {
             $('#editMenuName').val(menuItem.name);
             $('#editMenuDescription').val(menuItem.description);
             $('#editMenuCategory').val(menuItem.categoryId).trigger('change');
-            $('#editMenuCost').val(menuItem.cost);
+            const initialCost = menuItem.cost != null ? parseFloat(menuItem.cost).toFixed(2) : '0.00';
+            $('#editMenuCost').val(initialCost);
             $('#editMenuSellingPrice').val(menuItem.sellingPrice);
             $('#editFeaturedImage').val(imageBaseUrl + menuItem.featuredImage);
 
@@ -659,67 +672,39 @@ function getMenuItemById(id) {
                 $('#editFeaturedImageLabel').text('Choose new featured image');
             }
 
-            // Set ingredients
-            $('#editIngredientsSelect').val(menuItem.ingredients.map(ing => ing.ingredientId)).trigger('change');
+            // Preload ingredients synchronously
+            const preloadedIngs = {};
+            (menuItem.ingredients || []).forEach(ing => {
+                const ingredientData = ingredientsWithPrices.find(item => item.id == ing.ingredientId);
+                const userUnit = ing.uom || ing.unitOfMeasure || (ingredientData ? (ingredientData.unitOfMeasure || ingredientData.unit) : '');
+                let displayQuantity = ing.quantity;
+                if (ingredientData && typeof convertUnit === 'function') {
+                    displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit, ingredientData.size);
+                }
+                preloadedIngs[ing.ingredientId] = {
+                    quantity: displayQuantity != null ? parseFloat(displayQuantity).toFixed(2) : '',
+                    uom: userUnit
+                };
+            });
+            pendingPreloadedIngredientData['#editIngredientsDetails'] = preloadedIngs;
 
-            // Set recipes
-            $('#editRecipesSelect').val(menuItem.recipes.map(rec => rec.recipeId)).trigger('change');
+            // Preload recipes synchronously
+            const preloadedRecs = {};
+            (menuItem.recipes || []).forEach(rec => {
+                preloadedRecs[rec.recipeId] = rec.quantity;
+            });
+            pendingPreloadedRecipeData['#editRecipesDetails'] = preloadedRecs;
 
-            // Set quantities and trigger cost update
-            setTimeout(() => {
-                // Set ingredient quantities
-                menuItem.ingredients.forEach(ing => {
-                    const quantityInput = $(`input[name="ingredient_quantity_${ing.ingredientId}"]`);
-                    const uomSelect = $(`select[name="ingredient_uom_${ing.ingredientId}"]`);
-                    const ingredientData = ingredientsWithPrices.find(item => item.id == ing.ingredientId);
+            // Set ingredients & recipes and trigger synchronous render
+            $('#editIngredientsSelect').val((menuItem.ingredients || []).map(ing => ing.ingredientId)).trigger('change');
+            $('#editRecipesSelect').val((menuItem.recipes || []).map(rec => rec.recipeId)).trigger('change');
 
-                    if (ingredientData) {
-                        const userUnit = ing.uom || ing.unitOfMeasure || ingredientData.unitOfMeasure || ingredientData.unit;
-                        if (uomSelect.length) {
-                            const normalizeFn = (typeof normalizeUnit === 'function')
-                                ? normalizeUnit
-                                : (u => (u || '').toString().trim());
-                            const targetUom = normalizeFn(userUnit);
+            updateTotalCost('#editIngredientsDetails', '#editMenuCost');
 
-                            // Find the option whose value matches the saved uom (case/format insensitive)
-                            let matchedValue = null;
-                            uomSelect.find('option').each(function () {
-                                if (this.value && normalizeFn(this.value) === targetUom) {
-                                    matchedValue = this.value;
-                                    return false;
-                                }
-                            });
-
-                            // If the saved uom isn't among the compatible options, add it so it can be selected
-                            if (!matchedValue) {
-                                const uomLabel = (typeof ALLOWED_UNIT_OF_MEASURE_LABELS !== 'undefined' && ALLOWED_UNIT_OF_MEASURE_LABELS[userUnit])
-                                    ? ALLOWED_UNIT_OF_MEASURE_LABELS[userUnit]
-                                    : userUnit;
-                                uomSelect.append(`<option value="${userUnit}">${uomLabel}</option>`);
-                                matchedValue = userUnit;
-                            }
-
-                            uomSelect.val(matchedValue).trigger('change');
-                        }
-                        const displayQuantity = convertUnit(ing.quantity, ingredientData.unit, userUnit, ingredientData.size);
-                        quantityInput.val(displayQuantity.toFixed(2));
-                    } else {
-                        quantityInput.val(ing.quantity);
-                    }
-
-                    quantityInput.trigger('input');
-                });
-
-                // Set recipe quantities
-                menuItem.recipes.forEach(rec => {
-                    const quantityInput = $(`input[name="recipe_quantity_${rec.recipeId}"]`);
-                    quantityInput.val(rec.quantity);
-                    quantityInput.trigger('input');
-                });
-
-                // Explicitly update total cost after setting quantities
-                updateTotalCost('#editIngredientsDetails', '#editMenuCost');
-            }, 300);
+            const calculatedCost = parseFloat($('#editMenuCost').val()) || 0;
+            if (calculatedCost === 0 && parseFloat(initialCost) > 0) {
+                $('#editMenuCost').val(initialCost);
+            }
 
             openModal('editMenuItemModal');
         },
@@ -1161,20 +1146,43 @@ function showMenuCostBreakdown(menuItemId) {
         return;
     }
 
+    const ingredients = (menuItem.ingredients || []).slice();
+    const totalCost = ingredients.reduce((sum, ing) => {
+        const cp = ing.currentPrice != null ? parseFloat(ing.currentPrice) : (parseFloat(ing.oldPrice) || 0);
+        return sum + (isNaN(cp) ? 0 : cp);
+    }, 0) || (parseFloat(menuItem.currentCost) || parseFloat(menuItem.cost) || 0);
+
     $('#costBreakdownMenuName').text(menuItem.name || 'Menu Item');
-    $('#costBreakdownCategory').text(menuItem.categoryName ? `Category: ${menuItem.categoryName}` : '');
+    $('#costBreakdownCategory').text(
+        `${menuItem.categoryName ? `Category: ${menuItem.categoryName}` : ''}${menuItem.categoryName && totalCost > 0 ? ' • ' : ''}${totalCost > 0 ? `Total Cost: $${totalCost.toFixed(2)}` : ''}`
+    );
 
     const rows = [];
-    const ingredients = menuItem.ingredients || [];
 
     if (ingredients.length > 0) {
-        ingredients.forEach(ing => {
+        const list = ingredients.map(ing => {
+            const oldPrice = ing.oldPrice != null ? parseFloat(ing.oldPrice) : (parseFloat(ing.currentPrice) || 0);
+            const currentPrice = ing.currentPrice != null ? parseFloat(ing.currentPrice) : oldPrice;
+            const costPercent = totalCost > 0 ? (currentPrice / totalCost) * 100 : 0;
+            return {
+                ...ing,
+                oldPriceNum: oldPrice,
+                currentPriceNum: currentPrice,
+                costPercent: costPercent
+            };
+        });
+
+        // Sort descending by highest percentage at top
+        list.sort((a, b) => b.costPercent - a.costPercent);
+
+        list.forEach(ing => {
             const ingName = ing.ingredientName || (ing.name || `Ingredient #${ing.ingredientId}`);
             
             const sourceLabel = ing.source && ing.source.trim() !== '' ? ing.source.trim() : null;
 
-            const oldPrice = ing.oldPrice != null ? parseFloat(ing.oldPrice) : (parseFloat(ing.currentPrice) || 0);
-            const currentPrice = ing.currentPrice != null ? parseFloat(ing.currentPrice) : oldPrice;
+            const oldPrice = ing.oldPriceNum;
+            const currentPrice = ing.currentPriceNum;
+            const costPercent = ing.costPercent;
 
             const diff = currentPrice - oldPrice;
             let trendHtml = '';
@@ -1188,7 +1196,9 @@ function showMenuCostBreakdown(menuItemId) {
 
             const sourceBadge = sourceLabel && sourceLabel !== "Ingredient"
                 ? `<span style="background: #fef3c7; color: #92400e; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-utensils"></i> ${sourceLabel}</span>`
-                : `<span style="background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-cube"></i> ${sourceLabel}</span>`;
+                : `<span style="background: #e0f2fe; color: #0369a1; font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-cube"></i> ${sourceLabel || 'Ingredient'}</span>`;
+
+            const costPercentBadge = `<span style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center;">${costPercent.toFixed(2)}%</span>`;
 
             rows.push(`
                 <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -1203,6 +1213,9 @@ function showMenuCostBreakdown(menuItemId) {
                     </td>
                     <td style="padding: 10px 14px; color: #1e293b; font-weight: 600;">
                         $${currentPrice.toFixed(2)}
+                    </td>
+                    <td style="padding: 10px 14px; text-align: center;">
+                        ${costPercentBadge}
                     </td>
                     <td style="padding: 10px 14px;">
                         ${trendHtml}
