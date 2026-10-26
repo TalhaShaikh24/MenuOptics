@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
 using MenuOptics.Services.VendorApiServices.Interfaces;
 using Microsoft.Extensions.Primitives;
 using System.Data;

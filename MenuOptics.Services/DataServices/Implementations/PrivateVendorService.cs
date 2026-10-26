@@ -1,7 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
-using MenuOptics.Models.DTOs.PrivateVendor;
+using MenuOptics.Models.DTOs;
 using System.Data;
 using System.Data.SqlClient;
 

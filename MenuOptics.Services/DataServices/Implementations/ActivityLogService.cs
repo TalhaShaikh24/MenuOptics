@@ -1,7 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Services.VendorApiServices.Interfaces;
-using MenuOptics.Models.DTOs.ActivityLog;
+using MenuOptics.Models.DTOs;
 using System.Data;
 using MenuOptics.Models;
 

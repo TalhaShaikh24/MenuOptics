@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MenuOptics.Models;
-using MenuOptics.Models.DTOs.ActivityLog;
+using MenuOptics.Models.DTOs;
 using MenuOptics.Services;
 using MenuOptics.Services.VendorApiServices.Interfaces;
 

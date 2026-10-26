@@ -10,7 +10,7 @@ using System.Security.Claims;
 using MenuOptics.Models.Enums;
 using MenuOptics.Services.EmailTemplates;
 using Microsoft.Extensions.Configuration;
-using MenuOptics.Models.DTOs.PrivateVendor;
+using MenuOptics.Models.DTOs;
 
 namespace MenuOptics.Services
 {

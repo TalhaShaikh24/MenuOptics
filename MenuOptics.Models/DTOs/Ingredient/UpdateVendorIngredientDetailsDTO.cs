@@ -1,4 +1,4 @@
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
     public class UpdateVendorIngredientDetailsDTO
     {

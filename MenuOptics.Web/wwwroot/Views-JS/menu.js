@@ -480,6 +480,7 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
 
 // Update total cost with unit conversion for ingredients and recipes
 function updateTotalCost(detailsId, costInputId) {
+    
     let totalCost = 0;
 
     // Calculate ingredient costs
@@ -677,6 +678,7 @@ function getMenuItemById(id) {
             $('#editMenuDescription').val(menuItem.description);
             $('#editMenuCategory').val(menuItem.categoryId).trigger('change');
             const initialCost = menuItem.cost != null ? parseFloat(menuItem.cost).toFixed(2) : '0.00';
+            debugger;
             $('#editMenuCost').val(initialCost);
             $('#editMenuSellingPrice').val(menuItem.sellingPrice);
             $('#editFeaturedImage').val(imageBaseUrl + menuItem.featuredImage);
@@ -716,12 +718,7 @@ function getMenuItemById(id) {
             $('#editIngredientsSelect').val((menuItem.ingredients || []).map(ing => ing.ingredientId)).trigger('change');
             $('#editRecipesSelect').val((menuItem.recipes || []).map(rec => rec.recipeId)).trigger('change');
 
-            updateTotalCost('#editIngredientsDetails', '#editMenuCost');
-
-            const calculatedCost = parseFloat($('#editMenuCost').val()) || 0;
-            if (calculatedCost === 0 && parseFloat(initialCost) > 0) {
-                $('#editMenuCost').val(initialCost);
-            }
+          
 
             openModal('editMenuItemModal');
         },
@@ -1201,7 +1198,7 @@ function showMenuCostBreakdown(menuItemId) {
         list.sort((a, b) => b.costPercent - a.costPercent);
 
         list.forEach(ing => {
-            const ingName = ing.ingredientName || (ing.name || `Ingredient #${ing.ingredientId}`);
+            const ingName = ing.ingredientName || (ing.name || `${ing.ingredientId}`);
             
             const sourceLabel = ing.source && ing.source.trim() !== '' ? ing.source.trim() : null;
 

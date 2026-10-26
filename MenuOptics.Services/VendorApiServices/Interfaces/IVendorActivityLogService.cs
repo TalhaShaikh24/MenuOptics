@@ -1,5 +1,5 @@
 using MenuOptics.Models;
-using MenuOptics.Models.DTOs.ActivityLog;
+using MenuOptics.Models.DTOs;
 
 namespace MenuOptics.Services.VendorApiServices.Interfaces
 {

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MenuOptics.Services;
 using System.Security.Claims;
 using MenuOptics.API.Middleware;
-using MenuOptics.Models.DTOs.PrivateVendor;
+using MenuOptics.Models.DTOs;
 
 namespace MenuOptics.Controllers.Api
 {

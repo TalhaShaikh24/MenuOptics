@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
     public class GetInventoryInvoiceDTO
     {

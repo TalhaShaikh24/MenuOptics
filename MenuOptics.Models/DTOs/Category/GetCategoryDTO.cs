@@ -1,6 +1,4 @@
-using System;
-
-namespace MenuOptics.Models.DTOs.Category
+namespace MenuOptics.Models.DTOs
 {
     public class GetCategoryDTO
     {

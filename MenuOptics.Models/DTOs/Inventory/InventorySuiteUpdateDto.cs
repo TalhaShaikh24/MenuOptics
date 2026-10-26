@@ -1,6 +1,4 @@
-using System;
-
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
     public class InventorySuiteUpdateDto
     {

@@ -1,5 +1,5 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Models.DTOs.Category;
+using MenuOptics.Models.DTOs;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

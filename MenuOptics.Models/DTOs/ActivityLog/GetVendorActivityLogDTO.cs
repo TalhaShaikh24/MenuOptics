@@ -1,6 +1,4 @@
-using System;
-
-namespace MenuOptics.Models.DTOs.ActivityLog
+namespace MenuOptics.Models.DTOs
 {
     public class GetVendorActivityLogDTO
     {

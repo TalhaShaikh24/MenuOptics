@@ -1,6 +1,4 @@
-using System;
-
-namespace MenuOptics.Models.DTOs.PrivateVendor
+namespace MenuOptics.Models.DTOs
 {
     public class CreatePrivateVendorDTO
     {

@@ -893,7 +893,7 @@ function showRecipeCostBreakdown(recipeId) {
         list.sort((a, b) => b.costPercent - a.costPercent);
 
         list.forEach(ing => {
-            const ingName = ing.ingredientName || (ing.name || `Ingredient #${ing.ingredientId}`);
+            const ingName = ing.ingredientName || (ing.name || `${ing.ingredientId}`);
 
             const oldPrice = ing.oldPriceNum;
             const currentPrice = ing.currentPriceNum;

@@ -1,5 +1,5 @@
 using MenuOptics.Models;
-using MenuOptics.Models.DTOs.Ingredient;
+using MenuOptics.Models.DTOs;
 using Microsoft.AspNetCore.Http;
 
 namespace MenuOptics.Services
