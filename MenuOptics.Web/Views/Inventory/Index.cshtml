@@ -174,13 +174,7 @@
 </div>
 
 <div class="card" style="position: relative;">
-    <!-- Table Loading Overlay -->
-    <div id="tableLoadingOverlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.8); z-index: 50; border-radius: 12px; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
-        <div style="text-align: center; background: white; padding: 22px 34px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb;">
-            <i class="fas fa-spinner fa-spin" style="font-size: 30px; color: #f08d11; margin-bottom: 12px; display: block;"></i>
-            <span id="loadingOverlayText" style="font-size: 15px; font-weight: 600; color: #1f2937;">Loading inventory report...</span>
-        </div>
-    </div>
+    @* Table loading is shown by the shared LoadingComponent (wwwroot/js/loadingComponent.js) *@
 
     <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <h3><i class="fas fa-chart-line"></i> Inventory Cost Overview</h3>
@@ -212,12 +206,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr id="reportLoadingRow">
-                        <td colspan="10" class="text-center" style="padding: 48px 16px; color: #6b7280;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 26px; color: #f08d11; margin-bottom: 10px; display: block;"></i>
-                            <span style="font-size: 14px; font-weight: 500;">Loading inventory report...</span>
-                        </td>
-                    </tr>
+                    @* Rows are loaded by InventorySuiteReport.js; loading is shown by the shared LoadingComponent *@
                 </tbody>
                 <tfoot>
                     <tr>

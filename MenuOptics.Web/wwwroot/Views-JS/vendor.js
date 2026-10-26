@@ -201,6 +201,7 @@ function initDataTable() {
 
 // Refresh user table
 function refreshUserTable() {
+    LoadingComponent.showForTable('#userTable', 'Loading users...');
     ajaxRequest({
         url: '/api/UserApi/GetAllUsers',
         method: 'GET',
@@ -212,7 +213,8 @@ function refreshUserTable() {
         onError: function (xhr, status, error) {
             console.error('Failed to fetch users:', error);
             showNotification('Failed to load users.', 'error');
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('#userTable'); }
     });
 }
 

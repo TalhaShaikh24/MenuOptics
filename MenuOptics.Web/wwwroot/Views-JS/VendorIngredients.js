@@ -167,8 +167,7 @@ function initIngredientsTable() {
         order: [[1, 'asc']],
         language: {
             search: '',
-            searchPlaceholder: 'Search ingredients...',
-            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...'
+            searchPlaceholder: 'Search ingredients...'
         },
         drawCallback: function () {
             $('#selectAllIngredients').prop('checked', false);

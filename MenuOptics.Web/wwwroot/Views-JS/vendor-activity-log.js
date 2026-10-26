@@ -141,7 +141,6 @@ function initVendorActivityTable() {
         language: {
             search: '',
             searchPlaceholder: 'Search logs...',
-            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...',
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',
             paginate: {
                 previous: '<i class="fas fa-chevron-left"></i>',

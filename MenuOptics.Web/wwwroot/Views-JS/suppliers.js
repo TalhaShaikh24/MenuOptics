@@ -142,6 +142,7 @@ function editSupplier(id) {
 
 // Refresh the full suppliers table
 function refreshSuppliersTable() {
+    LoadingComponent.showForTable('.data-table', 'Loading suppliers...');
     ajaxRequest({
         url: '/api/PrivateVendorApi/GetAllPrivateVendors',
         method: 'GET',
@@ -155,12 +156,14 @@ function refreshSuppliersTable() {
         onError: function (xhr, status, error) {
             console.error('Failed to fetch suppliers:', error);
             showNotification('Failed to fetch suppliers.', 'error');
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
     });
 }
 
 // Toggle active-only filter
 function toggleActiveFilter() {
+    LoadingComponent.showForTable('.data-table', 'Loading suppliers...');
     const isActiveOnly = $('#activeFilter').hasClass('active');
     $('#activeFilter').toggleClass('active');
 
@@ -176,7 +179,8 @@ function toggleActiveFilter() {
         onError: function (xhr, status, error) {
             console.error('Failed to fetch suppliers:', error);
             showNotification('Failed to fetch suppliers.', 'error');
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
     });
 }
 

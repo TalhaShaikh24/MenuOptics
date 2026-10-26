@@ -49,6 +49,7 @@ $(document).ready(function () {
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
+    LoadingComponent.showForTable('.menu-engineering-table', 'Loading menu insights...');
     let url = `/api/MenuEngineeringInsightsApi/GetAllMenuEngineeringInsightsByUserId?`;
 
     if (startDate) {
@@ -83,7 +84,8 @@ function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
         onError: function (xhr, status, error) {
             console.error('Failed to fetch menu engineering insights:', error);
             showNotification('Failed to fetch menu engineering insights.', 'error');
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('.menu-engineering-table'); }
     });
 }
 

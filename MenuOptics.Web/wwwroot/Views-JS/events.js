@@ -80,6 +80,7 @@ function loadEventOnlyItems() {
 }
 
 function loadEvents() {
+    LoadingComponent.showForTable('.events-table', 'Loading events...');
     ajaxRequest({
         url: '/api/EventApi/GetAllEvents',
         method: 'GET',
@@ -87,7 +88,8 @@ function loadEvents() {
         onSuccess: res => {
             allEventsData = res.data;
             rebuildEventsTable(res.data);
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('.events-table'); }
     });
 }
 

@@ -63,6 +63,7 @@ $(document).ready(function () {
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function refreshSalesTable() {
+    LoadingComponent.showForTable('#salesTable', 'Loading sales...');
     ajaxRequest({
         url: '/api/SalesApi/GetAllSales',
         method: 'GET',
@@ -74,7 +75,8 @@ function refreshSalesTable() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to load sales:', error);
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('#salesTable'); }
     });
 }
 

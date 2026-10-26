@@ -253,6 +253,7 @@ function initDataTable() {
 
 // Refresh restaurant table
 function refreshRestaurantTable() {
+    LoadingComponent.showForTable('#restaurantTable', 'Loading restaurants...');
     
     ajaxRequest({
         url: '/api/UserApi/GetAllRestaurants',
@@ -266,7 +267,8 @@ function refreshRestaurantTable() {
         onError: function (xhr, status, error) {
             console.error('Failed to fetch restaurants:', error);
             showNotification('Failed to load restaurants.', 'error');
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('#restaurantTable'); }
     });
 }
 

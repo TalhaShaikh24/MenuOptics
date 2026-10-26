@@ -82,6 +82,7 @@ $(document).ready(function () {
 /* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function refreshInvoicesTable() {
+    LoadingComponent.showForTable('#invoicesTable', 'Loading invoices...');
     ajaxRequest({
         url: '/api/InventoryApi/GetInventoryInvoices',
         method: 'GET',
@@ -94,7 +95,8 @@ function refreshInvoicesTable() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to load inventory invoices:', error);
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('#invoicesTable'); }
     });
 }
 

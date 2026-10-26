@@ -159,6 +159,7 @@ function editCategory(id) {
 
 // Function to refresh the categories table
 function refreshCategoriesTable() {
+    LoadingComponent.showForTable('.data-table', 'Loading categories...');
     ajaxRequest({
         url: '/api/CategoryApi/GetAllCategories',
         method: 'GET',
@@ -169,12 +170,14 @@ function refreshCategoriesTable() {
             $('#totalCategories').text(categories.filter(c => c.isActive).length);
 
             renderCategoriesTable(categories);
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
     });
 }
 
 // Function to toggle active filter
 function toggleActiveFilter() {
+    LoadingComponent.showForTable('.data-table', 'Loading categories...');
     const isActiveOnly = $('#activeFilter').hasClass('active');
     $('#activeFilter').toggleClass('active');
 
@@ -190,7 +193,8 @@ function toggleActiveFilter() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch categories:', error);
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
     });
 }
 

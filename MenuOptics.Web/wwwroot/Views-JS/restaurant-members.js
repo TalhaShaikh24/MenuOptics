@@ -218,6 +218,7 @@ function initDataTable() {
 
 // Refresh table data
 function refreshMemberTable() {
+    LoadingComponent.showForTable('#membersTable', 'Loading members...');
     ajaxRequest({
         url: '/api/UserApi/GetRestaurantMembers',
         method: 'GET',
@@ -229,7 +230,8 @@ function refreshMemberTable() {
         onError: function (xhr, status, error) {
             console.error('Failed to fetch members:', error);
             showNotification('Failed to load members directory.', 'error');
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('#membersTable'); }
     });
 }
 

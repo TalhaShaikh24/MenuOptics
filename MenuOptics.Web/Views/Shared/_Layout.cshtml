@@ -37,6 +37,9 @@
     <!-- DataTables Buttons CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css" />
 
+    <!-- Shared loading component (all DataTables) -->
+    <link rel="stylesheet" href="~/css/loadingComponent.css?v=@DateTime.Now.Ticks" />
+
 
     <link href="~/css/error-popup.css" rel="stylesheet" />
     <link href="~/css/contact-modal.css?v=@DateTime.Now.Ticks" rel="stylesheet" />
@@ -428,6 +431,9 @@
     <!-- Buttons HTML5 -->
     
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+    <!-- Shared loading component: must load after DataTables and before page scripts -->
+    <script src="~/js/loadingComponent.js?v=@DateTime.Now.Ticks"></script>
 
 
 

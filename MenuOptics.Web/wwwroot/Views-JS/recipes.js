@@ -480,6 +480,7 @@ function toggleRecipeActive(id) {
 
 // Refresh table
 function refreshRecipesTable() {
+    LoadingComponent.showForTable('#recipesTable', 'Loading recipes...');
     ajaxRequest({
         url: '/api/RecipeApi/GetAllRecipes',
         method: 'GET',
@@ -565,7 +566,8 @@ function refreshRecipesTable() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch recipes:', error);
-        }
+        },
+        onComplete: function () { LoadingComponent.hideForTable('#recipesTable'); }
     });
 }
 

@@ -398,8 +398,7 @@ function initIngredientsTable() {
         lengthMenu: [10, 25, 50, 100],
         language: {
             search: '',
-            searchPlaceholder: 'Search ingredients...',
-            processing: '<i class="fas fa-spinner fa-spin"></i> Loading...'
+            searchPlaceholder: 'Search ingredients...'
         },
         drawCallback: function () {
             // Re-bind select-all checkbox after each draw

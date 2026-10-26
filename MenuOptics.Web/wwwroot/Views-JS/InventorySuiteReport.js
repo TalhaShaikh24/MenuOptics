@@ -508,13 +508,15 @@ function formatToDateInputVal(dateVal) {
     return `${y}-${m}-${day}`;
 }
 
+/* Loading goes through the shared LoadingComponent (js/loadingComponent.js)
+ * so this table shows the same indicator as every other DataTable.
+ * hideAll is used because load/refresh calls here are not strictly paired. */
 function showTableLoading(message = 'Loading inventory...') {
-    $('#loadingOverlayText').text(message);
-    $('#tableLoadingOverlay').css('display', 'flex');
+    LoadingComponent.showForTable('.cogs-report-table', message);
 }
 
 function hideTableLoading() {
-    $('#tableLoadingOverlay').hide();
+    LoadingComponent.hideAllForTable('.cogs-report-table');
 }
 
 function loadInventorySuiteReports(preselectReportId = null) {
@@ -630,14 +632,9 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
     }
 
     const tbody = $('.cogs-report-table tbody');
-    tbody.empty().append(`
-        <tr id="reportLoadingRow">
-            <td colspan="10" class="text-center" style="padding: 48px 16px; color: #6b7280;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: #f08d11; margin-bottom: 12px; display: block;"></i>
-                <span style="font-size: 14px; font-weight: 500;">Loading inventory...</span>
-            </td>
-        </tr>
-    `);
+    // Rows are cleared while loading; the LoadingComponent overlay (shown
+    // above) is the only loading indicator for this table now.
+    tbody.empty();
 
     const requestData = {
         inventorySuiteId: isNewReport ? null : currentSelectedReportId,
@@ -807,8 +804,7 @@ function initDataTable() {
         ],
         language: {
             search: '',
-            searchPlaceholder: 'Search ingredients...',
-            processing: '<div style="padding: 12px 20px; background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 8px;"><i class="fas fa-spinner fa-spin" style="color: #f08d11; font-size: 18px;"></i> <span style="font-weight: 500; font-size: 14px; color: #374151;">Processing...</span></div>'
+            searchPlaceholder: 'Search ingredients...'
         },
         dom: 'Bfrtip',
         buttons: [
