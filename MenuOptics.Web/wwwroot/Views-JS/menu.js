@@ -779,8 +779,10 @@ function toggleMenuItemActive(id) {
     }
 }
 
-// Refresh menu grid
+// Refresh menu grid (loading shown by the shared LoadingComponent —
+// the Menu page has no DataTable, the overlay covers the #menuGrid itself)
 function refreshMenuGrid() {
+    LoadingComponent.show('#menuGrid', 'Loading menu items...');
     ajaxRequest({
         url: '/api/MenuApi/GetAllMenuItems',
         method: 'GET',
@@ -898,7 +900,8 @@ function refreshMenuGrid() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch menu items:', error);
-        }
+        },
+        onComplete: function () { LoadingComponent.hide('#menuGrid'); }
     });
 }
 

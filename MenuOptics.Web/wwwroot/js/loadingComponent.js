@@ -13,6 +13,13 @@
  *     LoadingComponent.hide('#salesTable');                 // call on complete
  *     LoadingComponent.hideAll('#salesTable');              // force hide
  *
+ * The target does not have to be a table: any container element works the
+ * same way and the overlay is placed inside that element itself — e.g. the
+ * Menu page, which has no DataTable and renders a card grid:
+ *
+ *     LoadingComponent.show('#menuGrid', 'Loading menu items...');
+ *     LoadingComponent.hide('#menuGrid');
+ *
  * `target` may be a selector, DOM element, jQuery object or a DataTables
  * table node. Manual shows/hides are counted per table, so overlapping
  * requests (e.g. Inventory: load reports -> load report rows) keep the
@@ -63,13 +70,20 @@
         if (target.nTable) { // DataTables settings object
             return $(target.nTable);
         }
-        return $(target).filter('table').add($(target).find('table'));
+        var $tables = $(target).filter('table').add($(target).find('table'));
+        // Non-table containers (e.g. #menuGrid on the Menu page) are tracked
+        // as themselves when the target contains no table.
+        return $tables.length ? $tables : $(target);
     }
 
-    /* The overlay must survive DataTable destroy/re-init, so it lives on
-     * .table-container (present around every DataTable view) rather than on
-     * the DataTables wrapper, which destroy() removes. */
+    /* For tables, the overlay must survive DataTable destroy/re-init, so it
+     * lives on .table-container (present around every DataTable view) rather
+     * than on the DataTables wrapper, which destroy() removes.
+     * For any other container, the overlay lives inside the container itself. */
     function resolveHost($table) {
+        if ($table.length && $table[0].tagName !== 'TABLE') {
+            return $table;
+        }
         var $host = $table.closest('.table-container');
         if (!$host.length) {
             $host = $table.closest('.dataTables_wrapper');

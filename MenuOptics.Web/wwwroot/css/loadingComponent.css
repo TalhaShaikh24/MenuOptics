@@ -24,6 +24,12 @@
     min-height: 120px;
 }
 
+/* Non-table hosts: the Menu page grid holds full cards, so give its
+ * loading state a taller area while menu items are being fetched. */
+#menuGrid.mo-loading-host {
+    min-height: 260px;
+}
+
 /* ── Overlay ─────────────────────────────────────────────────────────── */
 .mo-loading-overlay {
     position: absolute;
