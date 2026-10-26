@@ -493,31 +493,12 @@ function updateTotalCost(detailsId, costInputId) {
 
     // Calculate ingredient costs
     $ingredientsContainer.find('.ingredient-detail-row').each(function () {
-        const ingredientId = $(this).find('input[name^="ingredient_quantity_"]').attr('name').split('_')[2];
-        const quantity = parseFloat($(this).find('input[name^="ingredient_quantity_"]').val()) || 0;
-        const uomSelect = $(this).find('select[name^="ingredient_uom_"]');
-        const ingredientData = ingredientsWithPrices.find(ing => ing.id == ingredientId);
-
-        if (ingredientData && quantity > 0) {
-            const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-            const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
-            const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
-            const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
-            const pricePerUnit = (ingredientData.price / packSize) / size;
-
-            totalCost += pricePerUnit * convertedQuantity;
-        }
+        totalCost += parseFloat($(this).find('.ingredient-price').text().split('$')[1]);
     });
 
     // Calculate recipe costs
     $recipesContainer.find('.recipe-detail-row').each(function () {
-        const recipeId = $(this).find('input[name^="recipe_quantity_"]').attr('name').split('_')[2];
-        const quantity = parseFloat($(this).find('input[name^="recipe_quantity_"]').val()) || 0;
-        const recipeData = recipesWithPrices.find(rec => rec.id == recipeId);
-
-        if (recipeData && quantity > 0) {
-            totalCost += (recipeData.cost / recipeData.size) * quantity;
-        }
+        totalCost += parseFloat($(this).find('.recipe-price').text().split('$')[1]);
     });
 
     $(costInputId).val(totalCost.toFixed(2));
@@ -677,9 +658,6 @@ function getMenuItemById(id) {
             $('#editMenuName').val(menuItem.name);
             $('#editMenuDescription').val(menuItem.description);
             $('#editMenuCategory').val(menuItem.categoryId).trigger('change');
-            const initialCost = menuItem.cost != null ? parseFloat(menuItem.cost).toFixed(2) : '0.00';
-            debugger;
-            $('#editMenuCost').val(initialCost);
             $('#editMenuSellingPrice').val(menuItem.sellingPrice);
             $('#editFeaturedImage').val(imageBaseUrl + menuItem.featuredImage);
 
@@ -719,8 +697,6 @@ function getMenuItemById(id) {
             $('#editRecipesSelect').val((menuItem.recipes || []).map(rec => rec.recipeId)).trigger('change');
 
             updateTotalCost('#editIngredientsDetails', '#editMenuCost');
-
-            $('#editMenuCost').val(initialCost);
 
             openModal('editMenuItemModal');
         },

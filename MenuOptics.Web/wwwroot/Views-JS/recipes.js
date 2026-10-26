@@ -262,7 +262,7 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
         const input = $(this).find('input[name^="ingredient_quantity_"]');
         if (input.val()) updateIngredientPrice(input, detailsId, priceInputId);
     });
-    updateTotalPrice(detailsId, priceInputId);
+    updateTotalCost(detailsId, priceInputId);
 
     // Remove handler
     //$(detailsId).off('click', '.remove-ingredient').on('click', '.remove-ingredient', function () {
@@ -300,15 +300,14 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
         row.find('.ingredient-price').text(`Cost: $0.00`);
     }
 
-    updateTotalPrice(detailsId, priceInputId);
+    updateTotalCost(detailsId, priceInputId);
 }
 
-// Update total price
-function updateTotalPrice(detailsId, priceInputId) {
+// Update total cost
+function updateTotalCost(detailsId, priceInputId) {
     let total = 0;
     $(`${detailsId} .ingredient-detail-row`).each(function () {
-        const priceText = $(this).find('.ingredient-price').text().replace('Cost: $', '');
-        total += parseFloat(priceText) || 0;
+        total += parseFloat($(this).find('.ingredient-price').text().split('$')[1]);
     });
     $(priceInputId).val(total.toFixed(2));
 }
@@ -428,8 +427,6 @@ function getRecipeById(id) {
             }
             updateRecipeSizeUnitBadge('#editRecipeUnit', '#editRecipeSizeUnitBadge', '#editRecipeSize');
 
-            const initialCost = recipe.cost != null ? parseFloat(recipe.cost).toFixed(2) : '0.00';
-            $('#editRecipeCost').val(initialCost);
             $('#editRecipeSize').val(recipe.size);
             $('#editRecipeDescription').val(recipe.description);
 
@@ -453,13 +450,6 @@ function getRecipeById(id) {
             // Trigger select2 change to render rows synchronously with quantities and computed prices
             const ingredientIds = (recipe.ingredients || []).map(ing => ing.ingredientId);
             $('#editIngredientsSelect').val(ingredientIds).trigger('change');
-
-            // The modal must show the cost returned by the API for this
-            // recipe — NOT the total the row renders just recalculated from
-            // today's ingredient prices (which overwrote the field above).
-            // Restore the API cost; live recalculation still happens when
-            // the user edits quantities.
-            $('#editRecipeCost').val(initialCost);
 
             // Open modal only after all inputs, prices, and totals are synchronously rendered
             openModal('editRecipeModal');
