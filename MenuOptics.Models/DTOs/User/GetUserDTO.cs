@@ -3,7 +3,7 @@ using System;
 
 namespace MenuOptics.Models
 {
-    public class UserDto
+    public class GetUserDTO
     {
         public int UserId { get; set; }
         public string? FirstName { get; set; }

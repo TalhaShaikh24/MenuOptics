@@ -1,6 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
 using Newtonsoft.Json;
 using System.Data;
 using System.Data.SqlClient;
@@ -28,7 +29,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Action", "SELECT_ALL");
                 parameters.Add("@RestaurantId", currentUserId);
 
-                var events = await connection.QueryAsync<Event>(
+                var events = await connection.QueryAsync<GetEventDTO>(
                     "sp_EventCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure);
@@ -69,7 +70,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Action", "SELECT");
 
-                var evt = await connection.QuerySingleOrDefaultAsync<Event>(
+                var evt = await connection.QuerySingleOrDefaultAsync<GetEventDTO>(
                     "sp_EventCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure);
@@ -78,7 +79,7 @@ namespace MenuOptics.Services
                 {
                     if (!string.IsNullOrWhiteSpace(evt.ItemsJson))
                     {
-                        var items = JsonConvert.DeserializeObject<List<EventItem>>(evt.ItemsJson);
+                        var items = JsonConvert.DeserializeObject<List<GetEventItemDTO>>(evt.ItemsJson);
                         if (items != null)
                         {
                             evt.Items = items;
@@ -109,7 +110,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreateEventAsync(Event model, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> CreateEventAsync(CreateEventDTO model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -131,13 +132,12 @@ namespace MenuOptics.Services
                         object menuItemId = (item.MenuItemId > 0) ? (object)item.MenuItemId : DBNull.Value;
                         object eventOnlyItemId = (item.EventOnlyItemId > 0) ? (object)item.EventOnlyItemId : DBNull.Value;
 
-                        decimal qty = item.Qty != 0 ? item.Qty : item.Quantity;
-                        decimal totalCost = item.TotalCost != 0 ? item.TotalCost : (qty * item.UnitCost);
+                        decimal totalCost = item.TotalCost != 0 ? item.TotalCost : (item.Quantity * item.UnitCost);
 
                         itemsTable.Rows.Add(
                             menuItemId,
                             eventOnlyItemId,
-                            qty,
+                            item.Quantity,
                             item.UnitCost,
                             totalCost
                         );
@@ -189,7 +189,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateEventAsync(Event model, int currentUserId, int actualUserId)
+        public async Task<ResponseDto> UpdateEventAsync(UpdateEventDTO model, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -211,13 +211,12 @@ namespace MenuOptics.Services
                         object menuItemId = (item.MenuItemId > 0) ? (object)item.MenuItemId : DBNull.Value;
                         object eventOnlyItemId = (item.EventOnlyItemId > 0) ? (object)item.EventOnlyItemId : DBNull.Value;
 
-                        decimal qty = item.Qty != 0 ? item.Qty : item.Quantity;
-                        decimal totalCost = item.TotalCost != 0 ? item.TotalCost : (qty * item.UnitCost);
+                        decimal totalCost = item.TotalCost != 0 ? item.TotalCost : (item.Quantity * item.UnitCost);
 
                         itemsTable.Rows.Add(
                             menuItemId,
                             eventOnlyItemId,
-                            qty,
+                            item.Quantity,
                             item.UnitCost,
                             totalCost
                         );
@@ -321,7 +320,7 @@ namespace MenuOptics.Services
                 parameters.Add("@ModifiedBy", actualUserId);
                 parameters.Add("@Action", "TOGGLE_ACTIVE");
 
-                var result = await connection.QueryFirstAsync<Event>("sp_EventCRUD",parameters,commandType: CommandType.StoredProcedure);
+                var result = await connection.QueryFirstAsync<GetEventDTO>("sp_EventCRUD",parameters,commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = $"Event {(result.IsActive ? "activated" : "deactivated")} successfully.";

@@ -1,5 +1,7 @@
 using MenuOptics.API.Middleware;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
+using MenuOptics.Models.DTOs.InventorySuite;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -21,7 +23,7 @@ namespace MenuOptics.Controllers.Api
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
         [HttpPost("InventorySuiteReport")]
-        public async Task<IActionResult> InventorySuiteReport([FromBody] InventorySuiteReportRequestDto model)
+        public async Task<IActionResult> InventorySuiteReport([FromBody] GetInventorySuiteReportFilterDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -46,7 +48,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("UpdateInventorySuiteReport")]
-        public async Task<IActionResult> UpdateInventorySuiteReport([FromBody] UpdateInventorySuiteReportRequestDto model)
+        public async Task<IActionResult> UpdateInventorySuiteReport([FromBody] UpdateInventorySuiteReportDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -62,7 +64,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("AddInventorySuiteReport")]
-        public async Task<IActionResult> AddInventorySuiteReport([FromBody] AddInventorySuiteReportRequestDto model)
+        public async Task<IActionResult> AddInventorySuiteReport([FromBody] CreateInventorySuiteReportDTO model)
         {
             if (!ModelState.IsValid)
             {

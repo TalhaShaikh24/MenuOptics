@@ -1,6 +1,6 @@
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
-    public class TotalInventorySuiteReportItemDto
+    public class GetTotalInventorySuiteReportItemDTO
     {
         public decimal TotalCogs { get; set; }
         public decimal TotalFoodRevenue { get; set; }

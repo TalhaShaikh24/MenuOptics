@@ -1,6 +1,6 @@
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
-    public class InventorySuiteReportItemDto
+    public class GetInventorySuiteReportItemDTO
     {
         public int IngredientId { get; set; }
         public string IngredientName { get; set; } = string.Empty;

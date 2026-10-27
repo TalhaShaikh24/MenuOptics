@@ -10,6 +10,7 @@ using System.Data.SqlClient;
 using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using MenuOptics.Models.DTOs;
 
 namespace MenuOptics.Services
 {
@@ -44,7 +45,7 @@ namespace MenuOptics.Services
             _configuration = configuration;
         }
 
-        public async Task<ResponseDto> LoginAsync(LoginDto model, string? ipAddress)
+        public async Task<ResponseDto> LoginAsync(LoginDTO model, string? ipAddress)
         {
             var ResponseDto = new ResponseDto();
             var payload = System.Text.Json.JsonSerializer.Serialize(new { model.Username }); // never log password
@@ -58,7 +59,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Username", model.Username);
                 parameters.Add("@Action", "LOGIN");
 
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_Auth", parameters, commandType: CommandType.StoredProcedure);
 
 
@@ -144,7 +145,7 @@ namespace MenuOptics.Services
             return await Task.FromResult(ResponseDto);
         }
 
-        public async Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDto model)
+        public async Task<ResponseDto> RefreshTokenAsync(RefreshTokenRequestDTO model)
         {
             var ResponseDto = new ResponseDto();
 
@@ -189,7 +190,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", storedToken.UserId);
                 parameters.Add("@Action", "SELECT");
 
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 if (user == null || !user.IsActive)
@@ -230,7 +231,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> RevokeTokenAsync(RefreshTokenRequestDto model)
+        public async Task<ResponseDto> RevokeTokenAsync(RefreshTokenRequestDTO model)
         {
             var ResponseDto = new ResponseDto();
 
@@ -272,7 +273,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CheckUserAsync(CheckUserDto model)
+        public async Task<ResponseDto> CheckUserAsync(CheckUserDTO model)
         {
             var ResponseDto = new ResponseDto();
 
@@ -320,7 +321,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> SendOtpAsync(SendOtpDto model)
+        public async Task<ResponseDto> SendOtpAsync(SendOtpDTO model)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -332,7 +333,7 @@ namespace MenuOptics.Services
                 selectParams.Add("@UserId", model.UserId);
                 selectParams.Add("@Action", "SELECT");
 
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_UserCRUD", selectParams, commandType: CommandType.StoredProcedure);
 
                 
@@ -381,7 +382,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> VerifyOtpAsync(VerifyOtpDto model)
+        public async Task<ResponseDto> VerifyOtpAsync(VerifyOtpDTO model)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();

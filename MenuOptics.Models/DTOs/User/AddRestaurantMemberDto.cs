@@ -1,19 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
-    public class AddRestaurantMemberDto
+    public class AddRestaurantMemberDTO
     {
-        [Required(ErrorMessage = "Username is required.")]
-        public string Username { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Email is required.")]
-        [EmailAddress(ErrorMessage = "Invalid Email Address.")]
-        public string Email { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Password is required.")]
-        public string Password { get; set; } = string.Empty;
-
+        public required string Username { get; set; }
+        public required string Email { get; set; }
+        public required string Password { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Phone { get; set; }

@@ -1,9 +1,6 @@
-using System;
-using System.Collections.Generic;
-
-namespace MenuOptics.Models
+﻿namespace MenuOptics.Models.DTOs
 {
-    public class Event
+    public class GetEventDTO
     {
         public int EventId { get; set; }
         public int RestaurantId { get; set; }
@@ -24,20 +21,7 @@ namespace MenuOptics.Models
         public int? ModifiedBy { get; set; }
         public string? Notes { get; set; }
         public string? ItemsJson { get; set; }
-        public List<EventItem> Items { get; set; } = new List<EventItem>();
+        public List<GetEventItemDTO> Items { get; set; } = new List<GetEventItemDTO>();
     }
 
-    public class EventItem
-    {
-        public int EventItemId { get; set; }
-        public int EventId { get; set; }
-        public int MenuItemId { get; set; }
-        public int EventOnlyItemId { get; set; }
-        public string ItemName { get; set; } = string.Empty;
-        public decimal Qty { get; set; }
-        public decimal Quantity { get => Qty; set => Qty = value; }
-        public decimal UnitCost { get; set; }
-        public decimal TotalCost { get; set; }
-        public decimal SellingPrice { get; set; }
-    }
 }

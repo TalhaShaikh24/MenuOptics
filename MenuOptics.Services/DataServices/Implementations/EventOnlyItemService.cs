@@ -1,6 +1,8 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -28,7 +30,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Action", "SELECT_ALL");
                 parameters.Add("@RestaurantId", restaurantId);
 
-                var eventOnlyItems = await connection.QueryAsync<EventOnlyItemDto>(
+                var eventOnlyItems = await connection.QueryAsync<GetEventOnlyItemDTO>(
                     "sp_EventOnlyItemCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure);
@@ -56,7 +58,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreateAsync(EventOnlyItemDto model, int restaurantId)
+        public async Task<ResponseDto> CreateAsync(CreateEventOnlyItemDTO model, int restaurantId)
         {
             var ResponseDto = new ResponseDto();
 
@@ -69,7 +71,7 @@ namespace MenuOptics.Services
                 parameters.Add("@Action", "INSERT");
                 parameters.Add("@RestaurantId", restaurantId);
                 parameters.Add("@Name", model.Name);
-                parameters.Add("@Cost", model.DefaultCost);
+                parameters.Add("@Cost", model.Cost);
                 parameters.Add("@SellingPrice", model.SellingPrice);
 
                 var id = await connection.ExecuteScalarAsync<int>(
@@ -77,11 +79,17 @@ namespace MenuOptics.Services
                     parameters,
                     commandType: CommandType.StoredProcedure);
 
-                model.EventOnlyItemId = id;
+                var res = new GetEventOnlyItemDTO
+                {
+                    EventOnlyItemId = id,
+                    Name = model.Name,
+                    Cost = model.Cost,
+                    SellingPrice = model.SellingPrice
+                };
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Event item created successfully.";
-                ResponseDto.Data = model;
+                ResponseDto.Data = res;
 
                 return ResponseDto;
             }

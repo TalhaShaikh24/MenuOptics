@@ -71,7 +71,7 @@ function loadEventOnlyItems() {
             eventOnlyItemsGlobal = rawItems.map(item => ({
                 id: item.eventOnlyItemId,
                 text: item.name,
-                cost: item.defaultCost ?? item.cost ?? 0,
+                cost: item.cost ?? 0,
                 sellingPrice: item.sellingPrice ?? 0
             }));
             populateSelect2('#eventOnlyItemSelect', eventOnlyItemsGlobal);
@@ -123,18 +123,18 @@ function saveNewCustomItem() {
     ajaxRequest({
         url: '/api/EventOnlyItemApi/Create',
         method: 'POST',
-        data: { Name: name, DefaultCost: cost, Cost: cost, SellingPrice: validSellingPrice },
+        data: { Name: name, Cost: cost, SellingPrice: validSellingPrice },
         onSuccess: res => {
             closeModal('customItemModal');
             const itemData = res.data || {};
             const itemId = itemData.eventOnlyItemId || itemData.EventOnlyItemId;
             if (!itemId) return;
-
+debugger
             eventOnlyItemsGlobal.push({
                 id: itemId,
                 text: itemData.name || itemData.Name,
-                cost: itemData.defaultCost ?? itemData.cost ?? itemData.DefaultCost ?? cost,
-                sellingPrice: itemData.sellingPrice ?? itemData.SellingPrice ?? validSellingPrice
+                cost: itemData.cost,
+                sellingPrice: itemData.sellingPrice ?? validSellingPrice
             });
 
             populateSelect2('#eventOnlyItemSelect', eventOnlyItemsGlobal);

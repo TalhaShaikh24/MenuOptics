@@ -1,16 +1,16 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
+using MenuOptics.Models.Enums;
+using MenuOptics.Services.EmailTemplates;
+using Microsoft.Extensions.Configuration;
 using Stripe;
 using Stripe.Checkout;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Security.Claims;
-using MenuOptics.Models.Enums;
-using MenuOptics.Services.EmailTemplates;
-using Microsoft.Extensions.Configuration;
-using MenuOptics.Models.DTOs;
 
 namespace MenuOptics.Services
 {
@@ -55,7 +55,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@Action", "SELECT_USER_STATS");
 
-                var stats = await connection.QueryFirstOrDefaultAsync<UserStatsDto>(
+                var stats = await connection.QueryFirstOrDefaultAsync<GetUserStatsDTO>(
                     "sp_UserCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure
@@ -94,7 +94,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@Action", "SELECT_RESTAURANT_STATS");
 
-                var stats = await connection.QueryFirstOrDefaultAsync<UserStatsDto>(
+                var stats = await connection.QueryFirstOrDefaultAsync<GetUserStatsDTO>(
                     "sp_UserCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure
@@ -123,7 +123,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> CreateUserAsync(User model, int fallbackCreatedBy, string requestBaseUrl)
+        public async Task<ResponseDto> CreateUserAsync(CreateUserDTO model, int fallbackCreatedBy, string requestBaseUrl)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -199,7 +199,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", id);
                 parameters.Add("@Action", "SELECT");
 
-                var userProfile = await connection.QueryFirstOrDefaultAsync<UserDto>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var userProfile = await connection.QueryFirstOrDefaultAsync<GetUserDTO>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "User profile retrieved successfully.";
@@ -234,7 +234,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var users = await connection.QueryAsync<UserDto>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var users = await connection.QueryAsync<GetUserDTO>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Users retrieved successfully.";
                 ResponseDto.Data = users;
@@ -268,7 +268,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@Action", "SELECT_ALL_RESTAURANT");
 
-                var users = await connection.QueryAsync<UserDto>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var users = await connection.QueryAsync<GetUserDTO>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Users retrieved successfully.";
                 ResponseDto.Data = users;
@@ -328,7 +328,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateUserAsync(User model, int modifiedBy, string requestBaseUrl)
+        public async Task<ResponseDto> UpdateUserAsync(UpdateUserDTO model, int modifiedBy, string requestBaseUrl)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -354,7 +354,7 @@ namespace MenuOptics.Services
                 parameters.Add("@State", model.State);
                 parameters.Add("@City", model.City);
                 parameters.Add("@Zip", model.Zip);
-                parameters.Add("@RestaurantName", model.Role == Role.Restaurant.ToString() ? model.RestaurantName : null);
+                parameters.Add("@RestaurantName", model.RestaurantName);
                 parameters.Add("@ModifiedBy", modifiedBy);
                 parameters.Add("@Action", "UPDATE");
 
@@ -393,7 +393,7 @@ namespace MenuOptics.Services
                 var parameters = new DynamicParameters();
                 parameters.Add("@UserId", id);
                 parameters.Add("@Action", "SELECT");
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 parameters = new DynamicParameters();
                 parameters.Add("@UserId", id);
@@ -425,7 +425,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> AddRestaurantMemberAsync(AddRestaurantMemberDto model, int currentUserId, string callerRole, string isParentClaim)
+        public async Task<ResponseDto> AddRestaurantMemberAsync(AddRestaurantMemberDTO model, int currentUserId, string callerRole, string isParentClaim)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -507,7 +507,7 @@ namespace MenuOptics.Services
                 parameters.Add("@ParentId", currentUserId);
                 parameters.Add("@Action", "SELECT_MEMBERS");
 
-                var members = await connection.QueryAsync<UserDto>(
+                var members = await connection.QueryAsync<GetUserDTO>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
@@ -541,7 +541,7 @@ namespace MenuOptics.Services
                 parameters.Add("@ParentId", currentUserId);
                 parameters.Add("@Action", "SELECT_MEMBER_STATS");
 
-                var stats = await connection.QueryFirstOrDefaultAsync<UserStatsDto>(
+                var stats = await connection.QueryFirstOrDefaultAsync<GetUserStatsDTO>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
@@ -564,7 +564,7 @@ namespace MenuOptics.Services
             finally { connection.Close(); }
         }
 
-        public async Task<ResponseDto> UpdateRestaurantMemberAsync(UpdateRestaurantMemberDto model, int currentUserId, string requestBaseUrl)
+        public async Task<ResponseDto> UpdateRestaurantMemberAsync(UpdateRestaurantMemberDTO model, int currentUserId, string requestBaseUrl)
         {
             var ResponseDto = new ResponseDto();
 
@@ -578,7 +578,7 @@ namespace MenuOptics.Services
                 checkParams.Add("@Action", "SELECT");
 
                 //QueryFirstAsync means it will always expect a record or the exception will be thrown from Store Procedure
-                var member = await connection.QueryFirstAsync<UserDto>(
+                var member = await connection.QueryFirstAsync<GetUserDTO>(
                     "sp_UserCRUD", checkParams, commandType: CommandType.StoredProcedure);
 
                 var parameters = new DynamicParameters();
@@ -598,7 +598,7 @@ namespace MenuOptics.Services
                     parameters.Add("@PasswordHash", null);
                 parameters.Add("@Action", "UPDATE_MEMBER");
 
-                var updated = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var updated = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
@@ -635,7 +635,7 @@ namespace MenuOptics.Services
                 checkParams.Add("@Action", "SELECT");
 
                 //QueryFirstAsync means it will always expect a record or the exception will be thrown from Store Procedure
-                var member = await connection.QueryFirstAsync<UserDto>(
+                var member = await connection.QueryFirstAsync<GetUserDTO>(
                     "sp_UserCRUD", checkParams, commandType: CommandType.StoredProcedure);
 
                 var parameters = new DynamicParameters();
@@ -666,7 +666,7 @@ namespace MenuOptics.Services
             finally { connection.Close(); }
         }
 
-        public async Task<ResponseDto> CompleteRegistrationAsync(CompleteRegistrationDto model, string requestBaseUrl)
+        public async Task<ResponseDto> CompleteRegistrationAsync(CompleteRegistrationDTO model, string requestBaseUrl)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -697,7 +697,7 @@ namespace MenuOptics.Services
                 selectParams.Add("@UserId", model.UserId);
                 selectParams.Add("@Action", "SELECT");
 
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_UserCRUD", selectParams, commandType: CommandType.StoredProcedure);
 
                 // Issue JWT
@@ -766,7 +766,7 @@ namespace MenuOptics.Services
             }
         }
 
-        private async Task SendVendorOnboardingEmailAsync(IDbConnection connection, UserDto user)
+        private async Task SendVendorOnboardingEmailAsync(IDbConnection connection, GetUserDTO user)
         {
             if (!user.VendorId.HasValue || user.VendorId.Value <= 0)
                 return;
@@ -776,7 +776,7 @@ namespace MenuOptics.Services
             vendorParams.Add("@UserId", user.VendorId.Value);
             vendorParams.Add("@Action", "SELECT");
 
-            var vendor = await connection.QueryFirstOrDefaultAsync<UserDto>(
+            var vendor = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                 "sp_UserCRUD", vendorParams, commandType: CommandType.StoredProcedure);
 
             if (vendor == null || string.IsNullOrWhiteSpace(vendor.Email))

@@ -1,5 +1,6 @@
 using MenuOptics.API.Utility;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -73,7 +74,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("CreateUser")]
-        public async Task<IActionResult> CreateUser([FromForm] User model)
+        public async Task<IActionResult> CreateUser([FromForm] CreateUserDTO model)
         {
             var responseData = await _userService.CreateUserAsync(model, CurrentUserId, RequestBaseUrl);
             return StatusCode(responseData.Status, responseData);
@@ -120,14 +121,14 @@ namespace MenuOptics.Controllers.Api
 
         [Authorize(Roles = "Admin")]
         [HttpPut("UpdateUser")]
-        public async Task<IActionResult> UpdateUser([FromForm] User model)
+        public async Task<IActionResult> UpdateUser([FromForm] UpdateUserDTO model)
         {
             var responseData = await _userService.UpdateUserAsync(model, CurrentUserId, RequestBaseUrl);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateCurrentUser")]
-        public async Task<IActionResult> UpdateCurrentUser([FromForm] User model)
+        public async Task<IActionResult> UpdateCurrentUser([FromForm] UpdateUserDTO model)
         {
             model.UserId = CurrentUserId;
             var responseData = await _userService.UpdateUserAsync(model, CurrentUserId, $"{Request.Scheme}://{Request.Host}");
@@ -144,7 +145,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("Login")]
-        public async Task<IActionResult> Login([FromBody] LoginDto model)
+        public async Task<IActionResult> Login([FromBody] LoginDTO model)
         {
             var ipAddress = BrowserRequestHeaders.GetClientIpAddress(HttpContext);
             var responseData = await _authService.LoginAsync(model, ipAddress);
@@ -161,7 +162,7 @@ namespace MenuOptics.Controllers.Api
 
         [HttpPost("AddRestaurantMember")]
         [Authorize(Roles = "Restaurant,Admin")]
-        public async Task<IActionResult> AddRestaurantMember([FromBody] AddRestaurantMemberDto model)
+        public async Task<IActionResult> AddRestaurantMember([FromBody] AddRestaurantMemberDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -193,7 +194,7 @@ namespace MenuOptics.Controllers.Api
 
         [HttpPut("UpdateRestaurantMember")]
         [Authorize(Roles = "Restaurant,Admin")]
-        public async Task<IActionResult> UpdateRestaurantMember([FromForm] UpdateRestaurantMemberDto model)
+        public async Task<IActionResult> UpdateRestaurantMember([FromForm] UpdateRestaurantMemberDTO model)
         {
             var responseData = await _userService.UpdateRestaurantMemberAsync(model, CurrentUserId, RequestBaseUrl);
             return StatusCode(responseData.Status, responseData);
@@ -217,7 +218,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("RefreshToken")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto model)
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDTO model)
         {
             var responseData = await _authService.RefreshTokenAsync(model);
             return StatusCode(responseData.Status, responseData);
@@ -225,7 +226,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("RevokeToken")]
-        public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequestDto model)
+        public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequestDTO model)
         {
             var responseData = await _authService.RevokeTokenAsync(model);
             return StatusCode(responseData.Status, responseData);
@@ -233,7 +234,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("CheckUser")]
-        public async Task<IActionResult> CheckUser([FromBody] CheckUserDto model)
+        public async Task<IActionResult> CheckUser([FromBody] CheckUserDTO model)
         {
             var responseData = await _authService.CheckUserAsync(model);
             return StatusCode(responseData.Status, responseData);
@@ -241,7 +242,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("CompleteRegistration")]
-        public async Task<IActionResult> CompleteRegistration([FromForm] CompleteRegistrationDto model)
+        public async Task<IActionResult> CompleteRegistration([FromForm] CompleteRegistrationDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -254,7 +255,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("SendOtp")]
-        public async Task<IActionResult> SendOtp([FromBody] SendOtpDto model)
+        public async Task<IActionResult> SendOtp([FromBody] SendOtpDTO model)
         {
             if (!ModelState.IsValid)
             {
@@ -267,7 +268,7 @@ namespace MenuOptics.Controllers.Api
 
         [AllowAnonymous]
         [HttpPost("VerifyOtp")]
-        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto model)
+        public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDTO model)
         {
             if (!ModelState.IsValid)
             {

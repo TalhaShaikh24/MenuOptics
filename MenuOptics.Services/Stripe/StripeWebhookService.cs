@@ -130,7 +130,7 @@ namespace MenuOptics.Services
             {
                 var findParams = new DynamicParameters();
                 findParams.Add("@Action", "SELECT_ALL");
-                var allUsers = await connection.QueryAsync<UserDto>("sp_UserCRUD", findParams, commandType: CommandType.StoredProcedure);
+                var allUsers = await connection.QueryAsync<GetUserDTO>("sp_UserCRUD", findParams, commandType: CommandType.StoredProcedure);
                 var matchedUser = allUsers.FirstOrDefault(u =>
                     u.StripeSubscriptionId == subscription.Id ||
                     (!string.IsNullOrEmpty(u.StripeCustomerId) && u.StripeCustomerId == subscription.CustomerId));
@@ -189,7 +189,7 @@ namespace MenuOptics.Services
 
             var findParams = new DynamicParameters();
             findParams.Add("@Action", "SELECT_ALL");
-            var allUsers = await connection.QueryAsync<UserDto>("sp_UserCRUD", findParams, commandType: CommandType.StoredProcedure);
+            var allUsers = await connection.QueryAsync<GetUserDTO>("sp_UserCRUD", findParams, commandType: CommandType.StoredProcedure);
             var matchedUser = allUsers.FirstOrDefault(u =>
                 (!string.IsNullOrEmpty(subId) && u.StripeSubscriptionId == subId) ||
                 (!string.IsNullOrEmpty(custId) && u.StripeCustomerId == custId));
@@ -217,7 +217,7 @@ namespace MenuOptics.Services
 
             var findParams = new DynamicParameters();
             findParams.Add("@Action", "SELECT_ALL");
-            var allUsers = await connection.QueryAsync<UserDto>("sp_UserCRUD", findParams, commandType: CommandType.StoredProcedure);
+            var allUsers = await connection.QueryAsync<GetUserDTO>("sp_UserCRUD", findParams, commandType: CommandType.StoredProcedure);
             var matchedUser = allUsers.FirstOrDefault(u =>
                 (!string.IsNullOrEmpty(subId) && u.StripeSubscriptionId == subId) ||
                 (!string.IsNullOrEmpty(custId) && u.StripeCustomerId == custId));

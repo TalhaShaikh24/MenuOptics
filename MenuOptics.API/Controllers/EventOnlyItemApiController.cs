@@ -1,5 +1,6 @@
 using MenuOptics.API.Middleware;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +32,7 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("Create")]
-        public async Task<IActionResult> Create([FromBody] EventOnlyItemDto model)
+        public async Task<IActionResult> Create([FromBody] CreateEventOnlyItemDTO model)
         {
             var responseData = await _eventOnlyItemService.CreateAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);

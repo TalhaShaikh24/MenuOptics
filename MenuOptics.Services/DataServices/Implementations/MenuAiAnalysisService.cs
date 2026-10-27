@@ -39,7 +39,7 @@ namespace MenuOptics.Services
             try
             {
                 var userResponse = await _userService.GetUserAsync(currentUserId);
-                var user = userResponse.Data as UserDto;
+                var user = userResponse.Data as GetUserDTO;
                 var restaurantName = user?.RestaurantName ?? user?.Username ?? "My Restaurant";
 
                 // Build full location context from profile (Address, City, State, Zip, Country)

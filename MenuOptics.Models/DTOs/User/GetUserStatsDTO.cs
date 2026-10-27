@@ -1,6 +1,6 @@
 namespace MenuOptics.Models
 {
-    public class UserStatsDto
+    public class GetUserStatsDTO
     {
         public int TotalCount { get; set; }
         public int ActiveCount { get; set; }

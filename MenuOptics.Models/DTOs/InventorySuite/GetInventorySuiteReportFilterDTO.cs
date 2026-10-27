@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MenuOptics.Models.Entities
+namespace MenuOptics.Models.DTOs.InventorySuite
 {
-    public class InventorySuite
+    public class GetInventorySuiteReportFilterDTO
     {
-        public int InventorySuiteId { get; set; }
+        public int? InventorySuiteId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
     }

@@ -34,7 +34,7 @@ namespace MenuOptics.API.Middleware
 
             var userId = int.TryParse(context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id) ? id : 0;
             var userResult = await _userService.GetUserAsync(userId);
-            var user = userResult.Data as UserDto;
+            var user = userResult.Data as GetUserDTO;
 
             if (user == null)
             {
@@ -60,7 +60,7 @@ namespace MenuOptics.API.Middleware
             if (user.ParentId.HasValue && user.ParentId.Value > 0)
             {
                 var parentResult = await _userService.GetUserAsync(user.ParentId.Value);
-                if (parentResult.Data is UserDto parentUser)
+                if (parentResult.Data is GetUserDTO parentUser)
                 {
                     targetUser = parentUser;
                 }

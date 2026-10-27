@@ -37,7 +37,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", effectiveUserId);
                 parameters.Add("@Action", "SELECT");
 
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 // If actual user is a staff member, fetch parent name for context
@@ -167,7 +167,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", effectiveUserId);
                 parameters.Add("@Action", "SELECT");
 
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 if (!string.IsNullOrEmpty(user.StripeSubscriptionId))
@@ -306,7 +306,7 @@ namespace MenuOptics.Services
                 parameters.Add("@UserId", effectiveUserId);
                 parameters.Add("@Action", "SELECT");
 
-                var user = await connection.QueryFirstOrDefaultAsync<UserDto>(
+                var user = await connection.QueryFirstOrDefaultAsync<GetUserDTO>(
                     "sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 var plan = user.SubscriptionType ?? "starter";

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MenuOptics.Models
 {
-    public class CheckUserDto
+    public class CheckUserDTO
     {
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Invalid email address.")]

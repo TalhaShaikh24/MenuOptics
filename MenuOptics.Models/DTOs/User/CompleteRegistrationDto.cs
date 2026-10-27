@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
-    public class CompleteRegistrationDto
+    public class CompleteRegistrationDTO
     {
         [Required(ErrorMessage = "UserId is required.")]
         public int UserId { get; set; }

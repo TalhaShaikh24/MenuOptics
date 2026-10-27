@@ -1,7 +1,8 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
-using MenuOptics.Models.Entities;
+using MenuOptics.Models.DTOs;
+using MenuOptics.Models.DTOs.InventorySuite;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -16,7 +17,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public async Task<ResponseDto> InventorySuiteReportAsync(InventorySuiteReportRequestDto model, int currentUserId)
+        public async Task<ResponseDto> InventorySuiteReportAsync(GetInventorySuiteReportFilterDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
 
@@ -34,8 +35,8 @@ namespace MenuOptics.Services
 
                 using var multi = await connection.QueryMultipleAsync("sp_InventorySuiteCRUD", parameters, commandType: CommandType.StoredProcedure);
 
-                var reportItems = (await multi.ReadAsync<InventorySuiteReportItemDto>()).ToList();
-                var totalCogsSummary = await multi.ReadFirstOrDefaultAsync<TotalInventorySuiteReportItemDto>();
+                var reportItems = (await multi.ReadAsync<GetInventorySuiteReportItemDTO>()).ToList();
+                var totalCogsSummary = await multi.ReadFirstOrDefaultAsync<GetTotalInventorySuiteReportItemDTO>();
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Inventory report generated successfully.";
@@ -78,7 +79,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", currentUserId);
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var inventoryReports = await connection.QueryAsync<InventorySuite>("sp_InventorySuiteCRUD", parameters, commandType: CommandType.StoredProcedure);
+                var inventoryReports = await connection.QueryAsync<GetInventorySuiteReportFilterDTO>("sp_InventorySuiteCRUD", parameters, commandType: CommandType.StoredProcedure);
 
                 ResponseDto.Status = 200;
                 ResponseDto.ResponseMsg = "Inventory Suite reports retrived successfully.";
@@ -104,7 +105,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> UpdateInventorySuiteReportAsync(UpdateInventorySuiteReportRequestDto model, int currentUserId)
+        public async Task<ResponseDto> UpdateInventorySuiteReportAsync(UpdateInventorySuiteReportDTO model, int currentUserId)
         {
             var responseDto = new ResponseDto();
 
@@ -164,7 +165,7 @@ namespace MenuOptics.Services
             }
         }
 
-        public async Task<ResponseDto> AddInventorySuiteReportAsync(AddInventorySuiteReportRequestDto model, int currentUserId)
+        public async Task<ResponseDto> AddInventorySuiteReportAsync(CreateInventorySuiteReportDTO model, int currentUserId)
         {
             var responseDto = new ResponseDto();
 

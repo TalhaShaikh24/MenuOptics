@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
-    public class UpdateRestaurantMemberDto
+    public class UpdateRestaurantMemberDTO
     {
         [Required]
         public int MemberId { get; set; }

@@ -1,5 +1,6 @@
 using MenuOptics.API.Middleware;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,14 +38,14 @@ namespace MenuOptics.Controllers.Api
         }
 
         [HttpPost("CreateEvent")]
-        public async Task<IActionResult> CreateEvent([FromBody] Event model)
+        public async Task<IActionResult> CreateEvent([FromBody] CreateEventDTO model)
         {
             var responseData = await _eventService.CreateEventAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("UpdateEvent")]
-        public async Task<IActionResult> UpdateEvent([FromBody] Event model)
+        public async Task<IActionResult> UpdateEvent([FromBody] UpdateEventDTO model)
         {
             var responseData = await _eventService.UpdateEventAsync(model, CurrentUserId, ActualUserId);
             return StatusCode(responseData.Status, responseData);

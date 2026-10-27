@@ -1,8 +1,8 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
-    public class SendOtpDto
+    public class SendOtpDTO
     {
         [Required(ErrorMessage = "UserId is required.")]
         public int UserId { get; set; }

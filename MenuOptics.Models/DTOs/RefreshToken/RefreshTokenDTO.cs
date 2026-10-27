@@ -1,8 +1,12 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace MenuOptics.Models
+namespace MenuOptics.Models.DTOs
 {
-    public class RefreshToken
+    public class RefreshTokenDTO
     {
         public int Id { get; set; }
         public int UserId { get; set; }

@@ -1,7 +1,8 @@
 using Dapper;
-using Microsoft.IdentityModel.Tokens;
 using MenuOptics.Data;
 using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
+using Microsoft.IdentityModel.Tokens;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -21,7 +22,7 @@ namespace MenuOptics.Services
             _context = context;
         }
 
-        public string GenerateAccessToken(UserDto user)
+        public string GenerateAccessToken(GetUserDTO user)
         {
             var jwtSettings = _configuration.GetSection("Jwt");
             var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
@@ -100,7 +101,7 @@ namespace MenuOptics.Services
         /// <summary>
         /// Retrieves a refresh token record from the database (returns null if not found).
         /// </summary>
-        public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
+        public async Task<RefreshTokenDTO?> GetRefreshTokenAsync(string token)
         {
             using var connection = _context.CreateConnection();
 
@@ -108,7 +109,7 @@ namespace MenuOptics.Services
             parameters.Add("@Token", token);
             parameters.Add("@Action", "SELECT");
 
-            return await connection.QueryFirstOrDefaultAsync<RefreshToken>(
+            return await connection.QueryFirstOrDefaultAsync<RefreshTokenDTO>(
                 "sp_TokenCRUD",
                 parameters,
                 commandType: CommandType.StoredProcedure);
