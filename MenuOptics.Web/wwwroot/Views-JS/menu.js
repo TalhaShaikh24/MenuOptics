@@ -1077,7 +1077,6 @@ async function generateMenuPDF(menuData, filename) {
         }
         // Ingredients Breakdown
         if (item.ingredients && item.ingredients.length > 0) {
-            debugger;
             content.push({ text: 'Detailed Ingredients List', style: 'sectionHeader' });
 
             const ingRows = item.ingredients

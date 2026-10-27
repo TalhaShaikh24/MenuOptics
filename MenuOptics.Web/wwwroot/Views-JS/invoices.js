@@ -1479,7 +1479,6 @@ function processInvoiceCsv(csvText) {
         const cellPrice = idxPrice !== -1 ? (row[idxPrice] || '').trim() : '';
         const cellCatchWeight = idxCatchWeight !== -1 ? (row[idxCatchWeight] || '').trim().toLowerCase() : '';
 
-        debugger
 
         // Skip rows where Weight/Qty and Price are not present in CSV
         const parsedWeight = parseWeightQtyValue(cellWeightQty);
@@ -1608,7 +1607,6 @@ function processInvoiceCsv(csvText) {
 
         importedCount++;
     }
-    debugger
     renderInvoiceItems();
     syncInvoiceItemsView();
 

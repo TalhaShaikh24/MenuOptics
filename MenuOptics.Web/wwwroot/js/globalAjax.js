@@ -136,7 +136,6 @@ function executeAjaxRequest({
         error: function (xhr, status, error) {
             const statusCode = xhr.status;
             let errorMsg = "An unexpected error occurred";
-            debugger
             try {
                 if (xhr.responseJSON) {
                     errorMsg = xhr.responseJSON.responseMsg || xhr.responseJSON.error || JSON.stringify(xhr.responseJSON);

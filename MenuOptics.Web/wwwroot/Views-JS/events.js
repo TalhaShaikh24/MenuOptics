@@ -129,7 +129,6 @@ function saveNewCustomItem() {
             const itemData = res.data || {};
             const itemId = itemData.eventOnlyItemId || itemData.EventOnlyItemId;
             if (!itemId) return;
-debugger
             eventOnlyItemsGlobal.push({
                 id: itemId,
                 text: itemData.name || itemData.Name,

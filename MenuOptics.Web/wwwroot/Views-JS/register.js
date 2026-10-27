@@ -163,7 +163,6 @@ function GetAllVendors() {
 
                 const $vendorDropdown = $('#primaryDistributor');
                 $vendorDropdown.empty();
-                debugger
                 $vendorDropdown.append(
                     $('<option>', {
                         value: '',

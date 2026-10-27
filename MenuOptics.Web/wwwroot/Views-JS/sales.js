@@ -596,14 +596,11 @@ function updateSaleItemQty(menuItemId, value) {
     const item = currentSaleItems.find(i => i.menuItemId === menuItemId);
     if (!item) return;
 
-    if (isNaN(qty) || qty <= 0) {
-        removeSaleItem(menuItemId);
-    } else {
-        item.quantity = qty;
-        $(`#line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
-        $(`#line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
-        updateAddSaleTotal();
-    }
+    item.quantity = qty;
+    $(`#line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
+    $(`#line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
+    updateAddSaleTotal();
+   
 }
 
 function removeSaleItem(menuItemId) {
@@ -634,7 +631,7 @@ function syncSaleItemsView() {
                     ${escapeHtml(item.name)}
                 </td>
                 <td style="text-align: center;">
-                    <input type="number" min="1" step="1" value="${item.quantity}" onchange="updateSaleItemQty(${item.menuItemId}, this.value)" oninput="updateSaleItemQty(${item.menuItemId}, this.value)">
+                    <input type="number" min="1" step="1" value="${item.quantity}" placeholder="0" onchange="updateSaleItemQty(${item.menuItemId}, this.value)" oninput="updateSaleItemQty(${item.menuItemId}, this.value)">
                 </td>
                 <td style="text-align: right; color: #64748b; font-weight: 500;" id="line_cost_${item.menuItemId}">
                     ${formatCurrency(item.cost)}
@@ -746,7 +743,6 @@ function updateEditSaleItemQty(menuItemId, value) {
         removeEditSaleItem(menuItemId);
     } else {
         item.quantity = qty;
-        debugger
         $(`#edit_line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
         $(`#edit_line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
         updateEditSaleTotal();
@@ -770,7 +766,6 @@ function syncEditSaleItemsView() {
 
     $('#editSaleItemsEmpty').hide();
     $('#editSaleItemsWrapper').show();
-    debugger
     editSaleItems.forEach(item => {
         $body.append(`
             <tr class="sale-item-row" id="edit_sale_row_${item.menuItemId}">
@@ -808,7 +803,6 @@ function updateEditSaleTotal() {
 function viewSaleDetails(saleId) {
     const sale = allSales.find(s => s.saleId === saleId);
     if (!sale) return;
-    debugger
     $('#modalSaleTitle').text(`Sale #${sale.saleId}`);
     $('#modalSaleSubtitle').text(
         `${formatDateDisplay(sale.startDate)} - ${formatDateDisplay(sale.endDate)}`

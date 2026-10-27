@@ -162,7 +162,6 @@ function refreshUserStats() {
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            debugger
             const stats = response.data || {};
             $('#totalUsers').text(stats.totalCount);
             $('#activeUsers').text(stats.activeCount);

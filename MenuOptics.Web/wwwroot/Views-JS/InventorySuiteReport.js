@@ -654,7 +654,6 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
             pendingClosingCounts = {};
            
             const items = (response && response.data && response.data.items) ? response.data.items : [];
-            debugger;
             loadedReportItems = items;
 
             if (isNewReport) {

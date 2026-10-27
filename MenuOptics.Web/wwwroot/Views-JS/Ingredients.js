@@ -211,7 +211,6 @@ function updatePriceLabelByType(typeValue, isEditModal) {
     const labelSelector = isEditModal ? '#editTypeLabel' : '#typeLabel';
     const inputSelector = isEditModal ? '#editIngredientPrice' : '#ingredientPrice';
     const unitSelector = isEditModal ? '#editIngredientUnit' : '#ingredientUnit';
-    debugger
     if (typeValue === 'catchWeight') {
         const $unit = $(unitSelector);
         const val = $unit.val();
@@ -316,7 +315,6 @@ function initIngredientsTable() {
                 error: function (xhr, textStatus, errorThrown) {
 
                     callback({ draw: dtParams.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
-                    debugger
                     if (xhr.status == 402)
                         var $stripe = $('#subscriptioStatus');
                     $stripe.text(xhr.responseJSON.responseMsg).show();

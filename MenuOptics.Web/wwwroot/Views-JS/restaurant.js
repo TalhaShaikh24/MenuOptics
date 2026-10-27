@@ -261,7 +261,6 @@ function refreshRestaurantTable() {
         showMessage: false,
         onSuccess: function (response) {
             allRestaurants = response.data;
-            debugger
             filterAndRenderRestaurants();
         },
         onError: function (xhr, status, error) {
