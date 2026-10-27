@@ -884,7 +884,9 @@ function showRecipeCostBreakdown(recipeId) {
         list.sort((a, b) => b.costPercent - a.costPercent);
 
         list.forEach(ing => {
-            const ingName = ing.ingredientName || (ing.name || `${ing.ingredientId}`);
+            const ingName = ing.ingredientName.trim().includes(' ') ? ing.ingredientName.split(' ').slice(1).join(' ') : ing.ingredientName;
+            const brand = ing.ingredientName.split(' ')[0];
+            const productId = ing.vendorProductId;
 
             const oldPrice = ing.oldPriceNum;
             const currentPrice = ing.currentPriceNum;
@@ -904,8 +906,15 @@ function showRecipeCostBreakdown(recipeId) {
 
             rows.push(`
                 <tr style="border-bottom: 1px solid #f1f5f9;">
-                    <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">
-                        ${ingName}
+                    <td>
+                         <div class="ingredient-info" style="padding: 10px 14px; font-weight: 600; color: #1e293b;">
+                             <p class="ingredient-name">${ingName}</p>
+                             <p class="ingredient-meta">Brand: ${brand}</p>
+                             ${productId != null
+                                        ? `<p class="ingredient-meta category-badge" style=" margin-top: 2px; width: fit-content; ">${productId}</p> `
+                                        : ''
+                                      }
+                         </div>
                     </td>
                     <td style="padding: 10px 14px; color: #475569; font-weight: 500;">
                         $${oldPrice.toFixed(2)}
