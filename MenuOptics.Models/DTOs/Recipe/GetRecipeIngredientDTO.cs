@@ -13,6 +13,7 @@ namespace MenuOptics.Models.DTOs
         public required string Unit { get; set; } 
         public required string UOM { get; set; }
         public required string IngredientName { get; set; }
+        public string? VendorProductId { get; set; }
         public decimal CurrentPrice { get; set; }
         public decimal? OldPrice { get; set; }
     }

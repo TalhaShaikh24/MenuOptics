@@ -12,5 +12,6 @@ namespace MenuOptics.Models.DTOs
         public required string RecipeName { get; set; }
         public decimal Quantity { get; set; }
         public required string Unit { get; set; }
+        public string? IngredientName { get; set; }
     }
 }

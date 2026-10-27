@@ -10,6 +10,8 @@ namespace MenuOptics.Models.DTOs
     {
         public int MenuItemId { get; set; }
         public int IngredientId { get; set; }
+        public string? IngredientName { get; set; }
+        public string? VendorProductId { get; set; }
         public decimal Quantity { get; set; }
         public required string Unit { get; set; }
         public required string UOM { get; set; }
