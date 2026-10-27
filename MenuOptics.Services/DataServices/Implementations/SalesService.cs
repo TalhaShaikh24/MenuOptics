@@ -1,7 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
-using MenuOptics.Models.DTOs.MenuItem;
+using MenuOptics.Models.DTOs;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
@@ -21,7 +21,7 @@ namespace MenuOptics.Services
             _menuService = menuService;
         }
 
-        public async Task<ResponseDto> CreateSaleAsync(Sale model, int currentUserId)
+        public async Task<ResponseDto> CreateSaleAsync(CreateSaleDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -89,7 +89,7 @@ namespace MenuOptics.Services
                 connection.Close();
             }
         }
-        public async Task<ResponseDto> UpdateSaleAsync(Sale model, int currentUserId)
+        public async Task<ResponseDto> UpdateSaleAsync(UpdateSaleDTO model, int currentUserId)
         {
             var ResponseDto = new ResponseDto();
             using var connection = _context.CreateConnection();
@@ -172,7 +172,7 @@ namespace MenuOptics.Services
                 parameters.Add("@RestaurantId", CurrentUserId);
                 parameters.Add("@Action", "SELECT_ALL");
 
-                var sales = await connection.QueryAsync<Sale>(
+                var sales = await connection.QueryAsync<GetSaleDTO>(
                     "sp_SaleCRUD",
                     parameters,
                     commandType: CommandType.StoredProcedure
@@ -221,14 +221,14 @@ namespace MenuOptics.Services
                     return ResponseDto;
                 }
 
-                var sale = new Sale
+                var sale = new GetSaleDTO
                 {
                     StartDate = startDate,
                     EndDate = endDate,
                     Subtotal = 0,
                     Tax = 0,
                     Total = 0,
-                    Items = new List<SaleItem>()
+                    Items = new List<GetSaleItemDTO>()
                 };
 
                 using var reader = new StreamReader(file.OpenReadStream());
@@ -261,7 +261,7 @@ namespace MenuOptics.Services
                         return ResponseDto;
                     }
 
-                    sale.Items.Add(new SaleItem
+                    sale.Items.Add(new GetSaleItemDTO
                     {
                         MenuItemId = menuItemId,
                         Quantity = quantity,

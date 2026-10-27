@@ -1,7 +1,7 @@
 using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
-using MenuOptics.Models.DTOs.MenuItem;
+using MenuOptics.Models.DTOs;
 using Newtonsoft.Json;
 using Stripe;
 using System.Data;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 
-namespace MenuOptics.Models.DTOs.MenuItem
+namespace MenuOptics.Models.DTOs
 {
     public class GetMenuItemDTO
     {

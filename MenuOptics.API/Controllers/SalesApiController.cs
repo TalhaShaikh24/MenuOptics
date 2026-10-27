@@ -1,5 +1,5 @@
 using MenuOptics.API.Middleware;
-using MenuOptics.Models;
+using MenuOptics.Models.DTOs;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +24,7 @@ namespace MenuOptics.Controllers.Api
 
         [HttpPost("CreateSale")]
         [Authorize]
-        public async Task<IActionResult> CreateSale([FromBody] Sale model)
+        public async Task<IActionResult> CreateSale([FromBody] CreateSaleDTO model)
         {
             var responseData = await _salesService.CreateSaleAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
@@ -32,7 +32,7 @@ namespace MenuOptics.Controllers.Api
 
         [HttpPut("UpdateSale")]
         [Authorize]
-        public async Task<IActionResult> UpdateSale([FromBody] Sale model)
+        public async Task<IActionResult> UpdateSale([FromBody] UpdateSaleDTO model)
         {
             var responseData = await _salesService.UpdateSaleAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
