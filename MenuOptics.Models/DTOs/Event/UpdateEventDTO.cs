@@ -3,12 +3,12 @@
     public class UpdateEventDTO
     {
         public int EventId { get; set; }
-        public string EventName { get; set; } = string.Empty;
+        public required string EventName { get; set; }
         public DateTime EventDate { get; set; }
-        public string Location { get; set; } = string.Empty;
-        public string ContactName { get; set; } = string.Empty;
-        public string ContactEmail { get; set; } = string.Empty;
-        public string ContactPhone { get; set; } = string.Empty;
+        public required string Location { get; set; }
+        public required string ContactName { get; set; }
+        public required string ContactEmail { get; set; }
+        public required string ContactPhone { get; set; }
         public int NumberOfGuests { get; set; }
         public decimal PricePerGuest { get; set; }
         public decimal TotalFoodCost { get; set; }

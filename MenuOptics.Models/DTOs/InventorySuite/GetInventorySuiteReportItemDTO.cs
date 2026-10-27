@@ -3,12 +3,12 @@ namespace MenuOptics.Models.DTOs
     public class GetInventorySuiteReportItemDTO
     {
         public int IngredientId { get; set; }
-        public string IngredientName { get; set; } = string.Empty;
-        public string Unit { get; set; } = string.Empty;
+        public required string IngredientName { get; set; }
+        public required string Unit { get; set; }
         public decimal Size { get; set; }
         public decimal Price { get; set; }
         public int? PackSize { get; set; }
-        public string VendorName { get; set; } = string.Empty;
+        public required string VendorName { get; set; }
         public decimal OpeningCount { get; set; }
         public decimal OpeningValue { get; set; }
         public decimal PurchasesQuantity { get; set; }

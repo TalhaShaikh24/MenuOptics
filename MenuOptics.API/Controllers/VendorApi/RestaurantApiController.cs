@@ -34,7 +34,7 @@ namespace MenuOptics.API.Controllers.VendorApi
         private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
         [HttpPost("SignupRestaurant")]
-        public async Task<IActionResult> SignupRestaurant([FromBody] CreateRestaurantDto model)
+        public async Task<IActionResult> SignupRestaurant([FromBody] CreateRestaurantDTO model)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var responseData = new ResponseDto();
@@ -81,14 +81,14 @@ namespace MenuOptics.API.Controllers.VendorApi
         }
 
         [HttpPut("UpdateRestaurant")]
-        public async Task<IActionResult> UpdateRestaurant([FromBody] UpdateRestaurantDto model)
+        public async Task<IActionResult> UpdateRestaurant([FromBody] UpdateRestaurantDTO model)
         {
             var responseData = await _restaurantService.UpdateRestaurantAsync(model, CurrentUserId);
             return StatusCode(responseData.Status, responseData);
         }
 
         [HttpPut("ToggleRestaurantActive/{restaurantId}")]
-        public async Task<IActionResult> ToggleRestaurantActive(int restaurantId, [FromBody] RestaurantStatusRequestDto request)
+        public async Task<IActionResult> ToggleRestaurantActive(int restaurantId, [FromBody] RestaurantStatusRequestDTO request)
         {
             if (!ModelState.IsValid)
             {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace MenuOptics.Models.DTOs.Recipe
+namespace MenuOptics.Models.DTOs
 {
     public class GetRecipeDTO
     {

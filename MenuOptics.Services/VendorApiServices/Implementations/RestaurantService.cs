@@ -24,7 +24,7 @@ namespace MenuOptics.Services.VendorApi
             _vendorActivityLog = activityLog;
         }
 
-        public async Task<ResponseDto> SignupRestaurantAsync(CreateRestaurantDto model, int currentUserId)
+        public async Task<ResponseDto> SignupRestaurantAsync(CreateRestaurantDTO model, int currentUserId)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var ResponseDto = new ResponseDto();
@@ -93,7 +93,7 @@ namespace MenuOptics.Services.VendorApi
             }
         }
 
-        public async Task<ResponseDto> UpdateRestaurantAsync(UpdateRestaurantDto model, int currentUserId)
+        public async Task<ResponseDto> UpdateRestaurantAsync(UpdateRestaurantDTO model, int currentUserId)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(model);
             var ResponseDto = new ResponseDto();
@@ -133,7 +133,7 @@ namespace MenuOptics.Services.VendorApi
                 parameters.Add("@ModifiedBy", currentUserId);
                 parameters.Add("@Action", "UPDATE");
 
-                var updated = await connection.QueryFirstOrDefaultAsync<UpdateRestaurantDto>(
+                var updated = await connection.QueryFirstOrDefaultAsync<UpdateRestaurantDTO>(
                     "sp_RestaurantCRUD", parameters,
                     commandType: CommandType.StoredProcedure);
 
@@ -181,7 +181,7 @@ namespace MenuOptics.Services.VendorApi
             }
         }
 
-        public async Task<ResponseDto> ToggleRestaurantActiveAsync(int restaurantId, RestaurantStatusRequestDto request, int currentUserId)
+        public async Task<ResponseDto> ToggleRestaurantActiveAsync(int restaurantId, RestaurantStatusRequestDTO request, int currentUserId)
         {
             var payload = System.Text.Json.JsonSerializer.Serialize(request);
             var ResponseDto = new ResponseDto();

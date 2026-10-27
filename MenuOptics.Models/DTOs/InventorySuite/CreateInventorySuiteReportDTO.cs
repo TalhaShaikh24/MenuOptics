@@ -4,6 +4,6 @@ namespace MenuOptics.Models.DTOs
     {
         public required DateTime StartDate { get; set; }
         public required DateTime EndDate { get; set; }
-        public List<SaveInventorySuiteItemDTO>? Items { get; set; } = new();
+        public List<SaveInventorySuiteItemDTO>? Items { get; set; }
     }
 }

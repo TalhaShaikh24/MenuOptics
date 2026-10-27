@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace MenuOptics.Models
 {
-    public class UpdateRestaurantDto
+    public class UpdateRestaurantDTO
     {
         public int RestaurantId { get; set; }
         public string? FirstName { get; set; }

@@ -5,7 +5,7 @@ namespace MenuOptics.Models.DTOs
         public int PrivateVendorId { get; set; }
         public string? InvoiceId { get; set; }
         public DateTime? InvoiceDate { get; set; }
-        public List<SaveInvoiceItemDTO> Items { get; set; } = new();
-        public bool UpdatePrices { get; set; } = false;
+        public List<SaveInvoiceItemDTO>? Items { get; set; }
+        public bool UpdatePrices { get; set; }
     }
 }

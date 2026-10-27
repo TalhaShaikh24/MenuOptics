@@ -4,6 +4,6 @@ namespace MenuOptics.Models.DTOs
     {
         public int RestaurantId { get; set; }
         public string? InvoiceId { get; set; } // Optional
-        public List<VendorInvoiceItemDTO> Items { get; set; } = new();
+        public List<VendorInvoiceItemDTO>? Items { get; set; }
     }
 }

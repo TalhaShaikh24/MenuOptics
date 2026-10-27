@@ -4,27 +4,17 @@ using Microsoft.AspNetCore.Http;
 
 namespace MenuOptics.Models
 {
-    public class CreateRestaurantDto
+    public class CreateRestaurantDTO
     {
-        [Required(ErrorMessage = "restaurantId is required.")]
         public int RestaurantId { get; set; }
-
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
-
-        [Required(ErrorMessage = "username is required.")]
-        public string Username { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "email is required.")]
-        public string Email { get; set; } = string.Empty;
-
+        public required string Username { get; set; }
+        public required string Email { get; set; }
         public string? Phone { get; set; }
         public string? ProfilePic { get; set; }
-
-        [Required(ErrorMessage = "restaurantName is required.")]
-        public string RestaurantName { get; set; } = string.Empty;
+        public required string RestaurantName { get; set; }
         public string? SubscriptionType { get; set; }
-
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }
         public int? CreatedBy { get; set; }

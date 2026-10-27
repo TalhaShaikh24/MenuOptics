@@ -41,19 +41,19 @@ namespace MenuOptics.Services
                     {
                         try
                         {
-                            inv.Items = System.Text.Json.JsonSerializer.Deserialize<List<InventoryInvoiceItemDetailDTO>>(
+                            inv.Items = System.Text.Json.JsonSerializer.Deserialize<List<GetInvoiceItemDTO>>(
                                 inv.ItemsJson,
                                 new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
-                            ) ?? new List<InventoryInvoiceItemDetailDTO>();
+                            ) ?? new List<GetInvoiceItemDTO>();
                         }
                         catch
                         {
-                            inv.Items = new List<InventoryInvoiceItemDetailDTO>();
+                            inv.Items = new List<GetInvoiceItemDTO>();
                         }
                     }
                     else
                     {
-                        inv.Items = new List<InventoryInvoiceItemDetailDTO>();
+                        inv.Items = new List<GetInvoiceItemDTO>();
                     }
                 }
 
