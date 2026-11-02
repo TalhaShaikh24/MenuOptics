@@ -337,6 +337,8 @@ function refreshIngredientsTable() {
 }
 
 function addIngredient(ingredientData) {
+    const $btn = $('#addIngredientBtn2');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/IngredientApi/CreateIngredient',
         method: 'POST',
@@ -355,6 +357,9 @@ function addIngredient(ingredientData) {
             updateSizeUnitBadge('#ingredientUnit', '#ingredientSizeUnitBadge', '#ingredientSize');
             toggleSizePackSizeByType('', '#ingredientSize', '#ingredientPackSize');
             closeModal('addIngredientModal');
+        },
+        onComplete: function () {
+            setBtnLoading($btn, false);
         }
     });
 }
@@ -417,6 +422,8 @@ function getIngredientById(id) {
 }
 
 function updateIngredient(ingredientData) {
+    const $btn = $('#updateIngredientBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/IngredientApi/UpdateIngredient',
         method: 'PUT',
@@ -434,6 +441,9 @@ function updateIngredient(ingredientData) {
             refreshIngredientsTable();
             closeModal('editIngredientModal');
             showNotification('Ingredient updated successfully.', 'success');
+        },
+        onComplete: function () {
+            setBtnLoading($btn, false);
         }
     });
 }

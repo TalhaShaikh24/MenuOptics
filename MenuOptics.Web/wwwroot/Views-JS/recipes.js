@@ -296,6 +296,8 @@ function validateRecipeData(formData) {
 }
 
 function addRecipe(formData) {
+    const $btn = $('#saveRecipeBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/RecipeApi/CreateRecipe',
         method: 'POST',
@@ -312,11 +314,16 @@ function addRecipe(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add recipe:', error);
+        },
+        onComplete: function () {
+            setBtnLoading($btn, false);
         }
     });
 }
 
 function updateRecipe(formData) {
+    const $btn = $('#updateRecipeBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/RecipeApi/UpdateRecipe',
         method: 'PUT',
@@ -330,6 +337,9 @@ function updateRecipe(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update recipe:', error);
+        },
+        onComplete: function () {
+            setBtnLoading($btn, false);
         }
     });
 }

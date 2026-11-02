@@ -326,7 +326,8 @@
             <div style="display: flex; gap: 8px;">
                 <button class="btn btn-outline" onclick="closeAddInvoiceModal()">Cancel</button>
                 <button class="btn btn-primary" id="submitInvoiceBtn" onclick="submitAddInvoice()">
-                    <i class="fas fa-save"></i> Save Invoice
+                    <span class="btn-text"><i class="fas fa-save"></i> Save Invoice</span>
+                    <i class="fas fa-spinner fa-spin btn-loading" style="display: none;"></i>
                 </button>
             </div>
         </div>
@@ -422,7 +423,8 @@
             <div style="display: flex; gap: 8px;">
                 <button class="btn btn-outline" onclick="closeEditInvoiceModal()">Cancel</button>
                 <button class="btn btn-primary" id="updateInvoiceBtn" onclick="submitEditInvoice()">
-                    <i class="fas fa-save"></i> Update Invoice
+                    <span class="btn-text"><i class="fas fa-save"></i> Update Invoice</span>
+                    <i class="fas fa-spinner fa-spin btn-loading" style="display: none;"></i>
                 </button>
             </div>
         </div>

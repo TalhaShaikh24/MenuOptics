@@ -93,6 +93,8 @@ function validateRestaurantData(formData) {
 }
 
 function addRestaurant(formData) {
+    const $btn = $('#saveRestaurantBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/UserApi/CreateUser',
         method: 'POST',
@@ -108,7 +110,8 @@ function addRestaurant(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add restaurant:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
@@ -150,6 +153,8 @@ function getRestaurantById(id) {
 }
 
 function updateRestaurant(formData) {
+    const $btn = $('#updateRestaurantBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/UserApi/UpdateUser',
         method: 'PUT',
@@ -163,7 +168,8 @@ function updateRestaurant(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update restaurant:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
