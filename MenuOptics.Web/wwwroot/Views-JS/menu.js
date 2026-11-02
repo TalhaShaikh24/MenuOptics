@@ -41,6 +41,7 @@ $(document).ready(function () {
     });
 
     refreshMenuGrid();
+    initCategoryTabsSlider();
 
     $('#exportMenuPdfBtn').on('click', function () {
         ajaxRequest({
@@ -670,9 +671,64 @@ function renderCategoryTabs(categoryList) {
     $('.tab-btn').on('click', function () {
         $('.tab-btn').removeClass('active');
         $(this).addClass('active');
+        scrollCategoryTabIntoView(this, true);
         const categoryId = $(this).data('category');
         filterMenuItems(categoryId);
     });
+
+    updateCategoryTabsArrows();
+    const activeTab = $('.tab-btn.active')[0];
+    if (activeTab) {
+        scrollCategoryTabIntoView(activeTab, false);
+    }
+}
+
+function initCategoryTabsSlider() {
+    const container = document.getElementById('categoryTabs');
+    if (!container) {
+        return;
+    }
+
+    $('#categoryTabsPrev').on('click', function () {
+        container.scrollBy({ left: -container.clientWidth * 0.8, behavior: 'smooth' });
+    });
+
+    $('#categoryTabsNext').on('click', function () {
+        container.scrollBy({ left: container.clientWidth * 0.8, behavior: 'smooth' });
+    });
+
+    $(container).on('scroll', updateCategoryTabsArrows);
+    $(window).on('resize', updateCategoryTabsArrows);
+}
+
+// Arrows only appear when the tabs overflow; each disables at its scroll end.
+function updateCategoryTabsArrows() {
+    const container = document.getElementById('categoryTabs');
+    if (!container) {
+        return;
+    }
+
+    const hasOverflow = container.scrollWidth > container.clientWidth;
+    $('#categoryTabsPrev, #categoryTabsNext').toggleClass('is-hidden', !hasOverflow);
+    if (!hasOverflow) {
+        return;
+    }
+
+    const maxScroll = container.scrollWidth - container.clientWidth;
+    $('#categoryTabsPrev').prop('disabled', container.scrollLeft <= 0);
+    $('#categoryTabsNext').prop('disabled', container.scrollLeft >= maxScroll - 1);
+}
+
+function scrollCategoryTabIntoView(tab, smooth) {
+    const container = document.getElementById('categoryTabs');
+    if (!container || !tab) {
+        return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const tabRect = tab.getBoundingClientRect();
+    const delta = (tabRect.left + tabRect.width / 2) - (containerRect.left + containerRect.width / 2);
+    container.scrollBy({ left: delta, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 function toggleMenuItemActive(id) {

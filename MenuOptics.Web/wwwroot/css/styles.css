@@ -2134,14 +2134,64 @@ input:checked + .toggle-label {
 }
 
 /* Menu Tabs */
+.menu-tabs-slider {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
 .menu-tabs {
+    flex: 1;
+    min-width: 0;
     display: flex;
     gap: 8px;
     margin-bottom: 24px;
     border-bottom: 1px solid #e5e7eb;
     overflow-x: auto;
     padding-bottom: 16px;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
 }
+
+    .menu-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+.tabs-arrow {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+    .tabs-arrow:hover {
+        background: #f08d11;
+        border-color: #f08d11;
+        color: #fff;
+    }
+
+    .tabs-arrow:disabled {
+        opacity: 0.35;
+        cursor: default;
+    }
+
+        .tabs-arrow:disabled:hover {
+            background: #fff;
+            border-color: #e5e7eb;
+            color: #6b7280;
+        }
+
+    .tabs-arrow.is-hidden {
+        display: none;
+    }
 
 .tab-btn {
     padding: 8px 16px;
