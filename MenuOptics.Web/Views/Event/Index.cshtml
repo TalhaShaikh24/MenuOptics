@@ -193,7 +193,10 @@
             </form>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+            <button class="btn btn-primary" id="saveEventBtn" onclick="saveEvent()">
+                <span class="btn-text">Save Event</span>
+                <i class="fas fa-spinner fa-spin btn-loading" style="display: none;"></i>
+            </button>
             <button class="btn btn-light" onclick="closeModal('eventModal')">Cancel</button>
         </div>
     </div>
@@ -220,7 +223,10 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-success" onclick="saveNewCustomItem()">Create & Add</button>
+            <button class="btn btn-success" id="saveCustomItemBtn" onclick="saveNewCustomItem()">
+                <span class="btn-text">Create & Add</span>
+                <i class="fas fa-spinner fa-spin btn-loading" style="display: none;"></i>
+            </button>
         </div>
     </div>
 </div>

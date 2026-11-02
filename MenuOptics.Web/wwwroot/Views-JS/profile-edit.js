@@ -15,8 +15,10 @@ $(document).ready(function () {
     });
 
     $('#saveProfileBtn').on('click', function () {
+        const $btn = $(this);
         const formData = new FormData(document.getElementById('profileEditForm'));
 
+        setBtnLoading($btn, true);
         ajaxRequest({
             url: '/api/UserApi/UpdateCurrentUser',
             method: 'PUT',
@@ -26,7 +28,8 @@ $(document).ready(function () {
             onSuccess: function (response) {
                 localStorage.setItem('profilePic', response.data.profilePic);
                 showNotification('Profile updated successfully!', 'success');
-            }
+            },
+            onComplete: function () { setBtnLoading($btn, false); }
         });
     });
 });

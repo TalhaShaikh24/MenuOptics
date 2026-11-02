@@ -99,6 +99,9 @@ function loadAllPolicies() {
 }
 
 function savePolicy(type, content) {
+    const $btn = $('#savePolicyBtn');
+    setBtnLoading($btn, true);
+
     // Update the local copy first so the unsaved-changes check stays in sync.
     allPolicies[type] = content;
 
@@ -115,7 +118,8 @@ function savePolicy(type, content) {
         onError: function (xhr, status, error) {
             console.error('Failed to save policy:', error);
             showNotification('Failed to save policy.', 'error');
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 

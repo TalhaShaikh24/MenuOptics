@@ -93,6 +93,7 @@ function toggleEventActive(id) {
 }
 
 function saveNewCustomItem() {
+    const $btn = $('#saveCustomItemBtn');
     const name = $('#newCustomName').val().trim();
     const cost = parseFloat($('#newCustomCost').val());
     const sellingPrice = parseFloat($('#newCustomSellingPrice').val());
@@ -104,6 +105,7 @@ function saveNewCustomItem() {
 
     const validSellingPrice = isNaN(sellingPrice) ? 0 : sellingPrice;
 
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/EventOnlyItemApi/Create',
         method: 'POST',
@@ -126,11 +128,13 @@ function saveNewCustomItem() {
             const newIdStr = itemId.toString();
             if (!vals.includes(newIdStr)) vals.push(newIdStr);
             $('#eventOnlyItemSelect').val(vals).trigger('change');
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
 function saveEvent() {
+    const $btn = $('#saveEventBtn');
     const name = $('#eventName').val().trim();
     const date = $('#eventDate').val();
     const guests = parseFloat($('#guestCount').val()) || 0;
@@ -168,6 +172,7 @@ function saveEvent() {
     };
 
     const isUpdate = payload.EventId != 0;
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: isUpdate ? '/api/EventApi/UpdateEvent' : '/api/EventApi/CreateEvent',
         method: isUpdate ? 'PUT' : 'POST',
@@ -177,7 +182,8 @@ function saveEvent() {
             loadEvents();
             showNotification('Event saved successfully!', 'success');
         },
-        onError: err => showNotification('Error saving event: ' + err.statusText, 'error')
+        onError: err => showNotification('Error saving event: ' + err.statusText, 'error'),
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 

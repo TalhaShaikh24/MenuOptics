@@ -58,6 +58,9 @@ $(document).ready(function () {
 });
 
 function addMember(formData) {
+    const $btn = $('#saveMemberBtn');
+    setBtnLoading($btn, true);
+
     const payload = {};
     formData.forEach((value, key) => {
         payload[key] = value;
@@ -76,7 +79,8 @@ function addMember(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add member:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
@@ -121,6 +125,8 @@ window.editMember = function (id) {
 };
 
 function updateMember(formData) {
+    const $btn = $('#updateMemberBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/UserApi/UpdateRestaurantMember',
         method: 'PUT',
@@ -135,7 +141,8 @@ function updateMember(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update member:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 

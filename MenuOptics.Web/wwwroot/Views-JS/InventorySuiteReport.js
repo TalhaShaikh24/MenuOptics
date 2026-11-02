@@ -160,7 +160,7 @@ $(document).ready(function () {
             $('#startDateMinHint').hide();
         }
 
-        $('#saveInventoryBtn').prop('disabled', false).html('Save Inventory');
+        setBtnLoading($('#saveInventoryBtn'), false);
         openModal('addReportModal');
     }
 
@@ -210,6 +210,9 @@ $(document).ready(function () {
             return;
         }
 
+        const $btn = $(this);
+        setBtnLoading($btn, true);
+
         closeModal('addReportModal');
 
         currentMode = 'INSERT';
@@ -252,7 +255,7 @@ $(document).ready(function () {
         }
 
         const $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
+        setBtnLoading($btn, true);
 
         // Merge any on-screen inputs not yet tracked before submitting.
         $('.new-report-closing-input').each(function () {
@@ -277,7 +280,7 @@ $(document).ready(function () {
         }));
 
         if (itemsPayload.length === 0) {
-            $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Inventory');
+            setBtnLoading($btn, false);
             showNotification('Please enter closing count for at least one ingredient.', 'warning');
             return;
         }
@@ -295,7 +298,6 @@ $(document).ready(function () {
             contentType: 'application/json',
             showMessage: false,
             onSuccess: function (response) {
-                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Inventory');
                 showNotification(response.responseMsg || 'Inventory created successfully.', 'success');
 
                 reportsList = reportsList.filter(r => !r.isDraft);
@@ -313,12 +315,12 @@ $(document).ready(function () {
                 loadInventorySuiteReports(newReportId);
             },
             onError: function (xhr) {
-                $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Inventory');
                 const errorMsg = (xhr.responseJSON && xhr.responseJSON.responseMsg)
                     ? xhr.responseJSON.responseMsg
                     : 'Failed to insert inventory.';
                 showNotification(errorMsg, 'error');
-            }
+            },
+            onComplete: function () { setBtnLoading($btn, false); }
         });
     });
 
@@ -348,7 +350,7 @@ $(document).ready(function () {
         };
 
         const $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
+        setBtnLoading($btn, true);
 
         ajaxRequest({
             url: '/api/InventorySuiteReportApi/UpdateInventorySuiteReport',
@@ -357,7 +359,7 @@ $(document).ready(function () {
             contentType: 'application/json',
             showMessage: false,
             onSuccess: function (response) {
-                $btn.html('<i class="fas fa-check-circle"></i> Update Inventory');
+                setBtnLoading($btn, false);
 
                 $('.cogs-report-table td.editable-closing').each(function () {
                     const val = parseFloat($(this).text().trim().replace(/,/g, '')) || 0;
@@ -373,7 +375,7 @@ $(document).ready(function () {
                 refreshInventorySuiteReportTable(startDate, currentEndDate, false);
             },
             onError: function (xhr) {
-                $btn.prop('disabled', false).html('<i class="fas fa-check-circle"></i> Update Inventory');
+                setBtnLoading($btn, false);
                 console.error('Failed to update closing counts:', xhr);
                 const errorMsg = (xhr.responseJSON && xhr.responseJSON.responseMsg)
                     ? xhr.responseJSON.responseMsg
@@ -662,7 +664,8 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
             tbody.append('<tr><td colspan="10" class="text-center">Failed to load inventory. Please try again.</td></tr>');
             resetFooterValues();
             setupReportTable();
-        }
+        },
+        onComplete: function () { setBtnLoading($('#saveReportBtn'), false); }
     });
 }
 

@@ -129,7 +129,7 @@ function submitAddSale() {
     };
 
     const $btn = $('#submitSaleBtn');
-    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+    setBtnLoading($btn, true);
 
     ajaxRequest({
         url: '/api/SalesApi/CreateSale',
@@ -142,8 +142,8 @@ function submitAddSale() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to create sale:', error);
-            $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Save Sale');
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
@@ -198,7 +198,7 @@ function submitEditSale() {
     };
 
     const $btn = $('#updateSaleBtn');
-    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
+    setBtnLoading($btn, true);
 
     ajaxRequest({
         url: '/api/SalesApi/UpdateSale',
@@ -211,8 +211,8 @@ function submitEditSale() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update sale:', error);
-            $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Update Sale');
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
@@ -353,7 +353,7 @@ function openAddSaleModal() {
     $('#saleCsvFileInput').val('');
     syncSaleItemsView();
 
-    $('#submitSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Sale');
+    setBtnLoading($('#submitSaleBtn'), false);
     openModal('addSaleModal');
 }
 
@@ -493,7 +493,7 @@ function editSale(saleId) {
     $('#editMenuItemSelector').val('').trigger('change.select2');
     syncEditSaleItemsView();
 
-    $('#updateSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Update Sale');
+    setBtnLoading($('#updateSaleBtn'), false);
     openModal('editSaleModal');
 }
 

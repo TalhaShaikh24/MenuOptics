@@ -549,6 +549,8 @@ function validateMenuData(formData) {
 }
 
 function addMenuItem(formData) {
+    const $btn = $('#saveMenuItemBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/MenuApi/CreateMenuItem',
         method: 'POST',
@@ -565,6 +567,9 @@ function addMenuItem(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add menu item:', error);
+        },
+        onComplete: function () {
+            setBtnLoading($btn, false);
         }
     });
 }
@@ -628,6 +633,8 @@ function getMenuItemById(id) {
 }
 
 function updateMenuItem(formData) {
+    const $btn = $('#updateMenuItemBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/MenuApi/UpdateMenuItem',
         method: 'PUT',
@@ -640,6 +647,9 @@ function updateMenuItem(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update menu item:', error);
+        },
+        onComplete: function () {
+            setBtnLoading($btn, false);
         }
     });
 }

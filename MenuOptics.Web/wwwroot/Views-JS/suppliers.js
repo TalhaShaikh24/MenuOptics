@@ -104,6 +104,8 @@ function getSupplierById(id) {
 }
 
 function addSupplier(name) {
+    const $btn = $('#addSupplierBtn2');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/PrivateVendorApi/CreatePrivateVendor',
         method: 'POST',
@@ -116,11 +118,14 @@ function addSupplier(name) {
         onError: function (xhr, status, error) {
             console.error('Failed to add supplier:', error);
             showNotification('Failed to add supplier.', 'error');
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
 function updateSupplier(supplierData) {
+    const $btn = $('#updateSupplierBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/PrivateVendorApi/UpdatePrivateVendor',
         method: 'PUT',
@@ -136,7 +141,8 @@ function updateSupplier(supplierData) {
         onError: function (xhr, status, error) {
             console.error('Failed to update supplier:', error);
             showNotification('Failed to update supplier.', 'error');
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
