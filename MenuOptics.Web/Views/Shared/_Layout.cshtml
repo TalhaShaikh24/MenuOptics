@@ -40,54 +40,12 @@
     <!-- Shared loading component (all DataTables) -->
     <link rel="stylesheet" href="~/css/loadingComponent.css?v=@DateTime.Now.Ticks" />
 
-
     <link href="~/css/error-popup.css" rel="stylesheet" />
     <link href="~/css/contact-modal.css?v=@DateTime.Now.Ticks" rel="stylesheet" />
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
 
-
 </head>
 <body>
-    <style>
-        .availability-badge {
-            display: none !important;
-        }
-
-        .menu-item-content .stat {
-            display: none !important;
-        }
-
-        .policies {
-            margin-top: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .policies .policies-link {
-            font-size: 14px;
-            color: #898989;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .policies .policies-link:hover {
-            color: #f08d11;
-        }
-        .policies .welcome-video-sidebar-link {
-            color: #f08d11;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.2s ease;
-        }
-        .policies .welcome-video-sidebar-link:hover {
-            color: #e07c0a;
-        }
-        .policies .welcome-video-sidebar-link i {
-            font-size: 15px;
-        }
-    </style>
     <span id="subscriptioStatus" class="stripe-alert danger" style="display:none;"></span>
     <div class="dashboard-container">
         <!-- Sidebar -->
@@ -121,8 +79,6 @@
                     <input type="text" placeholder="Search..." class="search-input">
                 </div>
             </div> *@
-
-
 
             <!-- Navigation -->
             <nav class="sidebar-nav">
@@ -326,9 +282,7 @@
                 </div>
             </nav>
 
-
             
-
 
             <!-- Footer -->
             <div class="sidebar-footer">
@@ -365,8 +319,6 @@
         </main>
 
     </div>
-
-
 
     @if (User.IsInRole("Restaurant"))
     {
@@ -435,8 +387,6 @@
     <!-- Shared loading component: must load after DataTables and before page scripts -->
     <script src="~/js/loadingComponent.js?v=@DateTime.Now.Ticks"></script>
 
-
-
     <script src="~/js/dateformatter.js"></script>
     <script src="~/js/script.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/image-preview.js?v=@DateTime.Now.Ticks"></script>
@@ -447,7 +397,6 @@
     <script src="~/js/contact-modal.js?v=@DateTime.Now.Ticks"></script>
     <script src="~/js/module-tutorials.js?v=@DateTime.Now.Ticks"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 
     <script>
         let imageBaseUrl;
@@ -552,7 +501,6 @@
                     e.preventDefault();
                     showWelcomeModal();
                 });
-
 
                 // Close on Escape key
                 $(document).on('keydown', function (e) {
