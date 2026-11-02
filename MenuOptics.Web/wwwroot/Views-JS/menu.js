@@ -400,7 +400,8 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
 
         let displayPrice = '0.00';
         if (savedQuantity) {
-            displayPrice = (recipeData.cost * parseFloat(savedQuantity)).toFixed(2);
+            // currentCost is the cost of the full recipe yield (size), so prorate by quantity — same formula as updateRecipePrice.
+            displayPrice = (recipeData.cost * parseFloat(savedQuantity) / recipeData.size).toFixed(2);
         }
 
         html += `
