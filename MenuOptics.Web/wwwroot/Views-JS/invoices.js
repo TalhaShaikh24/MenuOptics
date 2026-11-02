@@ -274,9 +274,7 @@ function submitAddInvoice() {
         })
     };
 
-    $('#submitInvoiceBtn')
-        .prop('disabled', true)
-        .html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+    setBtnLoading($('#submitInvoiceBtn'), true);
 
     ajaxRequest({
         url: '/api/InventoryApi/CreateInvoice',
@@ -289,11 +287,8 @@ function submitAddInvoice() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to create invoice:', error);
-
-            $('#submitInvoiceBtn')
-                .prop('disabled', false)
-                .html('<i class="fas fa-save"></i> Save Invoice');
-        }
+        },
+        onComplete: function () { setBtnLoading($('#submitInvoiceBtn'), false); }
     });
 }
 
@@ -361,9 +356,7 @@ function submitEditInvoice() {
         })
     };
 
-    $('#updateInvoiceBtn')
-        .prop('disabled', true)
-        .html('<i class="fas fa-spinner fa-spin"></i> Updating...');
+    setBtnLoading($('#updateInvoiceBtn'), true);
 
     ajaxRequest({
         url: '/api/InventoryApi/UpdateInvoice',
@@ -376,11 +369,8 @@ function submitEditInvoice() {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update invoice:', error);
-
-            $('#updateInvoiceBtn')
-                .prop('disabled', false)
-                .html('<i class="fas fa-save"></i> Update Invoice');
-        }
+        },
+        onComplete: function () { setBtnLoading($('#updateInvoiceBtn'), false); }
     });
 }
 
@@ -614,9 +604,7 @@ function openAddInvoiceModal() {
 
     resetIngredientSelector();
 
-    $('#submitInvoiceBtn')
-        .prop('disabled', false)
-        .html('<i class="fas fa-save"></i> Save Invoice');
+    setBtnLoading($('#submitInvoiceBtn'), false);
 
     $('#addUpdatePricesToggle').prop('checked', false).trigger('change');
 
@@ -783,9 +771,7 @@ function editInvoice(inventoryInvoiceId) {
             resetEditIngredientSelector();
         }
 
-        $('#updateInvoiceBtn')
-            .prop('disabled', false)
-            .html('<i class="fas fa-save"></i> Update Invoice');
+        setBtnLoading($('#updateInvoiceBtn'), false);
 
         $('#editUpdatePricesToggle').prop('checked', false).trigger('change');
 

@@ -180,10 +180,12 @@
         <h3><i class="fas fa-chart-line"></i> Inventory Cost Overview</h3>
         <div id="reportActionContainer" style="display: flex; gap: 8px; align-items: center;">
             <button class="btn btn-primary" id="saveInventoryBtn" style="display: none;">
-                <i class="fas fa-plus-circle"></i> Save Inventory
+                <span class="btn-text"><i class="fas fa-plus-circle"></i> Save Inventory</span>
+                <i class="fas fa-spinner fa-spin btn-loading" style="display: none;"></i>
             </button>
             <button class="btn btn-primary" id="updateInventoryBtn" disabled style="display: none;">
-                <i class="fas fa-check-circle"></i> Update Inventory
+                <span class="btn-text"><i class="fas fa-check-circle"></i> Update Inventory</span>
+                <i class="fas fa-spinner fa-spin btn-loading" style="display: none;"></i>
             </button>
         </div>
     </div>
@@ -269,7 +271,10 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" type="button" onclick="closeModal('addReportModal')">Cancel</button>
-            <button id="saveReportBtn" class="btn btn-primary" type="button">Start</button>
+            <button id="saveReportBtn" class="btn btn-primary" type="button">
+                <span class="btn-text">Start</span>
+                <i class="fas fa-spinner fa-spin btn-loading" style="display: none;"></i>
+            </button>
         </div>
     </div>
 </div>

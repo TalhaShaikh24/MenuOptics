@@ -43,6 +43,8 @@ $(document).ready(function () {
 });
 
 function addUser(formData) {
+    const $btn = $('#saveUserBtn');
+    setBtnLoading($btn, true);
     formData.isActive = formData.isActive == 'on' ? 1 : 0;
     ajaxRequest({
         url: '/api/UserApi/CreateUser',
@@ -59,7 +61,8 @@ function addUser(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add user:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
@@ -99,6 +102,8 @@ function getUserById(id) {
 }
 
 function updateUser(formData) {
+    const $btn = $('#updateUserBtn');
+    setBtnLoading($btn, true);
     formData.isActive = formData.isActive == 'on' ? 1 : 0;
     ajaxRequest({
         url: '/api/UserApi/UpdateUser',
@@ -113,7 +118,8 @@ function updateUser(formData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update user:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 

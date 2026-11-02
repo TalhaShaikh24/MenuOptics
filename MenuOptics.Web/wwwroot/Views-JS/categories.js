@@ -102,6 +102,8 @@ function getCategoryById(id) {
 }
 
 function addCategory(categoryData) {
+    const $btn = $('#addCategoryBtn2');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/CategoryApi/CreateCategory',
         method: 'POST',
@@ -115,11 +117,14 @@ function addCategory(categoryData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to add category:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
 function updateCategory(categoryData) {
+    const $btn = $('#updateCategoryBtn');
+    setBtnLoading($btn, true);
     ajaxRequest({
         url: '/api/CategoryApi/UpdateCategory',
         method: 'PUT',
@@ -134,7 +139,8 @@ function updateCategory(categoryData) {
         },
         onError: function (xhr, status, error) {
             console.error('Failed to update category:', error);
-        }
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
     });
 }
 
