@@ -16,7 +16,7 @@ let allEventsData = [];
 let eventTable;
 
 $(document).ready(function () {
-    loadEvents();
+    initEventsTable();
     loadMenuItems();
     loadEventOnlyItems();
     initEventCalculations();
@@ -63,18 +63,121 @@ function loadEventOnlyItems() {
     });
 }
 
-function loadEvents() {
-    LoadingComponent.showForTable('.events-table', 'Loading events...');
-    ajaxRequest({
-        url: '/api/EventApi/GetAllEvents',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: res => {
-            allEventsData = res.data;
-            rebuildEventsTable(res.data);
+function initEventsTable() {
+    eventTable = initDataTable('.events-table', {
+        processing: true,
+        loadingMessage: 'Loading events...',
+        ajax: function (dtParams, callback, settings) {
+            $.ajax({
+                url: '/api/EventApi/GetAllEvents',
+                method: 'GET',
+                success: function (response) {
+                    const events = response.data || [];
+                    allEventsData = events;
+                    callback({ data: events });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch events:', error);
+                    callback({ data: [] });
+                }
+            });
         },
-        onComplete: function () { LoadingComponent.hideForTable('.events-table'); }
+        columns: [
+            {
+                data: 'eventName',
+                render: function (eventName, type, row) {
+                    const event = row;
+                    return `
+                    <div class="ingredient-info">
+                        <p class="ingredient-name">${event.eventName}</p>
+                        <p class="ingredient-meta"><i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(event.eventDate)}</p>
+                    </div>`;
+                }
+            },
+            {
+                data: 'numberOfGuests',
+                render: function (numberOfGuests, type, row) {
+                    const event = row;
+                    return `<span class="category-badge">${event.numberOfGuests} Guests</span>`;
+                }
+            },
+            {
+                data: 'pricePerGuest',
+                render: function (pricePerGuest, type, row) {
+                    const event = row;
+                    return `$${event.pricePerGuest.toFixed(2)}`;
+                }
+            },
+            {
+                data: 'totalFoodCost',
+                render: function (totalFoodCost, type, row) {
+                    const event = row;
+                    return `$${event.totalFoodCost.toFixed(2)}`;
+                }
+            },
+            {
+                data: 'totalRevenue',
+                render: function (totalRevenue, type, row) {
+                    const event = row;
+                    return `$${event.totalRevenue.toFixed(2)}`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const event = row;
+                    return `$${(event.totalRevenue - event.totalFoodCost).toFixed(2)}`;
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (isActive, type, row) {
+                    const event = row;
+                    return `<span class="status-badge ${event.isActive ? 'good' : 'critical'}">${event.isActive ? 'Active' : 'Inactive'}</span>`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const event = row;
+                    const actionText = event.isActive ? 'Deactivate' : 'Activate';
+                    const actionIcon = event.isActive ? 'fas fa-ban' : 'fas fa-check';
+                    return `
+                    <div class="dropdown">
+                        <button class="dropdown-toggle"><i class="fas fa-ellipsis-h"></i></button>
+                        <div class="dropdown-menu">
+                            <a href="#" onclick="editEvent(${event.eventId})"><i class="fas fa-edit"></i> Edit Details</a>
+                            <a href="#" onclick="toggleEventActive(${event.eventId})"><i class="${actionIcon}"></i> ${actionText}</a>
+                            <a href="#" onclick="duplicateEvent(${event.eventId})"><i class="fas fa-copy"></i> Duplicate</a>
+                            <a href="#" onclick="exportSingleEventPDF(${event.eventId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
+                        </div>
+                    </div>`;
+                }
+            }
+        ],
+        createdRow: function (row, data) {
+            $(row).attr('data-event-id', data.eventId);
+        },
+        language: { searchPlaceholder: 'Search events...' },
+        dom: 'Brtip',
+        buttons: [{
+            extend: 'csv', text: 'Export CSV', className: 'buttons-csv',
+            filename: 'Events_Report_' + new Date().toISOString().split('T')[0],
+            exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
+        }]
     });
+}
+
+function loadEvents() {
+    if (!eventTable) {
+        initEventsTable();
+        return;
+    }
+
+    // The old flow destroyed and rebuilt the table on every load, which reset
+    // paging and cleared the table search — the reload mirrors that.
+    eventTable.search('');
+    eventTable.ajax.reload(null, true);
 }
 
 function toggleEventActive(id) {
@@ -254,51 +357,6 @@ function duplicateEvent(id) {
             loadEvents();
             if (res.data?.eventId) setTimeout(() => editEvent(res.data.eventId), 500);
         }
-    });
-}
-
-function rebuildEventsTable(events) {
-    const tbody = $('.events-table tbody').empty();
-
-    events.forEach(event => {
-        const actionText = event.isActive ? 'Deactivate' : 'Activate';
-        const actionIcon = event.isActive ? 'fas fa-ban' : 'fas fa-check';
-        tbody.append(`
-            <tr data-event-id="${event.eventId}">
-                <td>
-                    <div class="ingredient-info">
-                        <p class="ingredient-name">${event.eventName}</p>
-                        <p class="ingredient-meta"><i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(event.eventDate)}</p>
-                    </div>
-                </td>
-                <td><span class="category-badge">${event.numberOfGuests} Guests</span></td>
-                <td>$${event.pricePerGuest.toFixed(2)}</td>
-                <td>$${event.totalFoodCost.toFixed(2)}</td>
-                <td>$${event.totalRevenue.toFixed(2)}</td>
-                <td>$${(event.totalRevenue - event.totalFoodCost).toFixed(2)}</td>
-                <td><span class="status-badge ${event.isActive ? 'good' : 'critical'}">${event.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td>
-                    <div class="dropdown">
-                        <button class="dropdown-toggle"><i class="fas fa-ellipsis-h"></i></button>
-                        <div class="dropdown-menu">
-                            <a href="#" onclick="editEvent(${event.eventId})"><i class="fas fa-edit"></i> Edit Details</a>
-                            <a href="#" onclick="toggleEventActive(${event.eventId})"><i class="${actionIcon}"></i> ${actionText}</a>
-                            <a href="#" onclick="duplicateEvent(${event.eventId})"><i class="fas fa-copy"></i> Duplicate</a>
-                            <a href="#" onclick="exportSingleEventPDF(${event.eventId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
-                        </div>
-                    </div>
-                </td>
-            </tr>`);
-    });
-
-    eventTable = initDataTable('.events-table', {
-        language: { searchPlaceholder: 'Search events...' },
-        dom: 'Brtip',
-        buttons: [{
-            extend: 'csv', text: 'Export CSV', className: 'buttons-csv',
-            filename: 'Events_Report_' + new Date().toISOString().split('T')[0],
-            exportOptions: { columns: [0, 1, 2, 3, 4, 5] }
-        }]
     });
 }
 

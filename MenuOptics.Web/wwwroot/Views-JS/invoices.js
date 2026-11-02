@@ -9,6 +9,124 @@ let vendorIngredients = [];
 
 $(document).ready(function () {
     table = initDataTable('#invoicesTable', {
+        processing: true,
+        loadingMessage: 'Loading invoices...',
+        ajax: function (dtParams, callback, settings) {
+            $.ajax({
+                url: '/api/InventoryApi/GetInventoryInvoices',
+                method: 'GET',
+                success: function (response) {
+                    allInvoices = response.data || [];
+                    updateStats();
+                    callback({ data: allInvoices });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to load inventory invoices:', error);
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const invoice = row;
+                    const invoiceNum = invoice.invoiceId || ('INV-' + invoice.inventoryInvoiceId);
+                    return `
+                <div class="category-info">
+                    <p class="category-name">${invoiceNum}</p>
+                </div>`;
+                }
+            },
+            {
+                data: 'invoiceDate',
+                render: function (invoiceDateValue, type, row) {
+                    const invoice = row;
+                    const invoiceDate = invoice.invoiceDate ? formatInvoiceDate(invoice.invoiceDate) : '-';
+                    return `
+                <i class="fas fa-calendar-alt" style="color: #6b7280; margin-right: 5px;"></i>
+                ${invoiceDate}`;
+                }
+            },
+            {
+                data: 'vendorName',
+                render: function (vendorNameValue, type, row) {
+                    const invoice = row;
+                    const vendorName = invoice.vendorName || 'N/A';
+                    return `
+                <i class="fas fa-truck"></i>
+                ${vendorName}`;
+                }
+            },
+            {
+                data: 'total',
+                className: 'text-right',
+                render: function (total, type, row) {
+                    const invoice = row;
+                    return `
+                ${formatCurrency(invoice.total)}`;
+                }
+            },
+            {
+                data: null,
+                className: 'text-center',
+                render: function (data, type, row) {
+                    const invoice = row;
+                    const items = invoice.items || (invoice.itemsJson ? parseItems(invoice.itemsJson) : []);
+                    return `
+                <span class="status-badge good">${items.length}</span>`;
+                }
+            },
+            {
+                data: null,
+                className: 'hidden',
+                render: function (data, type, row) {
+                    const invoice = row;
+                    const items = invoice.items || (invoice.itemsJson ? parseItems(invoice.itemsJson) : []);
+                    return items.map(i => i.ingredientName || '').join(', ');
+                }
+            },
+            {
+                data: null,
+                className: 'hidden',
+                render: function (data, type, row) {
+                    const invoice = row;
+                    const items = invoice.items || (invoice.itemsJson ? parseItems(invoice.itemsJson) : []);
+                    return items.map(i => i.vendorProductId || '').join(', ');
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const invoice = row;
+                    const hasVendorId =
+                        invoice.vendorId != null &&
+                        invoice.vendorId !== 0 &&
+                        invoice.vendorId !== '';
+                    const editBtnHtml = !hasVendorId
+                        ? `
+        <a href="#" onclick="editInvoice(${invoice.inventoryInvoiceId}); return false;">
+            <i class="fas fa-edit"></i> Edit Details
+        </a>
+    `
+                        : '';
+                    return `
+                <div class="dropdown">
+                    <button class="dropdown-toggle">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+
+                    <div class="dropdown-menu">
+                        <a href="#" onclick="viewInvoiceDetails(${invoice.inventoryInvoiceId}); return false;">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+
+                        ${editBtnHtml}
+                    </div>
+                </div>`;
+                }
+            }
+        ],
         language: { searchPlaceholder: 'Search invoices...' }
     });
 
@@ -55,27 +173,13 @@ $(document).ready(function () {
         $('#editUpdatePricesContainer').toggleClass('active', on);
     });
 
-    refreshInvoicesTable();
     loadVendors();
 });
 
 function refreshInvoicesTable() {
-    LoadingComponent.showForTable('#invoicesTable', 'Loading invoices...');
-    ajaxRequest({
-        url: '/api/InventoryApi/GetInventoryInvoices',
-        method: 'GET',
-        data: null,
-        showMessage: false,
-        onSuccess: function (response) {
-            allInvoices = response.data || [];
-            updateStats();
-            renderInvoicesTable(allInvoices);
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to load inventory invoices:', error);
-        },
-        onComplete: function () { LoadingComponent.hideForTable('#invoicesTable'); }
-    });
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
 function loadVendors() {
@@ -388,87 +492,6 @@ function updateStats() {
     });
 
     $('#statTotalInvoices').text(totalCount);
-}
-
-function renderInvoicesTable(invoices) {
-    table.clear();
-
-    invoices.forEach(invoice => {
-        table.row.add($(buildInvoiceRow(invoice)));
-    });
-
-    table.draw();
-}
-
-function buildInvoiceRow(invoice) {
-    const items = invoice.items || (invoice.itemsJson ? parseItems(invoice.itemsJson) : []);
-    const itemsCount = items.length;
-    const vendorName = invoice.vendorName || 'N/A';
-    const invoiceNum = invoice.invoiceId || ('INV-' + invoice.inventoryInvoiceId);
-    const invoiceDate = invoice.invoiceDate ? formatInvoiceDate(invoice.invoiceDate) : '-';
-
-    const hasVendorId =
-        invoice.vendorId != null &&
-        invoice.vendorId !== 0 &&
-        invoice.vendorId !== '';
-
-    const editBtnHtml = !hasVendorId
-        ? `
-        <a href="#" onclick="editInvoice(${invoice.inventoryInvoiceId}); return false;">
-            <i class="fas fa-edit"></i> Edit Details
-        </a>
-    `
-        : '';
-
-    const ingredientNames = items.map(i => i.ingredientName || '').join(', ');
-    const vendorProductIds = items.map(i => i.vendorProductId || '').join(', ');
-
-    return `
-        <tr>
-            <td>
-                <div class="category-info">
-                    <p class="category-name">${invoiceNum}</p>
-                </div>
-            </td>
-
-            <td>
-                <i class="fas fa-calendar-alt" style="color: #6b7280; margin-right: 5px;"></i>
-                ${invoiceDate}
-            </td>
-
-            <td>
-                <i class="fas fa-truck"></i>
-                ${vendorName}
-            </td>
-
-            <td class="text-right">
-                ${formatCurrency(invoice.total)}
-            </td>
-
-            <td class="text-center">
-                <span class="status-badge good">${itemsCount}</span>
-            </td>
-
-            <td class="hidden">${ingredientNames}</td>
-            <td class="hidden">${vendorProductIds}</td>
-
-            <td>
-                <div class="dropdown">
-                    <button class="dropdown-toggle">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
-
-                    <div class="dropdown-menu">
-                        <a href="#" onclick="viewInvoiceDetails(${invoice.inventoryInvoiceId}); return false;">
-                            <i class="fas fa-eye"></i> View Details
-                        </a>
-
-                        ${editBtnHtml}
-                    </div>
-                </div>
-            </td>
-        </tr>
-    `;
 }
 
 function viewInvoiceDetails(inventoryInvoiceId) {

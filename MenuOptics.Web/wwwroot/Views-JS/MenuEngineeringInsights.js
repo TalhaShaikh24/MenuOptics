@@ -4,6 +4,8 @@ let table;
 let startDate;
 let endDate;
 let currentEndDate = null;
+let insightsQueryStartDate = null;
+let insightsQueryEndDate = null;
 
 $(document).ready(function () {
     $('#dateRange').customRangeFilter({
@@ -33,113 +35,181 @@ $(document).ready(function () {
 });
 
 function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
-    LoadingComponent.showForTable('.menu-engineering-table', 'Loading menu insights...');
-    let url = `/api/MenuEngineeringInsightsApi/GetAllMenuEngineeringInsightsByUserId?`;
+    insightsQueryStartDate = startDate;
+    insightsQueryEndDate = endDate;
 
-    if (startDate) {
-        url += `startDate=${startDate}&`;
-        if (endDate) {
-            url += `endDate=${endDate}`;
+    if (table) {
+        // The old flow rebuilt the table on every refresh: page one, filters cleared.
+        table.search('');
+        table.column(8).search('');
+        table.page.len(10);
+        table.ajax.reload();
+    } else {
+        initMenuEngineeringInsightsTable();
+    }
+}
+
+function initMenuEngineeringInsightsTable() {
+    $.fn.dataTable.ext.type.order['quadrant-pre'] = function (d) {
+        const text = $(d).attr('data-quadrant') || $(d).data('quadrant') || $(d).text() || d;
+        switch (text) {
+            case 'Star': return 1;
+            case 'Plowhorse': return 2;
+            case 'Puzzle': return 3;
+            case 'Dog': return 4;
+            default: return 5;
         }
+    };
+
+    table = initDataTable('.menu-engineering-table', {
+        processing: true,
+        loadingMessage: 'Loading menu insights...',
+        ajax: function (dtParams, callback, settings) {
+            let url = `/api/MenuEngineeringInsightsApi/GetAllMenuEngineeringInsightsByUserId?`;
+
+            if (insightsQueryStartDate) {
+                url += `startDate=${insightsQueryStartDate}&`;
+                if (insightsQueryEndDate) {
+                    url += `endDate=${insightsQueryEndDate}`;
+                }
+            }
+
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function (response) {
+                    callback({ data: response.data || [] });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch menu engineering insights:', error);
+                    showNotification('Failed to fetch menu engineering insights.', 'error');
+                    // The old flow left the previous table untouched on error.
+                    callback({ data: table ? table.rows().data().toArray() : [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: 'name',
+                render: function (name, type, row) {
+                    return `
+                        <div class="insight-info">
+                            <img class="table-image" src="${imageBaseUrl + row.featuredImage}"/>
+                            <p class="insight-name">${row.name || ''}</p>
+                        </div>`;
+                }
+            },
+            {
+                data: 'sellingPrice',
+                render: function (data) { return `$${Number(data || 0).toFixed(2)}`; }
+            },
+            {
+                data: 'cost',
+                render: function (data) { return `$${Number(data || 0).toFixed(2)}`; }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const sellingPrice = Number(row.sellingPrice || 0);
+                    const cost = Number(row.cost || 0);
+                    const costPct = sellingPrice ? (cost / sellingPrice) * 100 : 0;
+                    return `${costPct.toFixed(2)}%`;
+                }
+            },
+            {
+                data: 'unitsSold',
+                render: function (data) { return `${Number(data || 0)}`; }
+            },
+            {
+                data: 'contributionMargin',
+                render: function (data) { return `$${Number(data || 0).toFixed(2)}`; }
+            },
+            {
+                data: 'profitabilityScore',
+                render: function (data) { return `$${Number(data || 0).toFixed(2)}`; }
+            },
+            {
+                data: 'popularityShare',
+                render: function (data) { return `${Number(data || 0).toFixed(2)}%`; }
+            },
+            {
+                data: 'menuQuadrant',
+                render: function (data) {
+                    const quadrant = data || 'N/A';
+                    return `<span class="quadrant-icon tooltip-icon" data-quadrant="${quadrant}" data-tooltip="${getQuadrantTooltipText(quadrant)}">
+                                ${getQuadrantIcon(quadrant)}
+                            </span>`;
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (data) {
+                    return `<span class="status-badge ${data ? 'good' : 'critical'}">
+                                ${data ? 'Active' : 'Inactive'}
+                            </span>`;
+                }
+            }
+        ],
+        orderable: false,
+        columnDefs: [
+            { type: 'quadrant', targets: 8 },
+            { searchable: false },
+            { targets: [1, 2, 3, 4, 5, 6, 7], className: 'dt-body-left' },
+            { targets: 9, className: 'hidden' }
+        ],
+        language: {
+            search: '',
+            searchPlaceholder: 'Search menu items...'
+        },
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'csvHtml5',
+                text: '<i class="fas fa-file-csv"></i> Export CSV',
+                className: 'btn btn-outline',
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                    format: {
+                        body: formatExportCell
+                    }
+                }
+            },
+            {
+                extend: 'pdfHtml5',
+                text: '<i class="fas fa-file-pdf"></i> Export PDF',
+                className: 'btn btn-primary',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                title: 'Menu Engineering Insights Report',
+                exportOptions: {
+                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                    format: {
+                        body: formatExportCell
+                    }
+                }
+            }
+        ]
+    });
+
+    if (table.buttons && $('#exportButtons').length) {
+        table.buttons().container().appendTo('#exportButtons');
     }
 
-    ajaxRequest({
-        url: url,
-        method: 'GET',
-        data: null,
-        isQuery: true,
-        showMessage: false,
-        onSuccess: function (response) {
-            const insights = response.data || [];
+    $('#menuItemSearch').off('keyup').on('keyup', function () {
+        table.search(this.value).draw();
+    });
 
-            if ($.fn.DataTable.isDataTable('.menu-engineering-table')) {
-                table.destroy();
-            }
+    $('.quadrant-filter').off('click').on('click', function () {
+        const quadrant = $(this).data('quadrant');
+        table.column(8).search(quadrant).draw();
+    });
 
-            const tbody = $('.menu-engineering-table tbody');
-            tbody.empty();
-
-            insights.forEach(insight => {
-                tbody.append(buildInsightRow(insight));
-            });
-
-            $.fn.dataTable.ext.type.order['quadrant-pre'] = function (d) {
-                const text = $(d).attr('data-quadrant') || $(d).data('quadrant') || $(d).text() || d;
-                switch (text) {
-                    case 'Star': return 1;
-                    case 'Plowhorse': return 2;
-                    case 'Puzzle': return 3;
-                    case 'Dog': return 4;
-                    default: return 5;
-                }
-            };
-
-            table = initDataTable('.menu-engineering-table', {
-                orderable: false,
-                columnDefs: [
-                    { type: 'quadrant', targets: 8 },
-                    { searchable: false },
-                    { targets: [1, 2, 3, 4, 5, 6, 7], className: 'dt-body-left' }
-                ],
-                language: {
-                    search: '',
-                    searchPlaceholder: 'Search menu items...'
-                },
-                dom: 'Bfrtip',
-                buttons: [
-                    {
-                        extend: 'csvHtml5',
-                        text: '<i class="fas fa-file-csv"></i> Export CSV',
-                        className: 'btn btn-outline',
-                        exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-                            format: {
-                                body: formatExportCell
-                            }
-                        }
-                    },
-                    {
-                        extend: 'pdfHtml5',
-                        text: '<i class="fas fa-file-pdf"></i> Export PDF',
-                        className: 'btn btn-primary',
-                        orientation: 'landscape',
-                        pageSize: 'A4',
-                        title: 'Menu Engineering Insights Report',
-                        exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-                            format: {
-                                body: formatExportCell
-                            }
-                        }
-                    }
-                ]
-            });
-
-            if (table.buttons && $('#exportButtons').length) {
-                table.buttons().container().appendTo('#exportButtons');
-            }
-
-            $('#menuItemSearch').on('keyup', function () {
-                table.search(this.value).draw();
-            });
-
-            $('.quadrant-filter').on('click', function () {
-                const quadrant = $(this).data('quadrant');
-                table.column(8).search(quadrant).draw();
-            });
-
-            $('#clear-filter').on('click', function () {
-                table.column(8).search('').draw();
-                $('#menuItemSearch').val('').trigger('keyup');
-            });
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch menu engineering insights:', error);
-            showNotification('Failed to fetch menu engineering insights.', 'error');
-        },
-        onComplete: function () { LoadingComponent.hideForTable('.menu-engineering-table'); }
+    $('#clear-filter').off('click').on('click', function () {
+        table.column(8).search('').draw();
+        $('#menuItemSearch').val('').trigger('keyup');
     });
 }
+
 
 function toggleMenuItemActive(id) {
     if (confirm('Are you sure you want to toggle the active status of this menu item?')) {
@@ -181,48 +251,6 @@ function formatExportCell(data, row, column, node) {
         return $(data).find('.insight-name').text() || data;
     }
     return data;
-}
-
-function buildInsightRow(insight) {
-    const sellingPrice = Number(insight.sellingPrice || 0);
-    const cost = Number(insight.cost || 0);
-    const costPct = sellingPrice ? (cost / sellingPrice) * 100 : 0;
-    const unitsSold = Number(insight.unitsSold || 0);
-    const cm = Number(insight.contributionMargin || 0);
-    const prof = Number(insight.profitabilityScore || 0);
-    const popShare = Number(insight.popularityShare || 0);
-    const quadrant = insight.menuQuadrant || 'N/A';
-
-    return `
-        <tr>
-            <td>
-                <div class="insight-info">
-                    <img class="table-image" src="${imageBaseUrl + insight.featuredImage}"/>
-                    <p class="insight-name">${insight.name || ''}</p>
-                </div>
-            </td>
-
-            <td data-order="${sellingPrice}">$${sellingPrice.toFixed(2)}</td>
-            <td data-order="${cost}">$${cost.toFixed(2)}</td>
-            <td data-order="${costPct.toFixed(2)}">${costPct.toFixed(2)}%</td>
-            <td data-order="${unitsSold}">${unitsSold}</td>
-            <td data-order="${cm}">$${cm.toFixed(2)}</td>
-            <td data-order="${prof}">$${prof.toFixed(2)}</td>
-            <td data-order="${popShare.toFixed(2)}">${popShare.toFixed(2)}%</td>
-
-            <td>
-                <span class="quadrant-icon tooltip-icon" data-quadrant="${quadrant}" data-tooltip="${getQuadrantTooltipText(quadrant)}">
-                    ${getQuadrantIcon(quadrant)}
-                </span>
-            </td>
-
-            <td class="hidden">
-                <span class="status-badge ${insight.isActive ? 'good' : 'critical'}">
-                    ${insight.isActive ? 'Active' : 'Inactive'}
-                </span>
-            </td>
-        </tr>
-    `;
 }
 
 function getQuadrantIcon(quadrant) {

@@ -6,6 +6,79 @@ let table;
 
 $(document).ready(function () {
     table = initDataTable('#userTable', {
+        processing: true,
+        loadingMessage: 'Loading users...',
+        ajax: function (dtParams, callback, settings) {
+            $.ajax({
+                url: '/api/UserApi/GetAllUsers',
+                method: 'GET',
+                success: function (response) {
+                    allUsers = response.data;
+                    callback({ data: getFilteredUsers() });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch users:', error);
+                    showNotification('Failed to load users.', 'error');
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: null,
+                render: function (data, type, row) {
+                    return `<div class="user-info">
+                                <div class="user-avatar">${row?.firstName[0]}${row.lastName[0]}</div>
+                                <div class="user-details">
+                                    <p class="user-name">${row?.firstName} ${row.lastName}</p>
+                                    <div class="user-contact">
+                                        <span><i class="fas fa-envelope"></i> ${row.email}</span>
+                                        <span><i class="fas fa-phone"></i> ${row.phone}</span>
+                                    </div>
+                                </div>
+                            </div>`;
+                }
+            },
+            {
+                data: 'roles',
+                render: function (roles, type, row) {
+                    return `<span class="role-badge ${row?.roles?.toLowerCase()}">${row?.roles}</span>`;
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (isActive, type, row) {
+                    const status = isActive ? 'active' : 'critical';
+                    return `<span class="status-badge ${status}">${row?.isActive ? 'Active' : 'Inactive'}</span>`;
+                }
+            },
+            {
+                data: 'createdOn',
+                render: function (createdOn, type, row) {
+                    return `<i class="fas fa-calendar"></i> ${new Date(row?.createdOn).toLocaleDateString()}`;
+                }
+            },
+            {
+                data: 'modifiedOn',
+                render: function (modifiedOn) {
+                    return `<i class="fas fa-clock"></i> ${modifiedOn ? new Date(modifiedOn).toLocaleDateString() : 'Never'}`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    return `<div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" onclick="getUserById(${row.userId})">Edit User</a>
+                                    <a href="#" onclick="toggleUserActive(${row.userId})">${row.isActive ? 'Deactivate' : 'Activate'}</a>
+                                </div>
+                            </div>`;
+                }
+            }
+        ],
         order: [[0, 'asc']],
         language: {
             search: '',
@@ -14,7 +87,6 @@ $(document).ready(function () {
     });
 
     refreshUserStats();
-    refreshUserTable();
 
     $('#saveUserBtn').on('click', function () {
         const formData = new FormData($('#addUserForm')[0]);
@@ -165,25 +237,13 @@ function refreshUserStats() {
 }
 
 function refreshUserTable() {
-    LoadingComponent.showForTable('#userTable', 'Loading users...');
-    ajaxRequest({
-        url: '/api/UserApi/GetAllUsers',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: function (response) {
-            allUsers = response.data;
-            filterAndRenderUsers();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch users:', error);
-            showNotification('Failed to load users.', 'error');
-        },
-        onComplete: function () { LoadingComponent.hideForTable('#userTable'); }
-    });
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
-function filterAndRenderUsers() {
-    const filteredUsers = allUsers.filter(user => {
+function getFilteredUsers() {
+    return allUsers.filter(user => {
         const matchesSearch = currentFilters.search === '' ||
             user.firstName.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
             user.lastName.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
@@ -192,46 +252,12 @@ function filterAndRenderUsers() {
 
         return matchesSearch;
     });
+}
 
-    table.clear();
-
-    filteredUsers.forEach(user => {
-        const status = user.isActive ? 'active' : 'critical';
-        const row = `
-            <tr>
-                <td>
-                    <div class="user-info">
-                        <div class="user-avatar">${user?.firstName[0]}${user.lastName[0]}</div>
-                        <div class="user-details">
-                            <p class="user-name">${user?.firstName} ${user.lastName}</p>
-                            <div class="user-contact">
-                                <span><i class="fas fa-envelope"></i> ${user.email}</span>
-                                <span><i class="fas fa-phone"></i> ${user.phone}</span>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-                <td><span class="role-badge ${user?.roles?.toLowerCase()}">${user?.roles}</span></td>
-                <td><span class="status-badge ${status}">${user?.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td><i class="fas fa-calendar"></i> ${new Date(user?.createdOn).toLocaleDateString()}</td>
-                <td><i class="fas fa-clock"></i> ${user.modifiedOn ? new Date(user.modifiedOn).toLocaleDateString() : 'Never'}</td>
-                <td>
-                    <div class="dropdown">
-                        <button class="dropdown-toggle">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="dropdown-menu">
-                            <a href="#" onclick="getUserById(${user.userId})">Edit User</a>
-                            <a href="#" onclick="toggleUserActive(${user.userId})">${user.isActive ? 'Deactivate' : 'Activate'}</a>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `;
-        table.row.add($(row));
-    });
-
-    table.draw();
+function filterAndRenderUsers() {
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
 window.filterUsers = function (type, value) {

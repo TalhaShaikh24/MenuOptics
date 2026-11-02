@@ -8,6 +8,118 @@ let editSaleItems = [];
 
 $(document).ready(function () {
     table = initDataTable('#salesTable', {
+        processing: true,
+        loadingMessage: 'Loading sales...',
+        ajax: function (dtParams, callback, settings) {
+            $.ajax({
+                url: '/api/SalesApi/GetAllSales',
+                method: 'GET',
+                success: function (response) {
+                    allSales = response.data || [];
+                    updateStats();
+                    callback({ data: allSales });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to load sales:', error);
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: 'saleId',
+                render: function (saleId, type, row) {
+                    const sale = row;
+                    return `
+                <div class="category-info">
+                    <p class="category-name" style="color: #0f172a;">${sale.saleId}</p>
+                </div>`;
+                }
+            },
+            {
+                data: 'startDate',
+                render: function (startDate, type, row) {
+                    const sale = row;
+                    const startDateDisplay = sale.startDate ? formatDateDisplay(sale.startDate) : '-';
+                    return `
+                <i class="fas fa-calendar-alt" style="color: #6b7280; margin-right: 6px;"></i>
+                ${startDateDisplay}`;
+                }
+            },
+            {
+                data: 'endDate',
+                render: function (endDate, type, row) {
+                    const sale = row;
+                    const endDateDisplay = sale.endDate ? formatDateDisplay(sale.endDate) : '-';
+                    return `
+                <i class="fas fa-calendar-check" style="color: #6b7280; margin-right: 6px;"></i>
+                ${endDateDisplay}`;
+                }
+            },
+            {
+                data: 'total',
+                className: 'text-right',
+                render: function (total, type, row) {
+                    const sale = row;
+                    return `
+                ${formatCurrency(sale.total)}`;
+                }
+            },
+            {
+                data: null,
+                className: 'text-center',
+                render: function (data, type, row) {
+                    const sale = row;
+                    const itemsCount = parseItems(sale.itemsJson).length;
+                    return `
+                <span class="status-badge good">${itemsCount} Items</span>`;
+                }
+            },
+            {
+                data: null,
+                className: 'hidden',
+                render: function (data, type, row) {
+                    const sale = row;
+                    const items = parseItems(sale.itemsJson);
+                    const itemsPreview = items.slice(0, 3).map(i => {
+                        const name = i.Name || i.name || 'Item';
+                        const qty = i.Quantity || i.quantity || 1;
+                        return `<span class="category-badge" style="font-size: 11px; margin-right: 4px; display: inline-block;">${escapeHtml(name)} (x${qty})</span>`;
+                    }).join(' ');
+                    const moreBadge = items.length > 3
+                        ? `<span class="status-badge" style="background: #f1f5f9; color: #475569; font-size: 11px;">+${items.length - 3} more</span>`
+                        : '';
+                    return `
+                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                    ${itemsPreview} ${moreBadge}
+                </div>`;
+                }
+            },
+            {
+                data: null,
+                className: 'text-center',
+                render: function (data, type, row) {
+                    const sale = row;
+                    return `
+                <div class="dropdown">
+                    <button class="dropdown-toggle" type="button">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a href="javascript:void(0)" onclick="viewSaleDetails(${sale.saleId}); return false;">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                        <a href="javascript:void(0)" onclick="editSale(${sale.saleId}); return false;">
+                            <i class="fas fa-edit"></i> Edit Sale
+                        </a>
+                    </div>
+                </div>`;
+                }
+            }
+        ],
+        createdRow: function (row) {
+            $(row).find('td').eq(3).css('color', '#0f172a');
+        },
         language: {
             searchPlaceholder: 'Search sales...',
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',
@@ -49,25 +161,12 @@ $(document).ready(function () {
     });
 
     loadMenuItems();
-    refreshSalesTable();
 });
 
 function refreshSalesTable() {
-    LoadingComponent.showForTable('#salesTable', 'Loading sales...');
-    ajaxRequest({
-        url: '/api/SalesApi/GetAllSales',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: function (response) {
-            allSales = response.data || [];
-            updateStats();
-            renderSalesTable(allSales);
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to load sales:', error);
-        },
-        onComplete: function () { LoadingComponent.hideForTable('#salesTable'); }
-    });
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
 function loadMenuItems() {
@@ -732,75 +831,6 @@ function updateStats() {
     $('#statTotalSales').text(totalCount);
     $('#statTotalRevenue').text(formatCurrency(totalRevenue));
     $('#statTotalItemsSold').text(Math.round(totalItemsSold));
-}
-
-function renderSalesTable(sales) {
-    table.clear();
-    sales.forEach(sale => {
-        table.row.add($(buildSaleRow(sale)));
-    });
-    table.draw();
-}
-
-function buildSaleRow(sale) {
-    const items = parseItems(sale.itemsJson);
-    const itemsCount = items.length;
-    const startDateDisplay = sale.startDate ? formatDateDisplay(sale.startDate) : '-';
-    const endDateDisplay = sale.endDate ? formatDateDisplay(sale.endDate) : '-';
-
-    const itemsPreview = items.slice(0, 3).map(i => {
-        const name = i.Name || i.name || 'Item';
-        const qty = i.Quantity || i.quantity || 1;
-        return `<span class="category-badge" style="font-size: 11px; margin-right: 4px; display: inline-block;">${escapeHtml(name)} (x${qty})</span>`;
-    }).join(' ');
-
-    const moreBadge = items.length > 3
-        ? `<span class="status-badge" style="background: #f1f5f9; color: #475569; font-size: 11px;">+${items.length - 3} more</span>`
-        : '';
-
-    return `
-        <tr>
-            <td>
-                <div class="category-info">
-                    <p class="category-name" style="color: #0f172a;">${sale.saleId}</p>
-                </div>
-            </td>
-            <td>
-                <i class="fas fa-calendar-alt" style="color: #6b7280; margin-right: 6px;"></i>
-                ${startDateDisplay}
-            </td>
-            <td>
-                <i class="fas fa-calendar-check" style="color: #6b7280; margin-right: 6px;"></i>
-                ${endDateDisplay}
-            </td>
-            <td class="text-right" style="color: #0f172a;">
-                ${formatCurrency(sale.total)}
-            </td>
-            <td class="text-center">
-                <span class="status-badge good">${itemsCount} Items</span>
-            </td>
-            <td class="hidden">
-                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                    ${itemsPreview} ${moreBadge}
-                </div>
-            </td>
-            <td class="text-center">
-                <div class="dropdown">
-                    <button class="dropdown-toggle" type="button">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
-                    <div class="dropdown-menu">
-                        <a href="javascript:void(0)" onclick="viewSaleDetails(${sale.saleId}); return false;">
-                            <i class="fas fa-eye"></i> View Details
-                        </a>
-                        <a href="javascript:void(0)" onclick="editSale(${sale.saleId}); return false;">
-                            <i class="fas fa-edit"></i> Edit Sale
-                        </a>
-                    </div>
-                </div>
-            </td>
-        </tr>
-    `;
 }
 
 function initMenuItemSelectors() {

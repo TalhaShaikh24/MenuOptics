@@ -1,10 +1,70 @@
 // suppliers.js — Supplier management page scripts.
 
 let table;
+let activeFilterApplied = false;
 
 $(document).ready(function () {
     table = initDataTable('.data-table', {
         processing: true,
+        loadingMessage: 'Loading suppliers...',
+        ajax: function (dtParams, callback, settings) {
+            $.ajax({
+                url: '/api/PrivateVendorApi/GetAllPrivateVendors',
+                method: 'GET',
+                success: function (response) {
+                    const suppliers = response.data;
+                    $('#totalSuppliers').text(suppliers.filter(s => s.isActive).length);
+
+                    const rows = activeFilterApplied
+                        ? suppliers.filter(s => s.isActive)
+                        : suppliers;
+                    callback({ data: rows });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch suppliers:', error);
+                    showNotification('Failed to fetch suppliers.', 'error');
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: 'name',
+                render: function (name) {
+                    return `<div class="category-info">
+                                <p class="category-name">${name}</p>
+                            </div>`;
+                }
+            },
+            {
+                data: 'createdOn',
+                render: function (createdOn) {
+                    return `<i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(createdOn)}`;
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (isActive) {
+                    return `<span class="status-badge ${isActive ? 'good' : 'critical'}">${isActive ? 'Active' : 'Inactive'}</span>`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const actionText = row.isActive ? 'Deactivate' : 'Activate';
+                    const actionIcon = row.isActive ? 'fas fa-ban' : 'fas fa-check';
+                    return `<div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" onclick="editSupplier(${row.privateVendorId})"><i class="fas fa-edit"></i> Edit Details</a>
+                                    <a href="#" onclick="toggleSupplierActive(${row.privateVendorId})"><i class="${actionIcon}"></i> ${actionText}</a>
+                                </div>
+                            </div>`;
+                }
+            }
+        ],
         language: { searchPlaceholder: 'Search suppliers...' }
     });
 
@@ -39,50 +99,20 @@ $(document).ready(function () {
     });
 
     $('#activeFilter').on('click', toggleActiveFilter);
-
-    refreshSuppliersTable();
 });
 
 function refreshSuppliersTable() {
-    LoadingComponent.showForTable('.data-table', 'Loading suppliers...');
-    ajaxRequest({
-        url: '/api/PrivateVendorApi/GetAllPrivateVendors',
-        method: 'GET',
-        data: null,
-        showMessage: false,
-        onSuccess: function (response) {
-            const suppliers = response.data;
-            $('#totalSuppliers').text(suppliers.filter(s => s.isActive).length);
-            renderSuppliersTable(suppliers);
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch suppliers:', error);
-            showNotification('Failed to fetch suppliers.', 'error');
-        },
-        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
-    });
+    // Matches the old refresh: it always re-rendered the full, unfiltered list.
+    activeFilterApplied = false;
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
 function toggleActiveFilter() {
-    LoadingComponent.showForTable('.data-table', 'Loading suppliers...');
-    const isActiveOnly = $('#activeFilter').hasClass('active');
     $('#activeFilter').toggleClass('active');
-
-    ajaxRequest({
-        url: '/api/PrivateVendorApi/GetAllPrivateVendors',
-        method: 'GET',
-        data: null,
-        showMessage: false,
-        onSuccess: function (response) {
-            const suppliers = isActiveOnly ? response.data : response.data.filter(s => s.isActive);
-            renderSuppliersTable(suppliers);
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch suppliers:', error);
-            showNotification('Failed to fetch suppliers.', 'error');
-        },
-        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
-    });
+    activeFilterApplied = $('#activeFilter').hasClass('active');
+    table.ajax.reload(null, false);
 }
 
 function getSupplierById(id) {
@@ -165,42 +195,6 @@ function toggleSupplierActive(id) {
 
 function editSupplier(id) {
     getSupplierById(id);
-}
-
-function renderSuppliersTable(suppliers) {
-    table.clear();
-    suppliers.forEach(supplier => {
-        table.row.add($(buildSupplierRow(supplier)));
-    });
-    table.draw();
-}
-
-function buildSupplierRow(supplier) {
-    const createdDate = DateFormatter.formatWithComma(supplier.createdOn);
-    const actionText = supplier.isActive ? 'Deactivate' : 'Activate';
-    const actionIcon = supplier.isActive ? 'fas fa-ban' : 'fas fa-check';
-    return `
-        <tr>
-            <td>
-                <div class="category-info">
-                    <p class="category-name">${supplier.name}</p>
-                </div>
-            </td>
-            <td><i class="fas fa-calendar"></i> ${createdDate}</td>
-            <td><span class="status-badge ${supplier.isActive ? 'good' : 'critical'}">${supplier.isActive ? 'Active' : 'Inactive'}</span></td>
-            <td>
-                <div class="dropdown">
-                    <button class="dropdown-toggle">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
-                    <div class="dropdown-menu">
-                        <a href="#" onclick="editSupplier(${supplier.privateVendorId})"><i class="fas fa-edit"></i> Edit Details</a>
-                        <a href="#" onclick="toggleSupplierActive(${supplier.privateVendorId})"><i class="${actionIcon}"></i> ${actionText}</a>
-                    </div>
-                </div>
-            </td>
-        </tr>
-    `;
 }
 
 function openModal(modalId) {

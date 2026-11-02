@@ -1,9 +1,69 @@
 // categories.js — Category management page scripts.
 
 let table;
+let activeFilterApplied = false;
 
 $(document).ready(function () {
     table = initDataTable('.data-table', {
+        processing: true,
+        loadingMessage: 'Loading categories...',
+        ajax: function (dtParams, callback, settings) {
+            $.ajax({
+                url: '/api/CategoryApi/GetAllCategories',
+                method: 'GET',
+                success: function (response) {
+                    const categories = response.data;
+                    $('#totalCategories').text(categories.filter(c => c.isActive).length);
+
+                    const rows = activeFilterApplied
+                        ? categories.filter(c => c.isActive)
+                        : categories;
+                    callback({ data: rows });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch categories:', error);
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: 'name',
+                render: function (name) {
+                    return `<div class="category-info">
+                                <p class="category-name">${name}</p>
+                            </div>`;
+                }
+            },
+            {
+                data: 'createdOn',
+                render: function (createdOn) {
+                    return `<i class="fas fa-calendar"></i> ${DateFormatter.formatWithComma(createdOn)}`;
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (isActive) {
+                    return `<span class="status-badge ${isActive ? 'good' : 'critical'}">${isActive ? 'Active' : 'Inactive'}</span>`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const actionText = row.isActive ? 'Deactivate' : 'Activate';
+                    const actionIcon = row.isActive ? 'fas fa-ban' : 'fas fa-check';
+                    return `<div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" onclick="editCategory(${row.categoryId})"><i class="fas fa-edit"></i> Edit Details</a>
+                                    <a href="#" onclick="toggleCategoryActive(${row.categoryId})"><i class="${actionIcon}"></i> ${actionText}</a>
+                                </div>
+                            </div>`;
+                }
+            }
+        ],
         language: { searchPlaceholder: 'Search categories...' }
     });
 
@@ -41,47 +101,20 @@ $(document).ready(function () {
         table.search(this.value).draw();
     });
     $('#activeFilter').on('click', toggleActiveFilter);
-
-    refreshCategoriesTable();
 });
 
 function refreshCategoriesTable() {
-    LoadingComponent.showForTable('.data-table', 'Loading categories...');
-    ajaxRequest({
-        url: '/api/CategoryApi/GetAllCategories',
-        method: 'GET',
-        data: null,
-        showMessage: false,
-        onSuccess: function (response) {
-            const categories = response.data;
-            $('#totalCategories').text(categories.filter(c => c.isActive).length);
-
-            renderCategoriesTable(categories);
-        },
-        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
-    });
+    // Matches the old refresh: it always re-rendered the full, unfiltered list.
+    activeFilterApplied = false;
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
 function toggleActiveFilter() {
-    LoadingComponent.showForTable('.data-table', 'Loading categories...');
-    const isActiveOnly = $('#activeFilter').hasClass('active');
     $('#activeFilter').toggleClass('active');
-
-    ajaxRequest({
-        url: '/api/CategoryApi/GetAllCategories',
-        method: 'GET',
-        data: null,
-        showMessage: false,
-        onSuccess: function (response) {
-            const categories = isActiveOnly ? response.data : response.data.filter(c => c.isActive);
-
-            renderCategoriesTable(categories);
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch categories:', error);
-        },
-        onComplete: function () { LoadingComponent.hideForTable('.data-table'); }
-    });
+    activeFilterApplied = $('#activeFilter').hasClass('active');
+    table.ajax.reload(null, false);
 }
 
 function getCategoryById(id) {
@@ -179,42 +212,4 @@ function deleteCategory(id) {
 
 function editCategory(id) {
     getCategoryById(id);
-}
-
-function renderCategoriesTable(categories) {
-    table.clear();
-
-    categories.forEach(category => {
-        table.row.add($(buildCategoryRow(category)));
-    });
-
-    table.draw();
-}
-
-function buildCategoryRow(category) {
-    const createdDate = DateFormatter.formatWithComma(category.createdOn);
-    const actionText = category.isActive ? 'Deactivate' : 'Activate';
-    const actionIcon = category.isActive ? 'fas fa-ban' : 'fas fa-check';
-    return `
-                    <tr>
-                        <td>
-                            <div class="category-info">
-                                <p class="category-name">${category.name}</p>
-                            </div>
-                        </td>
-                        <td><i class="fas fa-calendar"></i> ${createdDate}</td>
-                        <td><span class="status-badge ${category.isActive ? 'good' : 'critical'}">${category.isActive ? 'Active' : 'Inactive'}</span></td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="dropdown-toggle">
-                                    <i class="fas fa-ellipsis-h"></i>
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a href="#" onclick="editCategory(${category.categoryId})"><i class="fas fa-edit"></i> Edit Details</a>
-                                    <a href="#" onclick="toggleCategoryActive(${category.categoryId})"><i class="${actionIcon}"></i> ${actionText}</a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
 }

@@ -1,16 +1,88 @@
 ﻿// restaurant.js — Restaurant management page scripts.
 
 let allRestaurants = [];
+let restaurantsLoaded = false;
 let currentFilters = { cuisine: 'all', status: 'all', search: '' };
 
 $(document).ready(function () {
     table = initDataTable('#restaurantTable', {
+        processing: true,
+        loadingMessage: 'Loading restaurants...',
+        ajax: function (dtParams, callback, settings) {
+            if (restaurantsLoaded) {
+                callback({ data: getFilteredRestaurants() });
+                return;
+            }
+            $.ajax({
+                url: '/api/UserApi/GetAllRestaurants',
+                method: 'GET',
+                success: function (response) {
+                    allRestaurants = response.data;
+                    restaurantsLoaded = true;
+                    callback({ data: getFilteredRestaurants() });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch restaurants:', error);
+                    showNotification('Failed to load restaurants.', 'error');
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: null,
+                render: function (data, type, row) {
+                    return `<div class="user-info">
+                                <div class="user-avatar">${row?.restaurantName?.[0] ?? ""}</div>
+                                <div class="user-details">
+                                    <p class="user-name">${row.restaurantName}</p>
+                                    <div class="user-contact">
+                                        <span><i class="fas fa-envelope"></i> ${row.email}</span>
+                                        <span><i class="fas fa-phone"></i> ${row.phone}</span>
+                                    </div>
+                                </div>
+                            </div>`;
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (isActive) {
+                    const status = isActive ? 'active' : 'critical';
+                    return `<span class="status-badge ${status}">${isActive ? 'Active' : 'Inactive'}</span>`;
+                }
+            },
+            {
+                data: 'createdOn',
+                render: function (createdOn) {
+                    return `<i class="fas fa-calendar"></i> ${new Date(createdOn).toLocaleDateString()}`;
+                }
+            },
+            {
+                data: 'modifiedOn',
+                render: function (modifiedOn) {
+                    return `<i class="fas fa-clock"></i> ${modifiedOn ? new Date(modifiedOn).toLocaleDateString() : 'Never'}`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    return `<div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" onclick="getRestaurantById(${row.userId})">Edit Restaurant</a>
+                                    <a href="#" onclick="toggleRestaurantActive(${row.userId})">${row.isActive ? 'Deactivate' : 'Activate'}</a>
+                                </div>
+                            </div>`;
+                }
+            }
+        ],
         order: [[0, 'asc']],
         language: { searchPlaceholder: 'Search restaurant...' }
     });
 
     refreshRestaurantStats();
-    refreshRestaurantTable();
 
     $('#saveRestaurantBtn').on('click', function () {
         const formData = new FormData($('#addRestaurantForm')[0]);
@@ -209,26 +281,14 @@ function refreshRestaurantStats() {
 }
 
 function refreshRestaurantTable() {
-    LoadingComponent.showForTable('#restaurantTable', 'Loading restaurants...');
-
-    ajaxRequest({
-        url: '/api/UserApi/GetAllRestaurants',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: function (response) {
-            allRestaurants = response.data;
-            filterAndRenderRestaurants();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch restaurants:', error);
-            showNotification('Failed to load restaurants.', 'error');
-        },
-        onComplete: function () { LoadingComponent.hideForTable('#restaurantTable'); }
-    });
+    restaurantsLoaded = false;
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
-function filterAndRenderRestaurants() {
-    const filteredRestaurants = allRestaurants.filter(restaurant => {
+function getFilteredRestaurants() {
+    return allRestaurants.filter(restaurant => {
         const search = currentFilters.search;
         const matchesSearch = search === '' ||
             (restaurant.restaurantName || '').toLowerCase().includes(search) ||
@@ -241,44 +301,12 @@ function filterAndRenderRestaurants() {
             (currentFilters.status === 'inactive' && !restaurant.isActive);
         return matchesSearch && matchesCuisine && matchesStatus;
     });
+}
 
-    table.clear();
-
-    filteredRestaurants.forEach(restaurant => {
-        const status = restaurant.isActive ? 'active' : 'critical';
-        const row = `
-            <tr>
-                <td>
-                    <div class="user-info">
-                        <div class="user-avatar">${restaurant?.restaurantName?.[0] ?? ""}</div>
-                        <div class="user-details">
-                            <p class="user-name">${restaurant.restaurantName}</p>
-                            <div class="user-contact">
-                                <span><i class="fas fa-envelope"></i> ${restaurant.email}</span>
-                                <span><i class="fas fa-phone"></i> ${restaurant.phone}</span>
-                            </div>
-                        </div>
-                    </div>
-                </td>
-                <td><span class="status-badge ${status}">${restaurant.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td><i class="fas fa-calendar"></i> ${new Date(restaurant.createdOn).toLocaleDateString()}</td>
-                <td><i class="fas fa-clock"></i> ${restaurant.modifiedOn ? new Date(restaurant.modifiedOn).toLocaleDateString() : 'Never'}</td>
-                <td>
-                    <div class="dropdown">
-                        <button class="dropdown-toggle">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="dropdown-menu">
-                            <a href="#" onclick="getRestaurantById(${restaurant.userId})">Edit Restaurant</a>
-                            <a href="#" onclick="toggleRestaurantActive(${restaurant.userId})">${restaurant.isActive ? 'Deactivate' : 'Activate'}</a>
-                          </div>
-                    </div>
-                </td>
-            </tr>
-        `;
-        table.row.add($(row));
-    });
-    table.draw();
+function filterAndRenderRestaurants() {
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
 window.filterRestaurants = function (type, value) {

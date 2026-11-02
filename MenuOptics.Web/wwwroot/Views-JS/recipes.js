@@ -62,8 +62,6 @@ $(document).ready(function () {
             }
         });
     });
-
-    refreshRecipesTable();
 });
 
 function showRecipeDescription(recipeId) {
@@ -74,6 +72,121 @@ function showRecipeDescription(recipeId) {
 
 function initRecipeTable() {
     recipeTable = initDataTable('#recipesTable', {
+        processing: true,
+        loadingMessage: 'Loading recipes...',
+        ajax: function (dtParams, callback, settings) {
+            $.ajax({
+                url: '/api/RecipeApi/GetAllRecipes',
+                method: 'GET',
+                success: function (response) {
+                    const recipes = response.data || [];
+                    cachedRecipes = recipes;
+                    $('#totalRecipes').text(recipes.length);
+                    recipes.forEach(item => {
+                        recipeDescriptions[item.recipeId] = item.description || '';
+                    });
+                    callback({ data: recipes });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch recipes:', error);
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: 'name',
+                render: function (name, type, row) {
+                    const item = row;
+                    return `
+                            <div class="recipe-info">
+                                <p class="recipe-name">${item.name}</p>
+                            </div>`;
+                }
+            },
+            {
+                data: 'description',
+                render: function (description, type, row) {
+                    const item = row;
+                    return `
+                            <span class="recipeDescription" style="cursor:pointer;" onclick="showRecipeDescription(${item.recipeId})">${item.description}</span>`;
+                }
+            },
+            {
+                data: 'size',
+                render: function (size, type, row) {
+                    const item = row;
+                    return `
+                          <span class="${item.size != null ? 'category-badge-size' : ''}">
+                            ${item.size ? `${item.size} ${(item.unit || '')}` : ''}
+                          </span>`;
+                }
+            },
+            {
+                data: 'cost',
+                render: function (cost, type, row) {
+                    const item = row;
+                    const hasPriceChanged = item.cost != item.currentCost && item.ingredients?.some(i => i.oldPrice != null && i.oldPrice != i.currentPrice);
+                    const isCostHigh = item.currentCost > item.cost;
+                    return `
+                         ${!hasPriceChanged
+                        ? `
+                                  <span>
+                                    $${item.cost.toFixed(2)}
+                                    <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
+                                  </span>
+                                `
+                        : `
+                                  <div>
+                                      <span class="text-highlight danger" title="Cost at the time this recipe was created/updated.">
+                                        $${item.cost.toFixed(2)}
+                                      </span>
+                                      <br>
+                                      <span class="text-highlight ${isCostHigh ? `negative` : `positive`}" style="cursor:pointer;" onclick="showRecipeCostBreakdown(${item.recipeId})" title="Click to view ingredient cost breakdown">
+                                        $${item.currentCost.toFixed(2)}
+                                        <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i>
+                                      </span>
+                                  </div>
+                                `
+                    }`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const item = row;
+                    const ingredientNames = item.ingredients ? item.ingredients.map(ingredient => ingredient.ingredientName).join(', ') : '';
+                    return `<span class="status-badge good">${ingredientNames}</span>`;
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (isActive, type, row) {
+                    const item = row;
+                    const cls = item.isActive ? 'good' : 'critical';
+                    const lbl = item.isActive ? 'Active' : 'In Active';
+                    return `<span class="status-badge ${cls}" > ${lbl}</span >`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const item = row;
+                    return `
+                            <div class="dropdown">
+                                <button class="dropdown-toggle"><i class="fas fa-ellipsis-h"></i></button>
+                                <div class="dropdown-menu">
+                                    <a href="#" onclick="getRecipeById(${item.recipeId})"><i class="fas fa-edit"></i> Edit</a>
+                                    <a href = "#" onclick = "toggleRecipeActive(${item.recipeId})" >
+                                        <i class="fas fa-ban"></i>
+                                        ${item.isActive ? 'Deactivate' : 'Activate'}
+                                   </a>
+                                    <a href="#" onclick="exportSingleRecipePDF(${item.recipeId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
+                                </div>
+                            </div>`;
+                }
+            }
+        ],
         language: { searchPlaceholder: 'Search recipes...' }
     });
 }
@@ -419,93 +532,9 @@ function toggleRecipeActive(id) {
 }
 
 function refreshRecipesTable() {
-    LoadingComponent.showForTable('#recipesTable', 'Loading recipes...');
-    ajaxRequest({
-        url: '/api/RecipeApi/GetAllRecipes',
-        method: 'GET',
-        showMessage: false,
-        isQuery: false,
-        onSuccess: function (response) {
-            const recipes = response.data || [];
-            cachedRecipes = recipes;
-            $('#totalRecipes').text(recipes.length);
-
-            recipeTable.clear();
-
-            recipes.forEach(item => {
-                const created = DateFormatter.formatWithComma(item.createdOn);
-                recipeDescriptions[item.recipeId] = item.description || '';
-
-                const ingredientNames = item.ingredients ? item.ingredients.map(ingredient => ingredient.ingredientName).join(', ') : '';
-
-                const cls = item.isActive ? 'good' : 'critical';
-                const lbl = item.isActive ? 'Active' : 'In Active';
-                const hasPriceChanged = item.cost != item.currentCost && item.ingredients?.some(i => i.oldPrice != null && i.oldPrice != i.currentPrice);
-                const isCostHigh = item.currentCost > item.cost;
-
-                const row = `
-                    <tr>
-                        <td>
-                            <div class="recipe-info">
-                                <p class="recipe-name">${item.name}</p>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="recipeDescription" style="cursor:pointer;" onclick="showRecipeDescription(${item.recipeId})">${item.description}</span>
-                        </td>
-                        <td>
-                          <span class="${item.size != null ? 'category-badge-size' : ''}">
-                            ${item.size ? `${item.size} ${(item.unit || '')}` : ''}
-                          </span>
-                        </td>
-                        <td>
-                         ${!hasPriceChanged
-                        ? `
-                                  <span>
-                                    $${item.cost.toFixed(2)}
-                                    <span class="tooltip-icon" data-tooltip="Cost at the time this recipe was created/updated">i</span>
-                                  </span>
-                                `
-                        : `
-                                  <div>
-                                      <span class="text-highlight danger" title="Cost at the time this recipe was created/updated.">
-                                        $${item.cost.toFixed(2)}
-                                      </span>
-                                      <br>
-                                      <span class="text-highlight ${isCostHigh ? `negative` : `positive`}" style="cursor:pointer;" onclick="showRecipeCostBreakdown(${item.recipeId})" title="Click to view ingredient cost breakdown">
-                                        $${item.currentCost.toFixed(2)}
-                                        <i class="fas fa-info-circle" style="font-size:11px; opacity:0.75; margin-left:2px;"></i>
-                                      </span>
-                                  </div>
-                                `
-                    }
-                        </td>
-                        <td><span class="status-badge good">${ingredientNames}</span></td>
-                        <td><span class="status-badge ${cls}" > ${lbl}</span ></td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="dropdown-toggle"><i class="fas fa-ellipsis-h"></i></button>
-                                <div class="dropdown-menu">
-                                    <a href="#" onclick="getRecipeById(${item.recipeId})"><i class="fas fa-edit"></i> Edit</a>
-                                    <a href = "#" onclick = "toggleRecipeActive(${item.recipeId})" >
-                                        <i class="fas fa-ban"></i>
-                                        ${item.isActive ? 'Deactivate' : 'Activate'}
-                                   </a>
-                                    <a href="#" onclick="exportSingleRecipePDF(${item.recipeId})"><i class="fas fa-file-pdf"></i> Export PDF</a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>`;
-                recipeTable.row.add($(row));
-            });
-
-            recipeTable.draw();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch recipes:', error);
-        },
-        onComplete: function () { LoadingComponent.hideForTable('#recipesTable'); }
-    });
+    if (recipeTable) {
+        recipeTable.ajax.reload(null, false);
+    }
 }
 
 function exportSingleRecipePDF(id) {

@@ -1,19 +1,101 @@
 // restaurant-members.js — Restaurant members page scripts.
 
 let allMembers = [];
+let membersLoaded = false;
 let currentFilters = { search: '' };
 let table;
 
 $(document).ready(function () {
     table = initDataTable('#membersTable', {
+        processing: true,
+        loadingMessage: 'Loading members...',
         searching: false,
+        ajax: function (dtParams, callback, settings) {
+            if (membersLoaded) {
+                callback({ data: getFilteredMembers() });
+                return;
+            }
+            $.ajax({
+                url: '/api/UserApi/GetRestaurantMembers',
+                method: 'GET',
+                success: function (response) {
+                    allMembers = response.data || [];
+                    membersLoaded = true;
+                    callback({ data: getFilteredMembers() });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Failed to fetch members:', error);
+                    showNotification('Failed to load members directory.', 'error');
+                    callback({ data: [] });
+                }
+            });
+        },
+        columns: [
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const initials = ((row.firstName ? row.firstName[0] : '') + (row.lastName ? row.lastName[0] : '')).toUpperCase() || 'RM';
+                    const name = `${row.firstName || ''} ${row.lastName || ''}`.trim() || row.username;
+                    return `<div class="user-info">
+                                <div class="user-avatar">${initials}</div>
+                                <div class="user-details">
+                                    <p class="user-name">${name}</p>
+                                    <span class="user-username">@${row.username}</span>
+                                </div>
+                            </div>`;
+                }
+            },
+            { data: 'email' },
+            {
+                data: 'phone',
+                render: function (phone) {
+                    return phone || 'N/A';
+                }
+            },
+            {
+                data: 'isActive',
+                render: function (isActive, type, row) {
+                    const status = isActive ? 'active' : 'critical';
+                    return `<span class="status-badge ${status}">${row?.isActive ? 'Active' : 'Inactive'}</span>`;
+                }
+            },
+            {
+                data: 'createdOn',
+                render: function (createdOn) {
+                    const joinedDate = createdOn ? DateFormatter.formatWithComma(createdOn) : 'N/A';
+                    return `<i class="fas fa-calendar"></i> ${joinedDate}`;
+                }
+            },
+            {
+                data: 'modifiedOn',
+                render: function (modifiedOn) {
+                    const modifiedDate = modifiedOn ? DateFormatter.formatWithComma(modifiedOn) : 'Never';
+                    return `<i class="fas fa-clock"></i> ${modifiedDate}`;
+                }
+            },
+            {
+                data: null,
+                render: function (data, type, row) {
+                    const actionIcon = row.isActive ? 'fas fa-ban' : 'fas fa-check';
+                    const actionText = row.isActive ? 'Deactivate' : 'Activate';
+                    return `<div class="dropdown">
+                                <button class="dropdown-toggle">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" onclick="editMember(${row.userId})"><i class="fas fa-edit"></i> Edit Details</a>
+                                    <a href="#" onclick="toggleMemberActive(${row.userId})"><i class="${actionIcon}"></i> ${actionText}</a>
+                                </div>
+                            </div>`;
+                }
+            }
+        ],
         language: {
             emptyTable: 'No members found'
         }
     });
 
     refreshMemberStats();
-    refreshMemberTable();
 
     $('#editMemberProfilePicFile').on('change', function () {
         const file = this.files[0];
@@ -184,25 +266,14 @@ function refreshMemberStats() {
 }
 
 function refreshMemberTable() {
-    LoadingComponent.showForTable('#membersTable', 'Loading members...');
-    ajaxRequest({
-        url: '/api/UserApi/GetRestaurantMembers',
-        method: 'GET',
-        showMessage: false,
-        onSuccess: function (response) {
-            allMembers = response.data || [];
-            filterAndRenderMembers();
-        },
-        onError: function (xhr, status, error) {
-            console.error('Failed to fetch members:', error);
-            showNotification('Failed to load members directory.', 'error');
-        },
-        onComplete: function () { LoadingComponent.hideForTable('#membersTable'); }
-    });
+    membersLoaded = false;
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
-function filterAndRenderMembers() {
-    const filtered = allMembers.filter(member => {
+function getFilteredMembers() {
+    return allMembers.filter(member => {
         const matchesSearch = currentFilters.search === '' ||
             (member.firstName && member.firstName.toLowerCase().includes(currentFilters.search)) ||
             (member.lastName && member.lastName.toLowerCase().includes(currentFilters.search)) ||
@@ -212,51 +283,12 @@ function filterAndRenderMembers() {
 
         return matchesSearch;
     });
+}
 
-    table.clear();
-
-    filtered.forEach(member => {
-        const initials = ((member.firstName ? member.firstName[0] : '') + (member.lastName ? member.lastName[0] : '')).toUpperCase() || 'RM';
-        const name = `${member.firstName || ''} ${member.lastName || ''}`.trim() || member.username;
-        const joinedDate = member.createdOn ? DateFormatter.formatWithComma(member.createdOn) : 'N/A';
-        const modifiedDate = member.modifiedOn ? DateFormatter.formatWithComma(member.modifiedOn) : 'Never';
-        const status = member.isActive ? 'active' : 'critical';
-        const actionIcon = member.isActive ? 'fas fa-ban' : 'fas fa-check';
-        const actionText = member.isActive ? 'Deactivate' : 'Activate';
-
-        const row = `
-            <tr>
-                <td>
-                    <div class="user-info">
-                        <div class="user-avatar">${initials}</div>
-                        <div class="user-details">
-                            <p class="user-name">${name}</p>
-                            <span class="user-username">@${member.username}</span>
-                        </div>
-                    </div>
-                </td>
-                <td>${member.email}</td>
-                <td>${member.phone || 'N/A'}</td>
-                <td><span class="status-badge ${status}">${member?.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td><i class="fas fa-calendar"></i> ${joinedDate}</td>
-                <td><i class="fas fa-clock"></i> ${modifiedDate}</td>
-                <td>
-                    <div class="dropdown">
-                        <button class="dropdown-toggle">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="dropdown-menu">
-                            <a href="#" onclick="editMember(${member.userId})"><i class="fas fa-edit"></i> Edit Details</a>
-                            <a href="#" onclick="toggleMemberActive(${member.userId})"><i class="${actionIcon}"></i> ${actionText}</a>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        `;
-        table.row.add($(row));
-    });
-
-    table.draw();
+function filterAndRenderMembers() {
+    if (table) {
+        table.ajax.reload(null, false);
+    }
 }
 
 window.filterMembers = function (type, value) {
