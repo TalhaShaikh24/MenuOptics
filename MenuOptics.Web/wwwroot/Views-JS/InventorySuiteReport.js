@@ -1,13 +1,4 @@
-/* ============================================================================
- * InventorySuiteReport.js — Inventory / InventorySuite report page (Views/Ingredient/Index.cshtml)
- * Date-filtered InventorySuiteReport table with editable closing counts and CSV/PDF export.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// InventorySuiteReport.js — Inventory Suite Report page scripts.
 
 let table;
 let currentEndDate = null;
@@ -19,28 +10,17 @@ let pendingTargetReportId = null;
 let isSwitchingProgrammatically = false;
 let lastEndDate = null;
 
-let currentMode = 'UPDATE'; // 'INSERT' (new report draft) or 'UPDATE' (saved report)
+let currentMode = 'UPDATE'; // 'INSERT' = new report draft, 'UPDATE' = saved report
 let loadedReportItems = [];
 let newReportClosingCounts = {};
 
-function hasUnsavedChanges() {
-    if (currentMode === 'INSERT') {
-        return Object.keys(newReportClosingCounts).length > 0;
-    }
-    return Object.keys(pendingClosingCounts).length > 0;
-}
-
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    // Initialize select2 on #reportSelector
     $('#reportSelector').select2({
         placeholder: '-- Select Inventory --',
         width: '100%',
         minimumResultsForSearch: 10
     });
 
-    // Intercept report selection before change if unsaved closing counts exist
     $('#reportSelector').on('select2:selecting', function (e) {
         if (isSwitchingProgrammatically) return;
 
@@ -61,7 +41,7 @@ $(document).ready(function () {
 
         const selectedId = $(this).val();
 
-        // Fallback safeguard in case change event fired
+        // Safety net if 'change' fires despite the selecting guard above.
         if (hasUnsavedChanges() && selectedId !== currentSelectedReportId) {
             pendingTargetReportId = selectedId;
             isSwitchingProgrammatically = true;
@@ -99,7 +79,6 @@ $(document).ready(function () {
         }
     });
 
-    // Unsaved changes warning modal handlers
     $('#cancelSwitchReportBtn').on('click', function () {
         pendingTargetReportId = null;
         closeModal('unsavedChangesModal');
@@ -108,13 +87,11 @@ $(document).ready(function () {
     $('#confirmSwitchReportBtn').on('click', function () {
         closeModal('unsavedChangesModal');
 
-        // Discard unsaved changes
         pendingClosingCounts = {};
         newReportClosingCounts = {};
         $('.cogs-report-table td.editable-closing').removeClass('modified-count');
         $('#updateInventoryBtn').prop('disabled', true);
 
-        // If discarding from a draft, remove the draft item from reportsList
         reportsList = reportsList.filter(r => !r.isDraft);
 
         if (pendingTargetReportId === 'add_report_modal') {
@@ -147,7 +124,6 @@ $(document).ready(function () {
         }
     });
 
-    // Add Report modal triggers
     function openSaveReportModal() {
         const today = new Date();
         const last30Days = new Date();
@@ -164,7 +140,6 @@ $(document).ready(function () {
         const minStartDateStr = formatToDateInputVal(lastEndDate);
 
         if (minStartDateStr) {
-            // Apply condition: Start Date cannot be before last record's End Date
             $('#reportStartDate').attr('min', minStartDateStr);
             $('#reportStartDate').val(minStartDateStr);
 
@@ -189,7 +164,6 @@ $(document).ready(function () {
         openModal('addReportModal');
     }
 
-    // Keep End Date min synced with chosen Start Date
     $('#reportStartDate').on('change', function () {
         const chosenStart = $(this).val();
         if (chosenStart) {
@@ -211,9 +185,7 @@ $(document).ready(function () {
         openSaveReportModal();
     });
 
-    // "Start" button inside Add Report modal
-    // Does NOT call AddInventorySuiteReport directly!
-    // Instead, sets up draft in dropdown, fetches ingredients, renders inputs for closing count, and shows Insert Report button.
+    // 'Start' only sets up a draft; saving happens later via Insert Inventory.
     $('#saveReportBtn').on('click', function () {
         const sDate = $('#reportStartDate').val();
         const eDate = $('#reportEndDate').val();
@@ -240,14 +212,12 @@ $(document).ready(function () {
 
         closeModal('addReportModal');
 
-        // Switch to INSERT mode
         currentMode = 'INSERT';
         startDate = sDate;
         currentEndDate = eDate;
         pendingClosingCounts = {};
         newReportClosingCounts = {};
 
-        // Remove any previous unconfirmed draft
         reportsList = reportsList.filter(r => !r.isDraft);
 
         const draftId = 'draft_' + Date.now();
@@ -262,15 +232,12 @@ $(document).ready(function () {
         reportsList.unshift(draftReport);
         populateReportSelector(draftId);
 
-        // Show Insert Report button, hide Update Report button
         $('#saveInventoryBtn').show().prop('disabled', false);
         $('#updateInventoryBtn').hide().prop('disabled', true);
 
-        // Fetch ingredients for this date range with closing count inputs
         refreshInventorySuiteReportTable(startDate, currentEndDate, true);
     });
 
-    // Insert Report button handler (calls AddInventorySuiteReport with all items)
     $('#saveInventoryBtn').on('click', function () {
         if ($(this).is(':disabled')) return;
 
@@ -287,7 +254,7 @@ $(document).ready(function () {
         const $btn = $(this);
         $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
 
-        // Ensure any visible inputs currently on screen are captured
+        // Merge any on-screen inputs not yet tracked before submitting.
         $('.new-report-closing-input').each(function () {
             const $inp = $(this);
             const rawVal = $inp.val();
@@ -303,7 +270,6 @@ $(document).ready(function () {
             }
         });
 
-        // Only send ingredients whose closing count was entered / changed by user
         const itemsPayload = Object.values(newReportClosingCounts).map(item => ({
             ingredientId: parseInt(item.ingredientId, 10),
             closingCount: parseFloat(item.closingCount) || 0,
@@ -332,10 +298,8 @@ $(document).ready(function () {
                 $btn.prop('disabled', false).html('<i class="fas fa-plus-circle"></i> Insert Inventory');
                 showNotification(response.responseMsg || 'Inventory created successfully.', 'success');
 
-                // Remove draft from list
                 reportsList = reportsList.filter(r => !r.isDraft);
 
-                // Switch back to UPDATE mode for newly created report
                 currentMode = 'UPDATE';
                 $('#saveInventoryBtn').hide();
                 $('#updateInventoryBtn').show().prop('disabled', true);
@@ -358,7 +322,6 @@ $(document).ready(function () {
         });
     });
 
-    // Update closing count button handler
     $('#updateInventoryBtn').on('click', function () {
         if ($(this).is(':disabled')) return;
 
@@ -396,20 +359,17 @@ $(document).ready(function () {
             onSuccess: function (response) {
                 $btn.html('<i class="fas fa-check-circle"></i> Update Inventory');
 
-                // Update data-original-count to the new values
                 $('.cogs-report-table td.editable-closing').each(function () {
                     const val = parseFloat($(this).text().trim().replace(/,/g, '')) || 0;
                     $(this).attr('data-original-count', val.toFixed(2));
                     $(this).removeClass('modified-count');
                 });
 
-                // Clear pending tracking and disable button
                 pendingClosingCounts = {};
                 $btn.prop('disabled', true);
 
                 showNotification(response.responseMsg || 'Closing counts updated successfully.', 'success');
 
-                // Refresh table with updated calculations from database
                 refreshInventorySuiteReportTable(startDate, currentEndDate, false);
             },
             onError: function (xhr) {
@@ -423,7 +383,6 @@ $(document).ready(function () {
         });
     });
 
-    // Event listener for live typing in New Report closing inputs
     $(document).off('input change', '.new-report-closing-input');
     $(document).on('input change', '.new-report-closing-input', function () {
         const $input = $(this);
@@ -456,68 +415,14 @@ $(document).ready(function () {
         recalculateNewReportSummary();
     });
 
-    // Ensure DataTable is loaded before proceeding
     if (typeof $.fn.DataTable === 'undefined') {
         console.error('jQuery DataTable library is not loaded. Please check the CDN or script inclusion.');
         showNotification('DataTable library failed to load.', 'error');
         return;
     }
 
-    // Load reports from API into Select2 dropdown
     loadInventorySuiteReports();
 });
-
-function safeFormatUS(dateStr) {
-    if (!dateStr) return '';
-    if (typeof dateStr === 'string' && dateStr.includes('-')) {
-        const parts = dateStr.split('T')[0].split('-');
-        if (parts.length === 3 && parts[0].length === 4) {
-            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-            return DateFormatter.formatUS(d) || dateStr;
-        }
-    }
-    return DateFormatter.formatUS(dateStr) || dateStr;
-}
-
-function safeFormatDash(dateStr) {
-    if (!dateStr) return '';
-    if (typeof dateStr === 'string' && dateStr.includes('-')) {
-        const parts = dateStr.split('T')[0].split('-');
-        if (parts.length === 3 && parts[0].length === 4) {
-            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-            return DateFormatter.formatDashUS(d) || dateStr;
-        }
-    }
-    return DateFormatter.formatDashUS(dateStr) || dateStr;
-}
-
-
-function formatToDateInputVal(dateVal) {
-    if (!dateVal) return '';
-    if (typeof dateVal === 'string') {
-        const isoMatch = dateVal.split('T')[0];
-        if (/^\d{4}-\d{2}-\d{2}$/.test(isoMatch)) {
-            return isoMatch;
-        }
-    }
-    const d = new Date(dateVal);
-    if (isNaN(d.getTime())) return '';
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
-
-/* Loading goes through the shared LoadingComponent (js/loadingComponent.js)
- * so this table shows the same indicator as every other DataTable.
- * hideAll is used because load/refresh calls here are not strictly paired. */
-function showTableLoading(message = 'Loading inventory...') {
-    LoadingComponent.showForTable('.cogs-report-table', message);
-}
-
-function hideTableLoading() {
-    LoadingComponent.hideAllForTable('.cogs-report-table');
-}
 
 function loadInventorySuiteReports(preselectReportId = null) {
     showTableLoading('Loading inventory...');
@@ -530,12 +435,10 @@ function loadInventorySuiteReports(preselectReportId = null) {
         onSuccess: function (response) {
             const rawReports = (response && response.data) ? response.data : [];
 
-            // Get last record's endDate
             lastEndDate = (rawReports && rawReports.length > 0)
                 ? (rawReports[rawReports.length - 1].endDate ?? rawReports[rawReports.length - 1].EndDate ?? null)
                 : null;
 
-            // Enable Add Report button now that API response is received
             $('#openSaveReportModalBtn').prop('disabled', false);
 
             reportsList = rawReports.map(r => {
@@ -588,7 +491,6 @@ function loadInventorySuiteReports(preselectReportId = null) {
         },
         onError: function (xhr) {
             hideTableLoading();
-            // Enable button so user can still try adding a report if needed
             $('#openSaveReportModalBtn').prop('disabled', false);
             showNotification('Failed to load inventory.', 'error');
             const tbody = $('.cogs-report-table tbody');
@@ -615,8 +517,6 @@ function populateReportSelector(selectedReportId = null) {
     isSwitchingProgrammatically = false;
 }
 
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
-
 function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNewReport = false) {
     if (!startDate || !endDate) {
         console.warn('Start date or end date missing.');
@@ -626,14 +526,12 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
 
     showTableLoading('Loading inventory...');
 
-    // If already initialized, destroy BEFORE touching the DOM
+    // Destroy before touching the DOM; DataTables restores its own rows on destroy.
     if ($.fn.DataTable.isDataTable('.cogs-report-table')) {
         table.destroy();
     }
 
     const tbody = $('.cogs-report-table tbody');
-    // Rows are cleared while loading; the LoadingComponent overlay (shown
-    // above) is the only loading indicator for this table now.
     tbody.empty();
 
     const requestData = {
@@ -652,7 +550,7 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
         onSuccess: function (response) {
             hideTableLoading();
             pendingClosingCounts = {};
-           
+
             const items = (response && response.data && response.data.items) ? response.data.items : [];
             loadedReportItems = items;
 
@@ -664,13 +562,12 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
                 $('#saveInventoryBtn').hide();
             }
 
-            // Clean up tbody
             tbody.empty();
 
             if (items.length === 0) {
                 tbody.append('<tr><td colspan="10" class="text-center">No data available for the selected date range.</td></tr>');
                 resetFooterValues();
-                initDataTable();
+                setupReportTable();
                 return;
             }
 
@@ -754,7 +651,7 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
                 resetFooterValues();
             }
 
-            initDataTable();
+            setupReportTable();
         },
         onError: function (xhr, status, error) {
             hideTableLoading();
@@ -764,45 +661,21 @@ function refreshInventorySuiteReportTable(startDate = null, endDate = null, isNe
             tbody.empty();
             tbody.append('<tr><td colspan="10" class="text-center">Failed to load inventory. Please try again.</td></tr>');
             resetFooterValues();
-            initDataTable();
+            setupReportTable();
         }
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-// Strips HTML tags from a cell's raw markup and collapses whitespace/newlines
-// Checks for input value if cell contains an input.
-function cleanExportCell(data) {
-    if (data == null) return '';
-    const $el = $('<div>').html(data);
-    const $inp = $el.find('input');
-    if ($inp.length) {
-        return $inp.val() || '0.00';
-    }
-    const text = $el.text();
-    return text.replace(/\s+/g, ' ').trim();
-}
-
-function initDataTable() {
-    table = $('.cogs-report-table').DataTable({
-        paging: true,
-        searching: true,
-        ordering: false,
+function setupReportTable() {
+    table = initDataTable('.cogs-report-table', {
         processing: true,
         order: [[1, 'asc']],
-        columnDefs: [
-            { targets: [3, 4, 5, 6, 7, 8, 9], className: 'dt-body-left' }
-        ],
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
         autoWidth: false,
         columnDefs: [
-            { width: "150px", targets: 0 },
-            { width: "80px", targets: 1 },
+            { width: '150px', targets: 0 },
+            { width: '80px', targets: 1 }
         ],
         language: {
-            search: '',
             searchPlaceholder: 'Search ingredients...'
         },
         dom: 'Bfrtip',
@@ -903,16 +776,14 @@ function initDataTable() {
         ]
     });
 
-    // Move export buttons to custom container
     if (table.buttons && $('#exportButtons').length) {
         table.buttons().container().appendTo('#exportButtons');
     }
 
-    // Only make closing counts editable on click if in UPDATE mode
     if (currentMode !== 'INSERT') {
         makeClosingCountEditable();
     } else {
-        // Redraw preservation for inputs across pages
+        // Restore typed counts after paging redraws.
         table.on('draw', function () {
             $('.new-report-closing-input').each(function () {
                 const $inp = $(this);
@@ -925,16 +796,140 @@ function initDataTable() {
         });
     }
 
-    // Custom search
     $('#ingredientSearch').off('keyup').on('keyup', function () {
         table.search(this.value).draw();
     });
 
-    // Clear filter
     $('#clear-filter').off('click').on('click', function () {
         table.search('').draw();
         $('#ingredientSearch').val('').trigger('keyup');
     });
+}
+
+function makeClosingCountEditable() {
+    $('.cogs-report-table tbody').off('click', 'td.editable-closing');
+    $('.cogs-report-table tbody').on('click', 'td.editable-closing', function (e) {
+        const $closingCountTd = $(this);
+        if ($closingCountTd.find('input').length) return;
+
+        const ingredientId = $closingCountTd.attr('data-ingredient-id');
+        if (!ingredientId) { console.warn('ingredientId missing'); return; }
+
+        const oldClosingCount = parseFloat($closingCountTd.text().trim().replace(/,/g, '')) || 0;
+        const $closingCountInput = $(`<input type="number" step="any" class="form-control form-control-sm" style="width:85px; text-align:right; font-weight:600;" value="${oldClosingCount}">`);
+        $closingCountTd.html($closingCountInput);
+        $closingCountInput.focus().select();
+
+        const $closingValueTd = $('#closingValue_' + ingredientId);
+        const oldClosingValue = parseFloat($closingValueTd.text().replace(/[$,]/g, '')) || 0;
+        const price = oldClosingCount > 0 ? (oldClosingValue / oldClosingCount) : 0;
+
+        const finish = () => {
+            const inputVal = $closingCountInput.val();
+            const newClosingCount = parseFloat(inputVal.replace(/[^0-9.-]/g, '')) || 0;
+            $closingCountTd.text(newClosingCount.toFixed(2));
+            $closingCountTd.removeClass('editing');
+
+            const newClosingValue = newClosingCount * price;
+            $closingValueTd.text('$' + newClosingValue.toFixed(2));
+
+            const originalCount = parseFloat($closingCountTd.attr('data-original-count')) || 0;
+            const isChanged = Math.abs(newClosingCount - originalCount) > 0.001;
+
+            if (isChanged) {
+                $closingCountTd.addClass('modified-count');
+                pendingClosingCounts[ingredientId] = {
+                    ingredientId: parseInt(ingredientId),
+                    closingCount: newClosingCount,
+                    closingValue: newClosingValue,
+                    closingDate: currentEndDate
+                };
+            } else {
+                $closingCountTd.removeClass('modified-count');
+                delete pendingClosingCounts[ingredientId];
+            }
+
+            const hasChanges = Object.keys(pendingClosingCounts).length > 0;
+            $('#updateInventoryBtn').prop('disabled', !hasChanges);
+
+            const $row = $closingCountTd.closest('tr');
+            const openingVal = parseFloat($row.find('td:nth-child(5)').text().replace(/[$,]/g, '')) || 0;
+            const purchasesVal = parseFloat($row.find('td:nth-child(7)').text().replace(/[$,]/g, '')) || 0;
+            const rowCogs = (openingVal + purchasesVal) - newClosingValue;
+            $row.find('td:nth-child(10)').text('$' + rowCogs.toFixed(2));
+        };
+
+        $closingCountInput.on('blur', finish)
+            .on('keydown', function (e) { if (e.which === 13) finish(); });
+    });
+}
+
+function hasUnsavedChanges() {
+    if (currentMode === 'INSERT') {
+        return Object.keys(newReportClosingCounts).length > 0;
+    }
+    return Object.keys(pendingClosingCounts).length > 0;
+}
+
+function safeFormatUS(dateStr) {
+    if (!dateStr) return '';
+    if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            return DateFormatter.formatUS(d) || dateStr;
+        }
+    }
+    return DateFormatter.formatUS(dateStr) || dateStr;
+}
+
+function safeFormatDash(dateStr) {
+    if (!dateStr) return '';
+    if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const parts = dateStr.split('T')[0].split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            return DateFormatter.formatDashUS(d) || dateStr;
+        }
+    }
+    return DateFormatter.formatDashUS(dateStr) || dateStr;
+}
+
+function formatToDateInputVal(dateVal) {
+    if (!dateVal) return '';
+    if (typeof dateVal === 'string') {
+        const isoMatch = dateVal.split('T')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(isoMatch)) {
+            return isoMatch;
+        }
+    }
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+// hideAll because load/refresh calls here are not strictly paired.
+function showTableLoading(message = 'Loading inventory...') {
+    LoadingComponent.showForTable('.cogs-report-table', message);
+}
+
+function hideTableLoading() {
+    LoadingComponent.hideAllForTable('.cogs-report-table');
+}
+
+// Plain-text value of a cell for export; uses the input's value when the cell holds one.
+function cleanExportCell(data) {
+    if (data == null) return '';
+    const $el = $('<div>').html(data);
+    const $inp = $el.find('input');
+    if ($inp.length) {
+        return $inp.val() || '0.00';
+    }
+    const text = $el.text();
+    return text.replace(/\s+/g, ' ').trim();
 }
 
 function recalculateNewReportSummary() {
@@ -988,66 +983,4 @@ function resetFooterValues() {
     $('#theoretical-food-cost-value').text('0%');
     $('#variance-percentage-value').text('0%');
     $('#variance-value').text('$0.00');
-}
-
-function makeClosingCountEditable() {
-    $('.cogs-report-table tbody').off('click', 'td.editable-closing');
-    $('.cogs-report-table tbody').on('click', 'td.editable-closing', function (e) {
-        const $closingCountTd = $(this);
-        if ($closingCountTd.find('input').length) return;
-
-        const ingredientId = $closingCountTd.attr('data-ingredient-id');
-        if (!ingredientId) { console.warn('ingredientId missing'); return; }
-
-        const oldClosingCount = parseFloat($closingCountTd.text().trim().replace(/,/g, '')) || 0;
-        const $closingCountInput = $(`<input type="number" step="any" class="form-control form-control-sm" style="width:85px; text-align:right; font-weight:600;" value="${oldClosingCount}">`);
-        $closingCountTd.html($closingCountInput);
-        $closingCountInput.focus().select();
-
-        const $closingValueTd = $('#closingValue_' + ingredientId);
-        const oldClosingValue = parseFloat($closingValueTd.text().replace(/[$,]/g, '')) || 0;
-        const price = oldClosingCount > 0 ? (oldClosingValue / oldClosingCount) : 0;
-
-        const finish = () => {
-            const inputVal = $closingCountInput.val();
-            const newClosingCount = parseFloat(inputVal.replace(/[^0-9.-]/g, '')) || 0;
-            $closingCountTd.text(newClosingCount.toFixed(2));
-            $closingCountTd.removeClass('editing');
-
-            const newClosingValue = newClosingCount * price;
-            $closingValueTd.text('$' + newClosingValue.toFixed(2));
-
-            const originalCount = parseFloat($closingCountTd.attr('data-original-count')) || 0;
-            const isChanged = Math.abs(newClosingCount - originalCount) > 0.001;
-
-            if (isChanged) {
-                // Mark visually as modified and queue change
-                $closingCountTd.addClass('modified-count');
-                pendingClosingCounts[ingredientId] = {
-                    ingredientId: parseInt(ingredientId),
-                    closingCount: newClosingCount,
-                    closingValue: newClosingValue,
-                    closingDate: currentEndDate
-                };
-            } else {
-                // Reverted to original value
-                $closingCountTd.removeClass('modified-count');
-                delete pendingClosingCounts[ingredientId];
-            }
-
-            // Enable button ONLY if there are modified counts, else keep disabled
-            const hasChanges = Object.keys(pendingClosingCounts).length > 0;
-            $('#updateInventoryBtn').prop('disabled', !hasChanges);
-
-            // Recalculate row COGS
-            const $row = $closingCountTd.closest('tr');
-            const openingVal = parseFloat($row.find('td:nth-child(5)').text().replace(/[$,]/g, '')) || 0;
-            const purchasesVal = parseFloat($row.find('td:nth-child(7)').text().replace(/[$,]/g, '')) || 0;
-            const rowCogs = (openingVal + purchasesVal) - newClosingValue;
-            $row.find('td:nth-child(10)').text('$' + rowCogs.toFixed(2));
-        };
-
-        $closingCountInput.on('blur', finish)
-            .on('keydown', function (e) { if (e.which === 13) finish(); });
-    });
 }

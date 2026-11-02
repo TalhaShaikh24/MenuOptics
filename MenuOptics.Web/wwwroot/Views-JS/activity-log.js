@@ -1,13 +1,4 @@
-/* ============================================================================
- * activity-log.js — Admin Restaurant Activity Logs (Views/ActivityLog/UserActivityLog.cshtml)
- *
- * Project convention — section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: referenced by inline handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// activity-log.js — Restaurant activity log page scripts.
 
 let table = null;
 let logCache = {};
@@ -35,10 +26,7 @@ let currentFilters = {
     endDate: defaultRange.endDate
 };
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    // Initialize Select2 filter for Restaurants
     $('#restaurantFilter').select2({
         placeholder: 'All Users',
         allowClear: false,
@@ -48,7 +36,6 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 
-    // Initialize Date Range filter with optional time
     $('#activityDateRange').customRangeFilter({
         enableTime: true,
         initialFilter: "Last 7 Days",
@@ -63,8 +50,6 @@ $(document).ready(function () {
     loadEndpointsDropdown();
     initRestaurantActivityTable();
 
-    
-
     $('#restaurantLogSearch').on('input', function () {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
@@ -77,7 +62,6 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 
-    // Initialize Select2 filter for Endpoints
     $('#restaurantLogRequestFilter').select2({
         placeholder: 'All Endpoints',
         allowClear: false,
@@ -98,8 +82,6 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 });
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function loadRestaurantsDropdown() {
     ajaxRequest({
@@ -126,19 +108,11 @@ function loadRestaurantsDropdown() {
 }
 
 function initRestaurantActivityTable() {
-    if ($.fn.DataTable.isDataTable('#restaurantActivityTable')) {
-        $('#restaurantActivityTable').DataTable().destroy();
-    }
-
-    table = $('#restaurantActivityTable').DataTable({
+    table = initDataTable('#restaurantActivityTable', {
         serverSide: true,
         processing: true,
         loadingMessage: 'Loading activity log...',
-        ordering: false,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
         language: {
-            search: '',
             searchPlaceholder: 'Search logs...',
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',
             paginate: {
@@ -280,8 +254,6 @@ function initRestaurantActivityTable() {
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
 function updateStatsCards(logs, total, counts) {
     let successCount = 0;
     let errorCount = 0;
@@ -379,8 +351,6 @@ function viewRestaurantLogDetails(logId) {
     openModal('restaurantLogDetailsModal');
 }
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
 function getMethodBadgeHtml(requestType) {
     if (!requestType) return '';
 
@@ -457,16 +427,6 @@ function copyJsonToClipboard(elementId) {
     }).catch(() => {
         showNotification('Failed to copy.', 'error');
     });
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.toString()
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
 }
 
 function formatDateTimeForApi(d) {

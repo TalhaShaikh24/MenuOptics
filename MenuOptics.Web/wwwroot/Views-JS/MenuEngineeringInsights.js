@@ -1,32 +1,18 @@
-/* ============================================================================
- * MenuEngineeringInsights.js — Menu engineering insights page
- * (Views/MenuEngineeringInsights/Index.cshtml)
- * Quadrant analysis table with CSV/PDF export and date-range filter.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// MenuEngineeringInsights.js — Menu engineering insights page scripts.
 
 let table;
 let startDate;
 let endDate;
 let currentEndDate = null;
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-
     $('#dateRange').customRangeFilter({
         onApplyFilter: function (filterType, selectedDates) {
             startDate = DateFormatter.formatDashUS(selectedDates.startDate);
             endDate = DateFormatter.formatDashUS(selectedDates.endDate);
             refreshMenuEngineeringInsightsTable(startDate, endDate);
         },
-        initialFilter: "Last 30 Days"
+        initialFilter: 'Last 30 Days'
     });
 
     if (typeof $.fn.DataTable === 'undefined') {
@@ -45,8 +31,6 @@ $(document).ready(function () {
 
     refreshMenuEngineeringInsightsTable(startDate, endDate);
 });
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
     LoadingComponent.showForTable('.menu-engineering-table', 'Loading menu insights...');
@@ -79,7 +63,75 @@ function refreshMenuEngineeringInsightsTable(startDate = null, endDate = null) {
                 tbody.append(buildInsightRow(insight));
             });
 
-            initDataTable();
+            $.fn.dataTable.ext.type.order['quadrant-pre'] = function (d) {
+                const text = $(d).attr('data-quadrant') || $(d).data('quadrant') || $(d).text() || d;
+                switch (text) {
+                    case 'Star': return 1;
+                    case 'Plowhorse': return 2;
+                    case 'Puzzle': return 3;
+                    case 'Dog': return 4;
+                    default: return 5;
+                }
+            };
+
+            table = initDataTable('.menu-engineering-table', {
+                orderable: false,
+                columnDefs: [
+                    { type: 'quadrant', targets: 8 },
+                    { searchable: false },
+                    { targets: [1, 2, 3, 4, 5, 6, 7], className: 'dt-body-left' }
+                ],
+                language: {
+                    search: '',
+                    searchPlaceholder: 'Search menu items...'
+                },
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'csvHtml5',
+                        text: '<i class="fas fa-file-csv"></i> Export CSV',
+                        className: 'btn btn-outline',
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                            format: {
+                                body: formatExportCell
+                            }
+                        }
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="fas fa-file-pdf"></i> Export PDF',
+                        className: 'btn btn-primary',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        title: 'Menu Engineering Insights Report',
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+                            format: {
+                                body: formatExportCell
+                            }
+                        }
+                    }
+                ]
+            });
+
+            if (table.buttons && $('#exportButtons').length) {
+                table.buttons().container().appendTo('#exportButtons');
+            }
+
+            $('#menuItemSearch').on('keyup', function () {
+                table.search(this.value).draw();
+            });
+
+            $('.quadrant-filter').on('click', function () {
+                const quadrant = $(this).data('quadrant');
+                table.column(8).search(quadrant).draw();
+            });
+
+            $('#clear-filter').on('click', function () {
+                table.column(8).search('').draw();
+                $('#menuItemSearch').val('').trigger('keyup');
+            });
         },
         onError: function (xhr, status, error) {
             console.error('Failed to fetch menu engineering insights:', error);
@@ -118,85 +170,6 @@ function deleteMenuItem(id) {
         onError: function (xhr, status, error) {
             console.error('Failed to delete menu item:', error);
         }
-    });
-}
-
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-function initDataTable() {
-    $.fn.dataTable.ext.type.order['quadrant-pre'] = function (d) {
-        const text = $(d).attr('data-quadrant') || $(d).data('quadrant') || $(d).text() || d;
-        switch (text) {
-            case 'Star': return 1;
-            case 'Plowhorse': return 2;
-            case 'Puzzle': return 3;
-            case 'Dog': return 4;
-            default: return 5;
-        }
-    };
-
-    table = $('.menu-engineering-table').DataTable({
-        paging: true,
-        searching: true,
-        ordering: false,
-        orderable: false,
-        columnDefs: [
-            { type: 'quadrant', targets: 8 },
-            { searchable: false },
-            { targets: [1, 2, 3, 4, 5, 6, 7], className: 'dt-body-left' }
-        ],
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search menu items...'
-        },
-        dom: 'Bfrtip',
-        buttons: [
-            {
-                extend: 'csvHtml5',
-                text: '<i class="fas fa-file-csv"></i> Export CSV',
-                className: 'btn btn-outline',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-                    format: {
-                        body: formatExportCell
-                    }
-                }
-            },
-            {
-                extend: 'pdfHtml5',
-                text: '<i class="fas fa-file-pdf"></i> Export PDF',
-                className: 'btn btn-primary',
-                orientation: 'landscape',
-                pageSize: 'A4',
-                title: 'Menu Engineering Insights Report',
-                exportOptions: {
-                    columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-                    format: {
-                        body: formatExportCell
-                    }
-                }
-            }
-        ]
-    });
-
-    if (table.buttons && $('#exportButtons').length) {
-        table.buttons().container().appendTo('#exportButtons');
-    }
-
-    $('#menuItemSearch').on('keyup', function () {
-        table.search(this.value).draw();
-    });
-
-    $('.quadrant-filter').on('click', function () {
-        const quadrant = $(this).data('quadrant');
-        table.column(8).search(quadrant).draw();
-    });
-
-    $('#clear-filter').on('click', function () {
-        table.column(8).search('').draw();
-        $('#menuItemSearch').val('').trigger('keyup');
     });
 }
 
@@ -251,8 +224,6 @@ function buildInsightRow(insight) {
         </tr>
     `;
 }
-
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
 function getQuadrantIcon(quadrant) {
     switch (quadrant) {

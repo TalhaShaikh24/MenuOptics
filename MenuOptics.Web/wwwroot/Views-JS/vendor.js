@@ -1,66 +1,49 @@
-﻿/* ============================================================================
- * vendor.js — Admin user management page (Views/User/AllUsers.cshtml)
- * User table with stats, filters, add/edit modals and periodic auto-refresh.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// vendor.js — Admin user management page scripts.
 
 let allUsers = [];
 let currentFilters = { search: '' };
 let table;
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    // Initialize DataTable once on page load
-    initDataTable();
+    table = initDataTable('#userTable', {
+        order: [[0, 'asc']],
+        language: {
+            search: '',
+            searchPlaceholder: 'Search users...'
+        }
+    });
 
-    // Load stats and users
     refreshUserStats();
     refreshUserTable();
 
-    // Event handler for add user
     $('#saveUserBtn').on('click', function () {
         const formData = new FormData($('#addUserForm')[0]);
-        if (isFormValid("#addUserForm")) {
+        if (isFormValid('#addUserForm')) {
             addUser(formData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
         }
     });
 
-    // Event handler for update user
     $('#updateUserBtn').on('click', function () {
         const formData = new FormData($('#editUserForm')[0]);
-        if (isFormValid("#updateUserForm")) {
+        if (isFormValid('#updateUserForm')) {
             updateUser(formData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
         }
     });
 
-    // Search filter
     $('#userSearch').on('input', function () {
         currentFilters.search = $(this).val();
         table.search(this.value).draw();
     });
 
-    // Auto-refresh table every 30 seconds
     setInterval(refreshUserTable, 30000);
 });
 
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
-
-// Add user
 function addUser(formData) {
-
-    formData.isActive = formData.isActive == "on" ? 1 : 0
+    formData.isActive = formData.isActive == 'on' ? 1 : 0;
     ajaxRequest({
         url: '/api/UserApi/CreateUser',
         method: 'POST',
@@ -80,7 +63,6 @@ function addUser(formData) {
     });
 }
 
-// Get user by ID
 function getUserById(id) {
     ajaxRequest({
         url: `/api/UserApi/GetUser/${id}`,
@@ -101,7 +83,7 @@ function getUserById(id) {
             $('#editUserForm [name="zip"]').val(user.zip);
             $('#editUserForm [name="profilePic"]').val(user.profilePic);
             if (user.profilePic) {
-                $('#editProfilePicPreview').attr('src', imageBaseUrl +user.profilePic).show();
+                $('#editProfilePicPreview').attr('src', imageBaseUrl + user.profilePic).show();
                 $('#editProfilePicLabel').text('Replace profile picture');
             } else {
                 $('#editProfilePicPreview').hide();
@@ -116,9 +98,8 @@ function getUserById(id) {
     });
 }
 
-// Update user
 function updateUser(formData) {
-    formData.isActive = formData.isActive == "on" ? 1 : 0
+    formData.isActive = formData.isActive == 'on' ? 1 : 0;
     ajaxRequest({
         url: '/api/UserApi/UpdateUser',
         method: 'PUT',
@@ -136,7 +117,6 @@ function updateUser(formData) {
     });
 }
 
-// Toggle user active status
 function toggleUserActive(id) {
     ajaxRequest({
         url: `/api/UserApi/ToggleUserActive/${id}`,
@@ -154,8 +134,6 @@ function toggleUserActive(id) {
     });
 }
 
-
-// Refresh user stats
 function refreshUserStats() {
     ajaxRequest({
         url: '/api/UserApi/GetUserStats',
@@ -180,25 +158,6 @@ function refreshUserStats() {
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-// Initialize DataTable
-function initDataTable() {
-    table = $('#userTable').DataTable({
-        paging: true,
-        searching: true,
-        ordering: false,
-        order: [[0, 'asc']], // Sort by Name column by default
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search users...'
-        }
-    });
-}
-
-// Refresh user table
 function refreshUserTable() {
     LoadingComponent.showForTable('#userTable', 'Loading users...');
     ajaxRequest({
@@ -217,7 +176,6 @@ function refreshUserTable() {
     });
 }
 
-// Filter and render users
 function filterAndRenderUsers() {
     const filteredUsers = allUsers.filter(user => {
         const matchesSearch = currentFilters.search === '' ||
@@ -225,14 +183,12 @@ function filterAndRenderUsers() {
             user.lastName.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
             user.email.toLowerCase().includes(currentFilters.search.toLowerCase()) ||
             user.username.toLowerCase().includes(currentFilters.search.toLowerCase());
-        
+
         return matchesSearch;
     });
 
-    // Clear existing rows
     table.clear();
 
-    // Add new rows
     filteredUsers.forEach(user => {
         const status = user.isActive ? 'active' : 'critical';
         const row = `
@@ -269,16 +225,11 @@ function filterAndRenderUsers() {
         table.row.add($(row));
     });
 
-    // Redraw the table
     table.draw();
 }
 
-// Filter users by role or status
 window.filterUsers = function (type, value) {
     currentFilters[type] = value;
     $('#' + type + 'FilterLabel').text(value.charAt(0).toUpperCase() + value.slice(1));
     filterAndRenderUsers();
 };
-
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-

@@ -1,29 +1,19 @@
-/* ============================================================================
- * profile-edit.js — Profile edit page (Views/Profile/Index.cshtml)
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * ==========================================================================*/
-
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+// profile-edit.js — Profile edit page scripts.
 
 $(document).ready(function () {
     loadCurrentProfile();
 
-    // Image preview logic
     $('#profileFile').on('change', function () {
         const file = this.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                $('#profilePreview').attr('src',e.target.result);
+                $('#profilePreview').attr('src', e.target.result);
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // Form Submit
     $('#saveProfileBtn').on('click', function () {
         const formData = new FormData(document.getElementById('profileEditForm'));
 
@@ -34,15 +24,12 @@ $(document).ready(function () {
             contentType: false,
             processData: false,
             onSuccess: function (response) {
-                localStorage.setItem("profilePic", response.data.profilePic);
+                localStorage.setItem('profilePic', response.data.profilePic);
                 showNotification('Profile updated successfully!', 'success');
             }
         });
     });
-
 });
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function loadCurrentProfile() {
     ajaxRequest({
@@ -61,10 +48,10 @@ function loadCurrentProfile() {
             form.find('[name="address"]').val(user.address);
             form.find('[name="city"]').val(user.city);
             form.find('[name="zip"]').val(user.zip);
-            form.find('#existingProfilePic').val(imageBaseUrl+user.profilePic);
-           
+            form.find('#existingProfilePic').val(imageBaseUrl + user.profilePic);
+
             if (user.profilePic) {
-                $('#profilePreview').attr('src', imageBaseUrl+user.profilePic);
+                $('#profilePreview').attr('src', imageBaseUrl + user.profilePic);
             }
         }
     });

@@ -1,30 +1,20 @@
-/* ============================================================================
- * restaurant-members.js — Restaurant members page (Views/Restaurant/Members.cshtml)
- * Member directory with stats, filters, add/edit modals and auto-refresh.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// restaurant-members.js — Restaurant members page scripts.
 
 let allMembers = [];
 let currentFilters = { search: '' };
 let table;
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    // Initialize DataTable once on page load
-    initDataTable();
+    table = initDataTable('#membersTable', {
+        searching: false,
+        language: {
+            emptyTable: 'No members found'
+        }
+    });
 
-    // Load stats and members
     refreshMemberStats();
     refreshMemberTable();
 
-    // Event handler for image upload preview in Edit Modal
     $('#editMemberProfilePicFile').on('change', function () {
         const file = this.files[0];
         if (file) {
@@ -37,7 +27,6 @@ $(document).ready(function () {
         }
     });
 
-    // Event handler for add member
     $('#saveMemberBtn').on('click', function () {
         const formEl = document.getElementById('addMemberForm');
         if (!formEl.checkValidity()) {
@@ -49,7 +38,6 @@ $(document).ready(function () {
         addMember(formData);
     });
 
-    // Event handler for update member
     $('#updateMemberBtn').on('click', function () {
         const formEl = document.getElementById('editMemberForm');
         if (!formEl.checkValidity()) {
@@ -58,25 +46,18 @@ $(document).ready(function () {
         }
 
         const formData = new FormData(formEl);
-
         updateMember(formData);
     });
 
-    // Search filter
     $('#memberSearch').on('input', function () {
         currentFilters.search = $(this).val().toLowerCase();
         filterAndRenderMembers();
     });
 
-    // Auto-refresh table every 30 seconds
     setInterval(refreshMemberTable, 30000);
 });
 
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
-
-// Add member
 function addMember(formData) {
-    // Convert DTO fields from FormData structure if needed
     const payload = {};
     formData.forEach((value, key) => {
         payload[key] = value;
@@ -99,7 +80,6 @@ function addMember(formData) {
     });
 }
 
-// Get member by ID for editing
 window.editMember = function (id) {
     ajaxRequest({
         url: `/api/UserApi/GetUser/${id}`,
@@ -108,7 +88,7 @@ window.editMember = function (id) {
         onSuccess: function (response) {
             const member = response.data;
             const form = $('#editMemberForm');
-            
+
             form.find('[name="memberId"]').val(member.userId);
             form.find('[name="firstName"]').val(member.firstName);
             form.find('[name="lastName"]').val(member.lastName);
@@ -120,8 +100,8 @@ window.editMember = function (id) {
             form.find('[name="state"]').val(member.state);
             form.find('[name="city"]').val(member.city);
             form.find('[name="zip"]').val(member.zip);
-            form.find('[name="profilePic"]').val(member.profilePic || "");
-            form.find('[name="password"]').val(""); // Reset password field
+            form.find('[name="profilePic"]').val(member.profilePic || '');
+            form.find('[name="password"]').val('');
 
             if (member.profilePic) {
                 $('#editMemberProfilePicPreview').attr('src', member.profilePic).show();
@@ -140,7 +120,6 @@ window.editMember = function (id) {
     });
 };
 
-// Update member details
 function updateMember(formData) {
     ajaxRequest({
         url: '/api/UserApi/UpdateRestaurantMember',
@@ -160,7 +139,6 @@ function updateMember(formData) {
     });
 }
 
-// Toggle member active/inactive status
 window.toggleMemberActive = function (id) {
     ajaxRequest({
         url: `/api/UserApi/ToggleMemberActive/${id}`,
@@ -178,15 +156,13 @@ window.toggleMemberActive = function (id) {
     });
 };
 
-
-// Refresh member stats cards
 function refreshMemberStats() {
     ajaxRequest({
         url: '/api/UserApi/GetMemberStats',
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            const stats = response.data || { totalCount: 0, activeCount: 0, inactiveCount: 0};
+            const stats = response.data || { totalCount: 0, activeCount: 0, inactiveCount: 0 };
             $('#totalMembers').text(stats.totalCount);
             $('#activeMembers').text(stats.activeCount);
             $('#inactiveMembers').text(stats.inactiveCount);
@@ -200,23 +176,6 @@ function refreshMemberStats() {
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-// Initialize DataTable
-function initDataTable() {
-    table = $('#membersTable').DataTable({
-        paging: true,
-        searching: false, // We handle search custom filter
-        ordering: false,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            emptyTable: "No members found"
-        }
-    });
-}
-
-// Refresh table data
 function refreshMemberTable() {
     LoadingComponent.showForTable('#membersTable', 'Loading members...');
     ajaxRequest({
@@ -235,7 +194,6 @@ function refreshMemberTable() {
     });
 }
 
-// Filter and render members
 function filterAndRenderMembers() {
     const filtered = allMembers.filter(member => {
         const matchesSearch = currentFilters.search === '' ||
@@ -244,7 +202,7 @@ function filterAndRenderMembers() {
             (member.email && member.email.toLowerCase().includes(currentFilters.search)) ||
             (member.username && member.username.toLowerCase().includes(currentFilters.search)) ||
             (member.phone && member.phone.toLowerCase().includes(currentFilters.search));
-            
+
         return matchesSearch;
     });
 
@@ -294,7 +252,6 @@ function filterAndRenderMembers() {
     table.draw();
 }
 
-// Dropdown status filter
 window.filterMembers = function (type, value) {
     filterAndRenderMembers();
 };

@@ -1,33 +1,19 @@
-/* ============================================================================
- * events.js — Event management page (Views/Event/Index.cshtml)
- * Event table, item cost calculations, notes and customer/staff PDF export.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 1. Constants ─────────────────────────────────────────────────────── */
+// events.js — Events page scripts.
 
 const profilePic = (() => {
-    const value = localStorage.getItem("profilePic");
-    return value && value !== "null" ? $('#imageBaseUrl').val() + value : '/images/menu optics_logo.png';
+    const value = localStorage.getItem('profilePic');
+    return value && value !== 'null' ? $('#imageBaseUrl').val() + value : '/images/menu optics_logo.png';
 })();
 
-const restaurantAddress = localStorage.getItem("address");
-const restaurantName = localStorage.getItem("restaurantName");
-const restaurantPhone = localStorage.getItem("phone");
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+const restaurantAddress = localStorage.getItem('address');
+const restaurantName = localStorage.getItem('restaurantName');
+const restaurantPhone = localStorage.getItem('phone');
 
 let menuItemsGlobal = [];
 let eventOnlyItemsGlobal = [];
 let allActiveItems = [];
 let allEventsData = [];
 let eventTable;
-
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
 
 $(document).ready(function () {
     loadEvents();
@@ -42,8 +28,6 @@ $(document).ready(function () {
     $('#exportCsvBtn').on('click', () => $('.buttons-csv').click());
     $('#exportPdfBtn').on('click', () => exportEventsPDF($('#customerFacing').is(':checked'), allEventsData));
 });
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function loadMenuItems() {
     ajaxRequest({
@@ -255,7 +239,7 @@ function editEvent(id) {
 }
 
 function duplicateEvent(id) {
-    if (!confirm("Duplicate this event?")) return;
+    if (!confirm('Duplicate this event?')) return;
     ajaxRequest({
         url: `/api/EventApi/DuplicateEvent/${id}`,
         method: 'POST',
@@ -267,14 +251,7 @@ function duplicateEvent(id) {
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-// ── Events table ──
-
 function rebuildEventsTable(events) {
-    if ($.fn.DataTable.isDataTable('.events-table')) {
-        $('.events-table').DataTable().destroy();
-    }
     const tbody = $('.events-table tbody').empty();
 
     events.forEach(event => {
@@ -308,9 +285,8 @@ function rebuildEventsTable(events) {
             </tr>`);
     });
 
-    eventTable = $('.events-table').DataTable({
-        paging: true, searching: true, ordering: false, pageLength: 10,
-        lengthMenu: [10, 25, 50, 100], language: { search: '', searchPlaceholder: 'Search events...' },
+    eventTable = initDataTable('.events-table', {
+        language: { searchPlaceholder: 'Search events...' },
         dom: 'Brtip',
         buttons: [{
             extend: 'csv', text: 'Export CSV', className: 'buttons-csv',
@@ -319,8 +295,6 @@ function rebuildEventsTable(events) {
         }]
     });
 }
-
-// ── Item list / cost calculations ──
 
 function populateSelect2(selector, data) {
     $(selector)
@@ -420,9 +394,9 @@ function initEventCalculations() {
 
 function updateAllCosts() {
     const guests = parseFloat($('#guestCount').val()) || 0;
-    let menuFoodCost = 0;       // Menu items cost
-    let eventItemsCost = 0;     // Event-only items: cost * qty
-    let eventItemsRevenue = 0;  // Event-only items: sellingPrice * qty
+    let menuFoodCost = 0;
+    let eventItemsCost = 0;
+    let eventItemsRevenue = 0;
 
     $('.event-item-row').each(function () {
         const item = allActiveItems[$(this).data('index')];
@@ -457,8 +431,6 @@ function updateAllCosts() {
     $('#grossMarginPercent').text(`${marginPct.toFixed(2)}%`);
 }
 
-// ── Modals & tabs ──
-
 function openNewEventModal() {
     allActiveItems = [];
     $('#addEventForm')[0].reset();
@@ -487,8 +459,6 @@ function resetTabs() {
     $('#tab-menu-items').show().addClass('active');
     $('.tab-btn').removeClass('active').first().addClass('active');
 }
-
-// ── PDF export ──
 
 function exportSingleEventPDF(eventId) {
     if ($('#customerFacing').is(':checked')) {
@@ -627,7 +597,6 @@ async function exportInternalReportPDF(exportableEvents) {
 }
 
 function exportCustomerQuotePDF(exportableEvents) {
-    // Notes now come with the GetEvent response (event.notes)
     Promise.all(exportableEvents.map(e =>
         getAjaxPromise({ url: `/api/EventApi/GetEvent/${e.eventId}`, method: 'GET' })
             .then(res => ({ ...e, ...res.data }))
@@ -640,7 +609,6 @@ function exportCustomerQuotePDF(exportableEvents) {
         events.forEach((event, idx) => {
             if (idx > 0) content.push({ pageBreak: 'before', text: '' });
 
-            // Company header
             content.push({
                 columns: [
                     {
@@ -656,7 +624,6 @@ function exportCustomerQuotePDF(exportableEvents) {
                 margin: [0, 0, 0, 20]
             });
 
-            // Bill to / event details / reference
             content.push({
                 columns: [
                     {
@@ -666,15 +633,15 @@ function exportCustomerQuotePDF(exportableEvents) {
                             {
                                 text: [
                                     { text: 'Name: ', bold: true },
-                                    { text: $("#custName").val().trim() + '\n' },
+                                    { text: $('#custName').val().trim() + '\n' },
                                     { text: 'Company: ', bold: true },
-                                    { text: $("#custCompany").val().trim() + '\n' },
+                                    { text: $('#custCompany').val().trim() + '\n' },
                                     { text: 'Address: ', bold: true },
-                                    { text: $("#custAddress").val().trim() + '\n' },
+                                    { text: $('#custAddress').val().trim() + '\n' },
                                     { text: 'Phone: ', bold: true },
-                                    { text: $("#custPhone").val().trim() + '\n' },
+                                    { text: $('#custPhone').val().trim() + '\n' },
                                     { text: 'Email: ', bold: true },
-                                    { text: $("#custName").val().trim() }
+                                    { text: $('#custName').val().trim() }
                                 ],
                                 style: 'infoText'
                             }
@@ -688,7 +655,7 @@ function exportCustomerQuotePDF(exportableEvents) {
                                 text: [
                                     { text: 'Event Name: ', bold: true }, { text: event.eventName + '\n' },
                                     { text: 'Date: ', bold: true }, { text: DateFormatter.formatWithComma(event.eventDate) + '\n' },
-                                    { text: 'Time: ', bold: true }, { text: (DateFormatter.format12?.(event.eventDate) || "") + '\n' },
+                                    { text: 'Time: ', bold: true }, { text: (DateFormatter.format12?.(event.eventDate) || '') + '\n' },
                                     { text: 'Guests: ', bold: true }, { text: event.numberOfGuests + '\n' },
                                     { text: 'Location: ', bold: true }, { text: (event.location || 'TBD') }
                                 ],
@@ -709,7 +676,6 @@ function exportCustomerQuotePDF(exportableEvents) {
                 margin: [0, 0, 0, 20]
             });
 
-            // Items table
             const headers = [
                 { text: 'DESCRIPTION', style: 'tableHeader', alignment: 'left' },
                 { text: 'QTY', style: 'tableHeader', alignment: 'center' },
@@ -776,7 +742,6 @@ function exportCustomerQuotePDF(exportableEvents) {
                 margin: [0, 0, 0, 15]
             });
 
-            // Totals
             content.push({
                 columns: [
                     { width: '*', text: '' },
@@ -801,7 +766,6 @@ function exportCustomerQuotePDF(exportableEvents) {
                 margin: [0, 0, 0, 20]
             });
 
-            // Terms, signature & note
             content.push({
                 columns: [
                     {
@@ -856,12 +820,10 @@ function exportCustomerQuotePDF(exportableEvents) {
     });
 }
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
 async function getImageAsPngBase64(url) {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "anonymous";
+        img.crossOrigin = 'anonymous';
         img.onload = () => {
             const targetWidth = 350;
             const targetHeight = Math.round(targetWidth * (img.naturalHeight / img.naturalWidth));
@@ -872,7 +834,7 @@ async function getImageAsPngBase64(url) {
             canvas.getContext('2d').drawImage(img, 0, 0, targetWidth, targetHeight);
             resolve(canvas.toDataURL('image/png'));
         };
-        img.onerror = () => reject(new Error("Image load failed"));
+        img.onerror = () => reject(new Error('Image load failed'));
         img.src = url;
     });
 }

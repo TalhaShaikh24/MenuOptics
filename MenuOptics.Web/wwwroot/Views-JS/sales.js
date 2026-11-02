@@ -1,14 +1,4 @@
-/* ============================================================================
- * sales.js — Sales Records & POS Entries (Views/Sales/Index.cshtml)
- * Table form layout matching Invoice entry, with Add, Edit, View, and Import.
- *
- * Project convention — section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: referenced by inline handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// sales.js — Sales page scripts.
 
 let table = null;
 let allSales = [];
@@ -16,28 +6,31 @@ let menuItems = [];
 let currentSaleItems = [];
 let editSaleItems = [];
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    initDataTable();
+    table = initDataTable('#salesTable', {
+        language: {
+            searchPlaceholder: 'Search sales...',
+            info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+            paginate: {
+                previous: '<i class="fas fa-chevron-left"></i>',
+                next: '<i class="fas fa-chevron-right"></i>'
+            }
+        }
+    });
 
-    // Event handler for Add Sale button
     $('#addSaleBtn').on('click', function () {
         openAddSaleModal();
     });
 
-    // Search filter
     $('#salesSearch').on('input', function () {
         if (table) table.search(this.value).draw();
     });
 
-    // Clear filter
     $('#clearFilterBtn').on('click', function () {
         $('#salesSearch').val('');
         if (table) table.search('').draw();
     });
 
-    // CSV Import and Sample Download bindings in Add Sale modal
     $('#importSaleCsvBtn').on('click', function () {
         if (!menuItems || menuItems.length === 0) {
             showNotification('Menu items are not loaded yet. Please wait a moment and try again.', 'warning');
@@ -55,12 +48,9 @@ $(document).ready(function () {
         downloadSampleSalesFile();
     });
 
-    // Initial load
     loadMenuItems();
     refreshSalesTable();
 });
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function refreshSalesTable() {
     LoadingComponent.showForTable('#salesTable', 'Loading sales...');
@@ -250,51 +240,6 @@ function handleSaleCsvUpload(e) {
     reader.readAsText(file);
 }
 
-function parseCsvText(text) {
-    const lines = [];
-    let row = [];
-    let inQuotes = false;
-    let currentCell = '';
-
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i];
-        const nextChar = text[i + 1];
-
-        if (char === '"') {
-            if (inQuotes && nextChar === '"') {
-                currentCell += '"';
-                i++;
-            } else {
-                inQuotes = !inQuotes;
-            }
-        } else if ((char === ',' || char === '\t') && !inQuotes) {
-            row.push(currentCell.trim());
-            currentCell = '';
-        } else if ((char === '\r' || char === '\n') && !inQuotes) {
-            if (char === '\r' && nextChar === '\n') {
-                i++;
-            }
-            row.push(currentCell.trim());
-            currentCell = '';
-            if (row.some(c => c !== '')) {
-                lines.push(row);
-            }
-            row = [];
-        } else {
-            currentCell += char;
-        }
-    }
-
-    if (currentCell.length > 0 || row.length > 0) {
-        row.push(currentCell.trim());
-        if (row.some(c => c !== '')) {
-            lines.push(row);
-        }
-    }
-
-    return lines;
-}
-
 function processSaleCsv(csvText) {
     if (!csvText || !csvText.trim()) {
         showNotification('The uploaded CSV file is empty.', 'error');
@@ -312,7 +257,6 @@ function processSaleCsv(csvText) {
         return;
     }
 
-    // Map headers (case and punctuation insensitive)
     const headerRow = rows[0].map(h => (h || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''));
 
     const idxId = headerRow.findIndex(h => h.includes('itemid') || h.includes('productid') || h === 'id' || h === 'menuitemid');
@@ -330,7 +274,6 @@ function processSaleCsv(csvText) {
         let cellName = idxName !== -1 ? (row[idxName] || '').trim() : '';
         let cellQty = idxQty !== -1 ? (row[idxQty] || '').trim() : '';
 
-        // Fallback if headers were not recognized
         if (idxId === -1 && idxName === -1 && idxQty === -1 && row.length >= 3) {
             cellName = (row[0] || '').trim();
             cellId = (row[1] || '').trim();
@@ -344,8 +287,6 @@ function processSaleCsv(csvText) {
             continue;
         }
 
-        // Matching strategy:
-        // 1. By menuItemId
         let matched = null;
         if (cellId) {
             const parsedId = parseInt(cellId, 10);
@@ -354,7 +295,6 @@ function processSaleCsv(csvText) {
             }
         }
 
-        // 2. By Name
         if (!matched && cellName) {
             const cleanName = cellName.toLowerCase().replace(/['"]/g, '').trim();
             matched = menuItems.find(m => {
@@ -374,7 +314,6 @@ function processSaleCsv(csvText) {
             continue;
         }
 
-        // Upsert into currentSaleItems
         const existing = currentSaleItems.find(i => i.menuItemId === matched.menuItemId);
         if (existing) {
             existing.quantity = qty;
@@ -404,25 +343,377 @@ function processSaleCsv(csvText) {
     }
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
+function openAddSaleModal() {
+    currentSaleItems = [];
+    const today = new Date().toISOString().split('T')[0];
+    $('#newSaleStartDate').val(today);
+    $('#newSaleEndDate').val(today);
 
-function initDataTable() {
-    table = $('#salesTable').DataTable({
-        paging: true,
-        searching: true,
-        ordering: false,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search sales...',
-            info: 'Showing _START_ to _END_ of _TOTAL_ entries',
-            paginate: {
-                previous: '<i class="fas fa-chevron-left"></i>',
-                next: '<i class="fas fa-chevron-right"></i>'
-            }
-        }
+    $('#menuItemSelector').val('').trigger('change.select2');
+    $('#saleCsvFileInput').val('');
+    syncSaleItemsView();
+
+    $('#submitSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Sale');
+    openModal('addSaleModal');
+}
+
+function closeAddSaleModal() {
+    closeModal('addSaleModal');
+}
+
+function addSaleItemRow() {
+    const selectedId = parseInt($('#menuItemSelector').val());
+    if (!selectedId) {
+        showNotification('Please select a menu item.', 'info');
+        return;
+    }
+
+    const menuItem = menuItems.find(m => m.menuItemId === selectedId);
+    if (!menuItem) return;
+
+    const existing = currentSaleItems.find(i => i.menuItemId === selectedId);
+    if (existing) {
+        showNotification('This menu item is already added.', 'info');
+        return;
+    }
+
+    currentSaleItems.push({
+        menuItemId: menuItem.menuItemId,
+        name: menuItem.name,
+        unitPrice: Number(menuItem.sellingPrice) || 0,
+        cost: Number(menuItem.cost) || 0,
+        quantity: 1
     });
+
+    syncSaleItemsView();
+    $('#menuItemSelector').val('').trigger('change.select2');
+}
+
+function updateSaleItemQty(menuItemId, value) {
+    const qty = parseFloat(value);
+    const item = currentSaleItems.find(i => i.menuItemId === menuItemId);
+    if (!item) return;
+
+    item.quantity = qty;
+    $(`#line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
+    $(`#line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
+    updateAddSaleTotal();
+}
+
+function removeSaleItem(menuItemId) {
+    currentSaleItems = currentSaleItems.filter(i => i.menuItemId !== menuItemId);
+    syncSaleItemsView();
+}
+
+function syncSaleItemsView() {
+    const $body = $('#saleItemsBody');
+    $body.empty();
+
+    if (currentSaleItems.length === 0) {
+        $('#saleItemsWrapper').hide();
+        $('#saleItemsEmpty').show();
+        $('#newSaleTotalDisplay').text('$0.00');
+        return;
+    }
+
+    $('#saleItemsEmpty').hide();
+    $('#saleItemsWrapper').show();
+
+    currentSaleItems.forEach(item => {
+        const revenue = item.unitPrice * item.quantity;
+        $body.append(`
+            <tr class="sale-item-row" id="sale_row_${item.menuItemId}">
+                <td style="font-weight: 600; color: #1e293b;">
+                    <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
+                    ${escapeHtml(item.name)}
+                </td>
+                <td style="text-align: center;">
+                    <input type="number" min="1" step="1" value="${item.quantity}" placeholder="0" onchange="updateSaleItemQty(${item.menuItemId}, this.value)" oninput="updateSaleItemQty(${item.menuItemId}, this.value)">
+                </td>
+                <td style="text-align: right; color: #64748b; font-weight: 500;" id="line_cost_${item.menuItemId}">
+                    ${formatCurrency(item.cost)}
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #0f172a;" id="line_total_${item.menuItemId}">
+                    ${formatCurrency(revenue)}
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="sale-remove-btn" onclick="removeSaleItem(${item.menuItemId})" title="Remove item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
+    });
+
+    updateAddSaleTotal();
+}
+
+function updateAddSaleTotal() {
+    const total = currentSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
+    $('#newSaleTotalDisplay').text(formatCurrency(total));
+}
+
+function editSale(saleId) {
+    const sale = allSales.find(s => s.saleId === saleId);
+    if (!sale) {
+        showNotification('Sale not found.', 'error');
+        return;
+    }
+
+    $('#editSaleId').val(sale.saleId);
+    $('#editSaleStartDate').val(formatDateForInput(sale.startDate));
+    $('#editSaleEndDate').val(formatDateForInput(sale.endDate));
+
+    const rawItems = parseItems(sale.itemsJson);
+    editSaleItems = rawItems.map(raw => {
+        const menuItemId = raw.MenuItemId || raw.menuItemId;
+        const matchedMenu = menuItems.find(m => m.menuItemId === menuItemId);
+
+        const qty = Number(raw.quantity ?? raw.Quantity) || 1;
+        const totalLinePrice = Number(raw.Revenue ?? raw.revenue) || 0;
+        const totalLineCost = Number(raw.cost ?? raw.Cost) || 0;
+
+        const unitPrice = matchedMenu
+            ? Number(matchedMenu.sellingPrice)
+            : (qty > 0 ? (totalLinePrice / qty) : totalLinePrice);
+
+        const unitCost = matchedMenu
+            ? Number(matchedMenu.cost)
+            : (qty > 0 ? (totalLineCost / qty) : totalLineCost);
+
+        return {
+            menuItemId: menuItemId,
+            name: raw.Name || raw.name || matchedMenu?.name || `Item #${menuItemId}`,
+            unitPrice: unitPrice,
+            cost: unitCost,
+            quantity: qty
+        };
+    });
+
+    $('#editMenuItemSelector').val('').trigger('change.select2');
+    syncEditSaleItemsView();
+
+    $('#updateSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Update Sale');
+    openModal('editSaleModal');
+}
+
+function closeEditSaleModal() {
+    closeModal('editSaleModal');
+}
+
+function addEditSaleItemRow() {
+    const selectedId = parseInt($('#editMenuItemSelector').val());
+    if (!selectedId) {
+        showNotification('Please select a menu item.', 'warning');
+        return;
+    }
+
+    const menuItem = menuItems.find(m => m.menuItemId === selectedId);
+    if (!menuItem) return;
+
+    const existing = editSaleItems.find(i => i.menuItemId === selectedId);
+    if (existing) {
+        showNotification('This menu item is already added.', 'warning');
+        return;
+    }
+
+    editSaleItems.push({
+        menuItemId: menuItem.menuItemId,
+        name: menuItem.name,
+        unitPrice: Number(menuItem.sellingPrice) || 0,
+        cost: Number(menuItem.cost) || 0,
+        quantity: 1
+    });
+
+    syncEditSaleItemsView();
+    $('#editMenuItemSelector').val('').trigger('change.select2');
+}
+
+function updateEditSaleItemQty(menuItemId, value) {
+    const qty = parseFloat(value);
+    const item = editSaleItems.find(i => i.menuItemId === menuItemId);
+    if (!item) return;
+
+    if (isNaN(qty) || qty <= 0) {
+        removeEditSaleItem(menuItemId);
+    } else {
+        item.quantity = qty;
+        $(`#edit_line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
+        $(`#edit_line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
+        updateEditSaleTotal();
+    }
+}
+
+function removeEditSaleItem(menuItemId) {
+    editSaleItems = editSaleItems.filter(i => i.menuItemId !== menuItemId);
+    syncEditSaleItemsView();
+}
+
+function syncEditSaleItemsView() {
+    const $body = $('#editSaleItemsBody');
+    $body.empty();
+
+    if (editSaleItems.length === 0) {
+        $('#editSaleItemsWrapper').hide();
+        $('#editSaleItemsEmpty').show();
+        $('#editSaleTotalDisplay').text('$0.00');
+        return;
+    }
+
+    $('#editSaleItemsEmpty').hide();
+    $('#editSaleItemsWrapper').show();
+
+    editSaleItems.forEach(item => {
+        $body.append(`
+            <tr class="sale-item-row" id="edit_sale_row_${item.menuItemId}">
+                <td style="font-weight: 600; color: #1e293b;">
+                    <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
+                    ${escapeHtml(item.name)}
+                </td>
+                <td style="text-align: center;">
+                    <input type="number" min="1" step="1" value="${item.quantity}" onchange="updateEditSaleItemQty(${item.menuItemId}, this.value)" oninput="updateEditSaleItemQty(${item.menuItemId}, this.value)">
+                </td>
+                <td style="text-align: right; color: #64748b; font-weight: 500;" id="edit_line_cost_${item.menuItemId}"">
+                    ${formatCurrency(item.cost * item.quantity)}
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #0f172a;" id="edit_line_total_${item.menuItemId}">
+                    ${formatCurrency(item.unitPrice * item.quantity)}
+                </td>
+                <td style="text-align: center;">
+                    <button type="button" class="sale-remove-btn" onclick="removeEditSaleItem(${item.menuItemId})" title="Remove item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `);
+    });
+
+    updateEditSaleTotal();
+}
+
+function updateEditSaleTotal() {
+    const total = editSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
+    $('#editSaleTotalDisplay').text(formatCurrency(total));
+}
+
+function viewSaleDetails(saleId) {
+    const sale = allSales.find(s => s.saleId === saleId);
+    if (!sale) return;
+
+    $('#modalSaleTitle').text(`Sale #${sale.saleId}`);
+    $('#modalSaleSubtitle').text(
+        `${formatDateDisplay(sale.startDate)} - ${formatDateDisplay(sale.endDate)}`
+    );
+    $('#modalSaleId').text(`${sale.saleId}`);
+    $('#modalSaleStartDate').text(formatDateDisplay(sale.startDate));
+    $('#modalSaleEndDate').text(formatDateDisplay(sale.endDate));
+    $('#modalSaleTotal').text(formatCurrency(sale.total));
+
+    let items = [];
+
+    try {
+        if (Array.isArray(sale.items)) {
+            items = sale.items;
+        } else if (sale.itemsJson) {
+            items = typeof sale.itemsJson === 'string'
+                ? JSON.parse(sale.itemsJson)
+                : sale.itemsJson;
+        }
+    } catch (error) {
+        console.error('Failed to parse sale items:', error);
+    }
+
+    if (!Array.isArray(items)) {
+        items = [];
+    }
+
+    $('#modalItemsCount').text(items.length);
+
+    const $tbody = $('#modalItemsTableBody');
+    $tbody.empty();
+
+    if (items.length === 0) {
+        $tbody.html(`
+            <tr>
+                <td colspan="4" class="text-center"
+                    style="padding: 24px; color: #6b7280;">
+                    No line items available for this sale.
+                </td>
+            </tr>
+        `);
+    } else {
+        items.forEach(item => {
+            const name = item.Name ?? 'Menu Item';
+            const qty = Number(item.Quantity) || 0;
+            const total = Number(item.Revenue) || 0;
+            const cost = Number(item.Cost) || 0;
+
+            $tbody.append(`
+                <tr>
+                    <td style="font-weight: 600; color: #1e293b;">
+                        <i class="fas fa-utensils"
+                           style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
+                        ${escapeHtml(String(name).trim())}
+                    </td>
+                    <td class="text-center" style="font-weight: 600;">
+                        ${qty}
+                    </td>
+                    <td class="text-right" style="color: #64748b;">
+                        ${formatCurrency(cost)}
+                    </td>
+                    <td class="text-right"
+                        style="font-weight: 700; color: #0f172a;">
+                        ${formatCurrency(total)}
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    openModal('saleDetailModal');
+}
+
+function downloadSampleSalesFile() {
+    function generateCsv(items) {
+        let csvContent = "Menu Item Name,Menu Item ID,Quantity Sold\n";
+        (items || []).forEach(item => {
+            const name = item.name ? `"${item.name.toString().replace(/"/g, '""')}"` : '""';
+            const itemId = item.menuItemId !== undefined ? item.menuItemId : (item.id || '');
+            csvContent += `${name},${itemId},0\n`;
+        });
+
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `Sales_Import_Sample_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    if (menuItems && menuItems.length > 0) {
+        generateCsv(menuItems);
+    } else {
+        ajaxRequest({
+            url: '/api/MenuApi/GetAllMenuItems?isActive=true',
+            method: 'GET',
+            showMessage: false,
+            onSuccess: function (response) {
+                if (response && response.data && response.data.length > 0) {
+                    menuItems = response.data;
+                    generateCsv(menuItems);
+                } else {
+                    showNotification('No menu items available for sample export.', 'error');
+                }
+            },
+            onError: function () {
+                showNotification('Failed to download sample file.', 'error');
+            }
+        });
+    }
 }
 
 function updateStats() {
@@ -431,7 +722,6 @@ function updateStats() {
     let totalItemsSold = 0;
 
     allSales.forEach(sale => {
-        
         totalRevenue += (Number(sale.total) || 0);
         const items = parseItems(sale.itemsJson);
         items.forEach(i => {
@@ -514,10 +804,8 @@ function buildSaleRow(sale) {
 }
 
 function initMenuItemSelectors() {
-    
     const options = [{ id: '', text: '-- Select Menu Item --' }].concat(
         menuItems.map(m => ({
-            
             id: m.menuItemId,
             text: `${m.name}`
         }))
@@ -544,385 +832,50 @@ function initMenuItemSelectors() {
     });
 }
 
-/* ── Add Sale Modal Handlers ──────────────────────────────────────────── */
-function openAddSaleModal() {
-    currentSaleItems = [];
-    const today = new Date().toISOString().split('T')[0];
-    $('#newSaleStartDate').val(today);
-    $('#newSaleEndDate').val(today);
+function parseCsvText(text) {
+    const lines = [];
+    let row = [];
+    let inQuotes = false;
+    let currentCell = '';
 
-    $('#menuItemSelector').val('').trigger('change.select2');
-    $('#saleCsvFileInput').val('');
-    syncSaleItemsView();
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
 
-    $('#submitSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Save Sale');
-    openModal('addSaleModal');
-}
-
-function closeAddSaleModal() {
-    closeModal('addSaleModal');
-}
-
-function addSaleItemRow() {
-    const selectedId = parseInt($('#menuItemSelector').val());
-    if (!selectedId) {
-        showNotification('Please select a menu item.', 'info');
-        return;
-    }
-
-    const menuItem = menuItems.find(m => m.menuItemId === selectedId);
-    if (!menuItem) return;
-
-    const existing = currentSaleItems.find(i => i.menuItemId === selectedId);
-    if (existing) {
-        showNotification('This menu item is already added.', 'info');
-        return;
-    }
-
-    currentSaleItems.push({
-        menuItemId: menuItem.menuItemId,
-        name: menuItem.name,
-        unitPrice: Number(menuItem.sellingPrice) || 0,
-        cost: Number(menuItem.cost) || 0,
-        quantity: 1
-    });
-
-    syncSaleItemsView();
-    $('#menuItemSelector').val('').trigger('change.select2');
-}
-
-function updateSaleItemQty(menuItemId, value) {
-    const qty = parseFloat(value);
-    const item = currentSaleItems.find(i => i.menuItemId === menuItemId);
-    if (!item) return;
-
-    item.quantity = qty;
-    $(`#line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
-    $(`#line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
-    updateAddSaleTotal();
-   
-}
-
-function removeSaleItem(menuItemId) {
-    currentSaleItems = currentSaleItems.filter(i => i.menuItemId !== menuItemId);
-    syncSaleItemsView();
-}
-
-function syncSaleItemsView() {
-    const $body = $('#saleItemsBody');
-    $body.empty();
-
-    if (currentSaleItems.length === 0) {
-        $('#saleItemsWrapper').hide();
-        $('#saleItemsEmpty').show();
-        $('#newSaleTotalDisplay').text('$0.00');
-        return;
-    }
-
-    $('#saleItemsEmpty').hide();
-    $('#saleItemsWrapper').show();
-
-    currentSaleItems.forEach(item => {
-        const revenue = item.unitPrice * item.quantity;
-        $body.append(`
-            <tr class="sale-item-row" id="sale_row_${item.menuItemId}">
-                <td style="font-weight: 600; color: #1e293b;">
-                    <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
-                    ${escapeHtml(item.name)}
-                </td>
-                <td style="text-align: center;">
-                    <input type="number" min="1" step="1" value="${item.quantity}" placeholder="0" onchange="updateSaleItemQty(${item.menuItemId}, this.value)" oninput="updateSaleItemQty(${item.menuItemId}, this.value)">
-                </td>
-                <td style="text-align: right; color: #64748b; font-weight: 500;" id="line_cost_${item.menuItemId}">
-                    ${formatCurrency(item.cost)}
-                </td>
-                <td style="text-align: right; font-weight: 700; color: #0f172a;" id="line_total_${item.menuItemId}">
-                    ${formatCurrency(revenue)}
-                </td>
-                <td style="text-align: center;">
-                    <button type="button" class="sale-remove-btn" onclick="removeSaleItem(${item.menuItemId})" title="Remove item">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `);
-    });
-
-    updateAddSaleTotal();
-}
-
-function updateAddSaleTotal() {
-    const total = currentSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
-    $('#newSaleTotalDisplay').text(formatCurrency(total));
-}
-
-/* ── Edit Sale Modal Handlers ─────────────────────────────────────────── */
-
-function editSale(saleId) {
-    const sale = allSales.find(s => s.saleId === saleId);
-    ;
-    if (!sale) {
-        showNotification('Sale not found.', 'error');
-        return;
-    }
-
-    $('#editSaleId').val(sale.saleId);
-    $('#editSaleStartDate').val(formatDateForInput(sale.startDate));
-    $('#editSaleEndDate').val(formatDateForInput(sale.endDate));
-
-    const rawItems = parseItems(sale.itemsJson);
-    editSaleItems = rawItems.map(raw => {
-        const menuItemId = raw.MenuItemId || raw.menuItemId;
-        const matchedMenu = menuItems.find(m => m.menuItemId === menuItemId);
-
-        const qty = Number(raw.quantity ?? raw.Quantity) || 1;
-        const totalLinePrice = Number(raw.Revenue ?? raw.revenue) || 0;
-        const totalLineCost = Number(raw.cost ?? raw.Cost) || 0;
-
-        const unitPrice = matchedMenu
-            ? Number(matchedMenu.sellingPrice)
-            : (qty > 0 ? (totalLinePrice / qty) : totalLinePrice);
-
-        const unitCost = matchedMenu
-            ? Number(matchedMenu.cost)
-            : (qty > 0 ? (totalLineCost / qty) : totalLineCost);
-
-        return {
-            menuItemId: menuItemId,
-            name: raw.Name || raw.name || matchedMenu?.name || `Item #${menuItemId}`,
-            unitPrice: unitPrice,
-            cost: unitCost,
-            quantity: qty
-        };
-    });
-
-    $('#editMenuItemSelector').val('').trigger('change.select2');
-    syncEditSaleItemsView();
-
-    $('#updateSaleBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Update Sale');
-    openModal('editSaleModal');
-}
-
-function closeEditSaleModal() {
-    closeModal('editSaleModal');
-}
-
-function addEditSaleItemRow() {
-    const selectedId = parseInt($('#editMenuItemSelector').val());
-    if (!selectedId) {
-        showNotification('Please select a menu item.', 'warning');
-        return;
-    }
-
-    const menuItem = menuItems.find(m => m.menuItemId === selectedId);
-    if (!menuItem) return;
-
-    const existing = editSaleItems.find(i => i.menuItemId === selectedId);
-    if (existing) {
-        showNotification('This menu item is already added.', 'warning');
-        return;
-    }
-
-    editSaleItems.push({
-        menuItemId: menuItem.menuItemId,
-        name: menuItem.name,
-        unitPrice: Number(menuItem.sellingPrice) || 0,
-        cost: Number(menuItem.cost) || 0,
-        quantity: 1
-    });
-
-    syncEditSaleItemsView();
-    $('#editMenuItemSelector').val('').trigger('change.select2');
-}
-function updateEditSaleItemQty(menuItemId, value) {
-    const qty = parseFloat(value);
-    const item = editSaleItems.find(i => i.menuItemId === menuItemId);
-    if (!item) return;
-
-    if (isNaN(qty) || qty <= 0) {
-        removeEditSaleItem(menuItemId);
-    } else {
-        item.quantity = qty;
-        $(`#edit_line_cost_${menuItemId}`).text(formatCurrency(item.cost * item.quantity));
-        $(`#edit_line_total_${menuItemId}`).text(formatCurrency(item.unitPrice * item.quantity));
-        updateEditSaleTotal();
-    }
-}
-function removeEditSaleItem(menuItemId) {
-    editSaleItems = editSaleItems.filter(i => i.menuItemId !== menuItemId);
-    syncEditSaleItemsView();
-}
-
-function syncEditSaleItemsView() {
-    const $body = $('#editSaleItemsBody');
-    $body.empty();
-
-    if (editSaleItems.length === 0) {
-        $('#editSaleItemsWrapper').hide();
-        $('#editSaleItemsEmpty').show();
-        $('#editSaleTotalDisplay').text('$0.00');
-        return;
-    }
-
-    $('#editSaleItemsEmpty').hide();
-    $('#editSaleItemsWrapper').show();
-    editSaleItems.forEach(item => {
-        $body.append(`
-            <tr class="sale-item-row" id="edit_sale_row_${item.menuItemId}">
-                <td style="font-weight: 600; color: #1e293b;">
-                    <i class="fas fa-utensils" style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
-                    ${escapeHtml(item.name)}
-                </td>
-                <td style="text-align: center;">
-                    <input type="number" min="1" step="1" value="${item.quantity}" onchange="updateEditSaleItemQty(${item.menuItemId}, this.value)" oninput="updateEditSaleItemQty(${item.menuItemId}, this.value)">
-                </td>
-                <td style="text-align: right; color: #64748b; font-weight: 500;" id="edit_line_cost_${item.menuItemId}"">
-                    ${formatCurrency(item.cost * item.quantity)}
-                </td>
-                <td style="text-align: right; font-weight: 700; color: #0f172a;" id="edit_line_total_${item.menuItemId}">
-                    ${formatCurrency(item.unitPrice * item.quantity)}
-                </td>
-                <td style="text-align: center;">
-                    <button type="button" class="sale-remove-btn" onclick="removeEditSaleItem(${item.menuItemId})" title="Remove item">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `);
-    });
-
-    updateEditSaleTotal();
-}
-
-function updateEditSaleTotal() {
-    const total = editSaleItems.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0);
-    $('#editSaleTotalDisplay').text(formatCurrency(total));
-}
-
-/* ── View Details Modal Handler ───────────────────────────────────────── */
-function viewSaleDetails(saleId) {
-    const sale = allSales.find(s => s.saleId === saleId);
-    if (!sale) return;
-    $('#modalSaleTitle').text(`Sale #${sale.saleId}`);
-    $('#modalSaleSubtitle').text(
-        `${formatDateDisplay(sale.startDate)} - ${formatDateDisplay(sale.endDate)}`
-    );
-    $('#modalSaleId').text(`${sale.saleId}`);
-    $('#modalSaleStartDate').text(formatDateDisplay(sale.startDate));
-    $('#modalSaleEndDate').text(formatDateDisplay(sale.endDate));
-    $('#modalSaleTotal').text(formatCurrency(sale.total));
-
-    // Parse menu items from itemsJson
-    let items = [];
-
-    try {
-        if (Array.isArray(sale.items)) {
-            items = sale.items;
-        } else if (sale.itemsJson) {
-            items = typeof sale.itemsJson === 'string'
-                ? JSON.parse(sale.itemsJson)
-                : sale.itemsJson;
-        }
-    } catch (error) {
-        console.error('Failed to parse sale items:', error);
-    }
-
-    if (!Array.isArray(items)) {
-        items = [];
-    }
-
-    $('#modalItemsCount').text(items.length);
-
-    const $tbody = $('#modalItemsTableBody');
-    $tbody.empty();
-
-    if (items.length === 0) {
-        $tbody.html(`
-            <tr>
-                <td colspan="4" class="text-center"
-                    style="padding: 24px; color: #6b7280;">
-                    No line items available for this sale.
-                </td>
-            </tr>
-        `);
-    } else {
-        items.forEach(item => {
-            const name = item.Name ?? 'Menu Item';
-            const qty = Number(item.Quantity) || 0;
-            const total = Number(item.Revenue) || 0;
-            const cost = Number(item.Cost) || 0;
-
-            $tbody.append(`
-                <tr>
-                    <td style="font-weight: 600; color: #1e293b;">
-                        <i class="fas fa-utensils"
-                           style="color: #f08d11; margin-right: 8px; font-size: 12px;"></i>
-                        ${escapeHtml(String(name).trim())}
-                    </td>
-                    <td class="text-center" style="font-weight: 600;">
-                        ${qty}
-                    </td>
-                    <td class="text-right" style="color: #64748b;">
-                        ${formatCurrency(cost)}
-                    </td>
-                    <td class="text-right"
-                        style="font-weight: 700; color: #0f172a;">
-                        ${formatCurrency(total)}
-                    </td>
-                </tr>
-            `);
-        });
-    }
-
-    openModal('saleDetailModal');
-}
-
-
-/* ── Sample CSV Download ──────────────────────────────────────────────── */
-function downloadSampleSalesFile() {
-    function generateCsv(items) {
-        let csvContent = "Menu Item Name,Menu Item ID,Quantity Sold\n";
-        (items || []).forEach(item => {
-            const name = item.name ? `"${item.name.toString().replace(/"/g, '""')}"` : '""';
-            const itemId = item.menuItemId !== undefined ? item.menuItemId : (item.id || '');
-            csvContent += `${name},${itemId},0\n`;
-        });
-
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `Sales_Import_Sample_${new Date().toISOString().slice(0, 10)}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-
-    if (menuItems && menuItems.length > 0) {
-        generateCsv(menuItems);
-    } else {
-        ajaxRequest({
-            url: '/api/MenuApi/GetAllMenuItems?isActive=true',
-            method: 'GET',
-            showMessage: false,
-            onSuccess: function (response) {
-                if (response && response.data && response.data.length > 0) {
-                    menuItems = response.data;
-                    generateCsv(menuItems);
-                } else {
-                    showNotification('No menu items available for sample export.', 'error');
-                }
-            },
-            onError: function () {
-                showNotification('Failed to download sample file.', 'error');
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                currentCell += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
             }
-        });
+        } else if ((char === ',' || char === '\t') && !inQuotes) {
+            row.push(currentCell.trim());
+            currentCell = '';
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+            if (char === '\r' && nextChar === '\n') {
+                i++;
+            }
+            row.push(currentCell.trim());
+            currentCell = '';
+            if (row.some(c => c !== '')) {
+                lines.push(row);
+            }
+            row = [];
+        } else {
+            currentCell += char;
+        }
     }
-}
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
+    if (currentCell.length > 0 || row.length > 0) {
+        row.push(currentCell.trim());
+        if (row.some(c => c !== '')) {
+            lines.push(row);
+        }
+    }
+
+    return lines;
+}
 
 function parseItems(itemsJson) {
     if (!itemsJson) return [];
@@ -967,17 +920,5 @@ function formatDateForInput(dateStr) {
     }
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.toString()
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
 window.downloadSampleSalesFile = downloadSampleSalesFile;
 window.downloadSaleSampleCsv = downloadSampleSalesFile;
-
-

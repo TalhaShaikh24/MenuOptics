@@ -1,17 +1,12 @@
-/* ============================================================================
- * menuEngineeringAi.js — AI Menu Engineering Intelligence & PDF Generator
- * Handles Full Menu Strategic AI Analysis with Location & Local Area Competitor Market Intelligence.
- * ==========================================================================*/
+// menuEngineeringAi.js — Menu Engineering AI page scripts.
 
 let currentFullAiReportData = null;
 
 $(document).ready(function () {
-    // Open Full Menu AI Modal
     $('#btnOpenAiInsightsModal').on('click', function () {
         openFullAiInsightsModal();
     });
 
-    // Download Full AI PDF Report
     $('#btnDownloadAiPdfModal, #btnDownloadAiPdfFooter').on('click', function () {
         if (currentFullAiReportData) {
             exportAiInsightsPdf(currentFullAiReportData);
@@ -20,8 +15,6 @@ $(document).ready(function () {
         }
     });
 });
-
-/* ── 1. Full Menu AI Strategic Analysis ─────────────────────────────────── */
 
 function openFullAiInsightsModal() {
     openCenteredModal('aiInsightsModal');
@@ -64,14 +57,12 @@ function renderFullAiReport(data) {
     $('#aiAvgFoodCost').text(`${(summary.averageFoodCostPct || 0).toFixed(1)}%`);
     $('#aiAnalyzedCount').text(data.totalMenuItemsAnalyzed || 0);
 
-    // Competitor Overview
     $('#aiCompetitorOverview').text(data.competitorMarketOverview || 'Area competitor pricing benchmark indicates healthy margin expansion opportunity.');
 
     $('#aiExecutiveTakeaway').text(summary.keyTakeaway || 'Execute menu rebalancing, price adjustments, and recipe trimming.');
     $('#aiTopStrength').text(summary.topStrength || '--');
     $('#aiCriticalRisk').text(summary.criticalRisk || '--');
 
-    // Section: Quadrants Breakdown Cards
     const q = data.quadrantBreakdown || {};
     $('#qStarCount').text(`${q.starsCount || 0} items`);
     $('#qStarRev').text(`${(q.starsRevenueShare || 0).toFixed(1)}% revenue`);
@@ -82,7 +73,6 @@ function renderFullAiReport(data) {
     $('#qDogCount').text(`${q.dogsCount || 0} items`);
     $('#qDogRev').text(`${(q.dogsRevenueShare || 0).toFixed(1)}% revenue`);
 
-    // Section 1: Bottom 10% Removal Table
     const $remTbody = $('#aiRemovalTable tbody');
     $remTbody.empty();
     const removals = data.removalRecommendations || [];
@@ -107,7 +97,6 @@ function renderFullAiReport(data) {
         });
     }
 
-    // Section: Title Improvements Table (Render ONLY if needed)
     const titles = data.titleImprovements || [];
     const $titleSection = $('#aiTitleImprovementSection');
     const $titleTbody = $('#aiTitleTable tbody');
@@ -129,7 +118,6 @@ function renderFullAiReport(data) {
         $titleSection.hide();
     }
 
-    // Section 2: Researched Pricing Optimization Table
     const $priceTbody = $('#aiPricingTable tbody');
     $priceTbody.empty();
     const pricing = data.pricingOptimizations || [];
@@ -155,7 +143,6 @@ function renderFullAiReport(data) {
         });
     }
 
-    // Section: Action Plan Timeline
     const $timeline = $('#aiTimelineContainer');
     $timeline.empty();
     const actions = data.actionPlan || [];
@@ -173,25 +160,6 @@ function renderFullAiReport(data) {
     $('#aiLoadingIndicator').hide();
     $('#aiReportContainer').fadeIn(200);
 }
-
-/* ── 2. Centered Modal Controller ───────────────────────────────────────── */
-
-function openCenteredModal(modalId) {
-    const $m = $('#' + modalId);
-    $m.addClass('show').css({
-        'display': 'flex',
-        'align-items': 'center',
-        'justify-content': 'center'
-    }).hide().fadeIn(200);
-}
-
-function closeCenteredModal(modalId) {
-    $('#' + modalId).fadeOut(200, function () {
-        $(this).removeClass('show').css('display', 'none');
-    });
-}
-
-/* ── 3. Full Menu AI PDF Export ─────────────────────────────────────────── */
 
 async function exportAiInsightsPdf(reportData) {
     if (!reportData) {
@@ -250,7 +218,6 @@ async function exportAiInsightsPdf(reportData) {
             { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 523, y2: 0, lineWidth: 1.5, lineColor: '#f08d11' }] },
             { text: '', margin: [0, 4, 0, 0] },
 
-            // Local Competitor Benchmark Callout Box
             {
                 table: {
                     widths: ['100%'],
@@ -361,7 +328,6 @@ async function exportAiInsightsPdf(reportData) {
                 layout: 'lightHorizontalLines'
             },
 
-            // 4. Strategic Menu Title & Naming Enhancements (If present)
             ...(titles.length > 0 ? [
                 { text: '4. TREND CULINARY VERBIAGE & TITLE ENHANCEMENTS', style: 'sectionHeader' },
                 {
@@ -424,7 +390,6 @@ async function exportAiInsightsPdf(reportData) {
                 }))
             },
 
-            // Disclaimer Box (Small Fonts)
             { text: '', margin: [0, 6, 0, 0] },
             {
                 table: {
@@ -462,6 +427,21 @@ async function exportAiInsightsPdf(reportData) {
     const fileName = `Menu_Engineering_AI_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
     pdfMake.createPdf(docDefinition).download(fileName);
     showNotification('AI Menu Engineering Report PDF downloaded successfully!', 'success');
+}
+
+function openCenteredModal(modalId) {
+    const $m = $('#' + modalId);
+    $m.addClass('show').css({
+        'display': 'flex',
+        'align-items': 'center',
+        'justify-content': 'center'
+    }).hide().fadeIn(200);
+}
+
+function closeCenteredModal(modalId) {
+    $('#' + modalId).fadeOut(200, function () {
+        $(this).removeClass('show').css('display', 'none');
+    });
 }
 
 async function getImageAsPngBase64(url) {

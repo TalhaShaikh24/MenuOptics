@@ -1,42 +1,27 @@
-/* ============================================================================
- * login.js — Multi-step login page (Views/User/Login.cshtml)
- * Steps: email check → password (existing) / OTP + account setup (first-time)
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * ==========================================================================*/
-
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+// login.js — Login page scripts.
 
 $(document).ready(function () {
-
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const email = urlParams.get('email');
+    const email = getQueryParam('email');
 
     if (email) {
         $('#loginIdentifier').val(decodeURIComponent(email)).focus();
     }
 
-    if (urlParams.get('sessionExpired') === 'true') {
+    if (getQueryParam('sessionExpired') === 'true') {
         showNotification('Your session has expired. Please log in again.', 'error');
-        // Clean URL so refresh does not keep showing the alert
+        // Clean the URL so a refresh does not show the alert again
         window.history.replaceState({}, document.title, window.location.pathname);
-    } 
+    }
 
     updateCompleteSetupState();
 
-    // ──────────────────────────────────────────────────────────────
-    // Helpers: show/hide steps
-    // ──────────────────────────────────────────────────────────────
     function showStep(stepId) {
         $('#step-email, #step-password, #step-otp, #step-setup').hide();
         $('#' + stepId).show();
     }
 
     function resetToEmail() {
-        $('#checkEmailBtn').attr('disabled',false);
+        $('#checkEmailBtn').attr('disabled', false);
         $('#checkEmailBtn').text('Continue');
         $('#loginIdentifier').val('');
         $('#password').val('');
@@ -51,17 +36,11 @@ $(document).ready(function () {
         showStep('step-email');
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // STEP 1 — Check Email  (unchanged logic)
-    // ──────────────────────────────────────────────────────────────
     $('#checkEmailBtn').on('click', function () {
         var identifier = $.trim($('#loginIdentifier').val());
         var $btn = $(this);
 
-        // Disable button and show loading spinner
-        $btn.find('.btn-text').hide();
-        $btn.find('.btn-loading').show();
-        $btn.prop('disabled', true);
+        setBtnLoading($btn, true);
 
         ajaxRequest({
             url: '/api/UserApi/CheckUser',
@@ -71,18 +50,13 @@ $(document).ready(function () {
             onSuccess: function (response) {
                 var data = response.data;
 
-                
-
                 if (data.isRegistrationCompleted) {
-                    // ── Already registered → password step
                     $('#confirmedIdentifier').val(identifier);
                     $('#resolvedUsername').val(data.username || identifier);
                     showStep('step-password');
                 } else {
-                    // ── First-time member → send OTP, then show OTP step
                     $('#setupUserId').val(data.userId);
 
-                    // Send OTP to the user's email
                     ajaxRequest({
                         url: '/api/UserApi/SendOtp',
                         method: 'POST',
@@ -90,45 +64,29 @@ $(document).ready(function () {
                         showMessage: false,
                         onSuccess: function () {
                             showStep('step-otp');
-                            // Reset button state in case the user navigates "Back" later
-                            $btn.find('.btn-text').show();
-                            $btn.find('.btn-loading').hide();
-                            $btn.prop('disabled', false);
+                            setBtnLoading($btn, false);
                         }
                     });
                 }
             },
             onError: function (xhr, status, error) {
-                // Reset button state if the request fails
-                $btn.find('.btn-text').show();
-                $btn.find('.btn-loading').hide();
-                $btn.prop('disabled', false);
+                setBtnLoading($btn, false);
             }
         });
     });
 
-    // Allow pressing Enter on the identifier field
     $('#loginIdentifier').on('keydown', function (e) {
         if (e.key === 'Enter') $('#checkEmailBtn').trigger('click');
     });
 
-    // ──────────────────────────────────────────────────────────────
-    // "Back" buttons
-    // ──────────────────────────────────────────────────────────────
     $('#backToEmailBtn, #backToEmailBtnSetup, #backToEmailBtnOtp').on('click', resetToEmail);
 
-    // ──────────────────────────────────────────────────────────────
-    // STEP 2a — Normal Login  (unchanged)
-    // ──────────────────────────────────────────────────────────────
     $('#loginFormBtn').on('click', function () {
         var username = $.trim($('#resolvedUsername').val());
         var password = $('#password').val();
         var $btn = $(this);
 
-        // Disable button and show loading spinner
-        $btn.find('.btn-text').hide();
-        $btn.find('.btn-loading').show();
-        $btn.prop('disabled', true);
+        setBtnLoading($btn, true);
 
         var formData = {
             Username: username,
@@ -141,10 +99,9 @@ $(document).ready(function () {
             data: formData,
             showMessage: true,
             onSuccess: function (response) {
-                
                 Cookies.set('JwtToken', response.data.token);
                 Cookies.set('WasLoggedIn', 'true', { expires: 30, path: '/' });
-                
+
                 localStorage.setItem('profilePic', response.data.profilePic);
                 localStorage.setItem('restaurantName', response.data.restaurantName);
                 localStorage.setItem('phone', response.data.phone);
@@ -166,26 +123,17 @@ $(document).ready(function () {
             },
             onError: function (xhr, status, error) {
                 console.error('Login failed:', error);
-
-                // Reset button state so the user can try again
-                $btn.find('.btn-text').show();
-                $btn.find('.btn-loading').hide();
-                $btn.prop('disabled', false);
+                setBtnLoading($btn, false);
             }
         });
     });
 
-    // Allow pressing Enter on the password field
     $('#password').on('keydown', function (e) {
         if (e.key === 'Enter') $('#loginFormBtn').trigger('click');
     });
 
-    // ──────────────────────────────────────────────────────────────
-    // STEP 2c — Verify OTP  (NEW)
-    // On success → show the setup form (step-setup)
-    // ──────────────────────────────────────────────────────────────
     $('#verifyOtpBtn').on('click', function () {
-        var userId  = $('#setupUserId').val();
+        var userId = $('#setupUserId').val();
         var otpCode = $.trim($('#otpCode').val());
 
         if (!otpCode || otpCode.length !== 6) {
@@ -193,9 +141,7 @@ $(document).ready(function () {
         }
 
         var $btn = $('#verifyOtpBtn');
-        $btn.find('.btn-text').hide();
-        $btn.find('.btn-loading').show();
-        $btn.prop('disabled', true);
+        setBtnLoading($btn, true);
 
         ajaxRequest({
             url: '/api/UserApi/VerifyOtp',
@@ -203,7 +149,6 @@ $(document).ready(function () {
             data: { UserId: userId, Otp: otpCode },
             showMessage: false,
             onSuccess: function (response) {
-                // OTP is valid — now show the account setup form
                 showStep('step-setup');
             },
             onError: function (xhr) {
@@ -211,19 +156,15 @@ $(document).ready(function () {
                     ? xhr.responseJSON.responseMsg
                     : 'Invalid or expired OTP. Please try again.';
 
-                $btn.find('.btn-text').show();
-                $btn.find('.btn-loading').hide();
-                $btn.prop('disabled', false);
+                setBtnLoading($btn, false);
             }
         });
     });
 
-    // Allow pressing Enter on the OTP field
     $('#otpCode').on('keydown', function (e) {
         if (e.key === 'Enter') $('#verifyOtpBtn').trigger('click');
     });
 
-    // ── Resend OTP link ───────────────────────────────────────────
     $('#resendOtpLink').on('click', function (e) {
         e.preventDefault();
         var userId = $('#setupUserId').val();
@@ -235,35 +176,30 @@ $(document).ready(function () {
             showMessage: false,
             onSuccess: function (res) {
                 $('#otpCode').val('');
-                showNotification(res.responseMsg)
+                showNotification(res.responseMsg);
             }
         });
     });
 
-    // ──────────────────────────────────────────────────────────────
-    // STEP 2b — Complete Registration  (unchanged)
-    // ──────────────────────────────────────────────────────────────
     $('#completeSetupBtn').on('click', function () {
-        var userId  = $('#setupUserId').val();
+        var userId = $('#setupUserId').val();
         var firstName = $.trim($('#setupFirstName').val());
-        var lastName  = $.trim($('#setupLastName').val());
-        var password  = $('#setupPassword').val();
-        var confirm   = $('#setupPasswordConfirm').val();
-        var picFile   = $('#setupProfilePic')[0].files[0];
+        var lastName = $.trim($('#setupLastName').val());
+        var password = $('#setupPassword').val();
+        var confirm = $('#setupPasswordConfirm').val();
+        var picFile = $('#setupProfilePic')[0].files[0];
 
         var formData = new FormData();
-        formData.append('UserId',    userId);
+        formData.append('UserId', userId);
         formData.append('FirstName', firstName);
-        formData.append('LastName',  lastName);
-        formData.append('Password',  password);
+        formData.append('LastName', lastName);
+        formData.append('Password', password);
         if (picFile) {
             formData.append('File', picFile);
         }
 
         var $btn = $('#completeSetupBtn');
-        $btn.find('.btn-text').hide();
-        $btn.find('.btn-loading').show();
-        $btn.prop('disabled', true);
+        setBtnLoading($btn, true);
 
         $.ajax({
             url: '/api/UserApi/CompleteRegistration',
@@ -290,24 +226,16 @@ $(document).ready(function () {
                 }, 2000);
             },
             error: function (xhr) {
-                $btn.find('.btn-text').show();
-                $btn.find('.btn-loading').hide();
-                $btn.prop('disabled', false);
+                setBtnLoading($btn, false);
             }
         });
     });
 
-    // ──────────────────────────────────────────────────────────────
-    // Forgot Password  (unchanged)
-    // ──────────────────────────────────────────────────────────────
     $('#forgotPasswordLink').on('click', function (e) {
         e.preventDefault();
         window.location.href = '/User/ForgotPassword';
     });
 
-
-
-    // Terms checkbox controls Next button availability
     function updateCompleteSetupState() {
         const isChecked = $('input[name="terms"]').is(':checked');
         $('#completeSetupBtn').prop('disabled', !isChecked);

@@ -1,34 +1,19 @@
-/* ============================================================================
- * analytics.js — Analytics dashboard page (Views/Analytics/Index.cshtml)
- * KPI cards, revenue/order charts and restaurant performance grid.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// analytics.js — Analytics dashboard page scripts.
 
 let revenueChartInstance = null;
 let orderChartInstance = null;
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-
     $('#dateRange').customRangeFilter({
         onApplyFilter: function (filterType, selectedDates) {
-
             startDate = DateFormatter.formatDashUS(selectedDates.startDate);
             endDate = DateFormatter.formatDashUS(selectedDates.endDate);
             console.log('Filtesaasr 1 Applied:', filterType, selectedDates);
-
             fetchAnalyticsData(startDate, endDate);
         },
-        initialFilter: "Last 30 Days"
+        initialFilter: 'Last 30 Days'
     });
 
-    // Ensure DataTable is loaded before proceeding
     if (typeof $.fn.DataTable === 'undefined') {
         console.error('jQuery DataTable library is not loaded. Please check the CDN or script inclusion.');
         showNotification('DataTable library failed to load.', 'error');
@@ -38,10 +23,7 @@ $(document).ready(function () {
     fetchAnalyticsData();
 });
 
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
-
 function fetchAnalyticsData(startDate = null, endDate = null) {
-
     let url = `/api/AnalyticsApi/GetAnalyticsDashboard?`;
 
     if (startDate) {
@@ -73,16 +55,12 @@ function fetchAnalyticsData(startDate = null, endDate = null) {
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
 function updateDashboard(data) {
-    // Update values
     $('#revenue').text(data.currentRevenue ? `$${data.currentRevenue.toLocaleString()}` : '$0');
     $('#sales-count').text(data.currentSalesCount ? data.currentSalesCount.toLocaleString() : '0');
     $('#average-order-value').text(data.currentAvgOrderValue ? `$${data.currentAvgOrderValue.toFixed(2)}` : '$0');
     $('#total-items-sold').text(data.currentItemsSold ? data.currentItemsSold.toLocaleString() : '0');
 
-    // Update changes
     updateChange('#revenue-change', data.percentageChangeRevenue);
     updateChange('#sales-count-change', data.percentageChangeSales);
     updateChange('#average-order-value-change', data.percentageChangeAvgOrder);
@@ -90,7 +68,6 @@ function updateDashboard(data) {
 }
 
 function updateChange(selector, change) {
-
     const isPositive = change >= 0;
     const formatted = `${isPositive ? '+' : '-'}${Math.abs(change).toFixed(1)}%`;
 
@@ -99,13 +76,13 @@ function updateChange(selector, change) {
 }
 
 function animateStats() {
-    $(".stat-value").each(function () {
+    $('.stat-value').each(function () {
         const $this = $(this);
         const finalValue = $this.text();
         let numericValue;
 
         if (finalValue.includes('$')) {
-            numericValue = Number.parseFloat(finalValue.replace(/[^0-9.-]+/g, ""));
+            numericValue = Number.parseFloat(finalValue.replace(/[^0-9.-]+/g, ''));
         } else if (finalValue.includes('/5')) {
             numericValue = Number.parseFloat(finalValue.split('/')[0]);
         } else {
@@ -113,22 +90,22 @@ function animateStats() {
         }
 
         if (!isNaN(numericValue)) {
-            $this.text(finalValue.includes('$') ? "$0" : "0/5");
+            $this.text(finalValue.includes('$') ? '$0' : '0/5');
             $({ value: 0 }).animate(
                 { value: numericValue },
                 {
                     duration: 2000,
-                    easing: "swing",
+                    easing: 'swing',
                     step: function () {
                         if (finalValue.includes('$')) {
-                            $this.text("$" + Math.floor(this.value).toLocaleString());
+                            $this.text('$' + Math.floor(this.value).toLocaleString());
                         } else if (finalValue.includes('/5')) {
-                            $this.text(this.value.toFixed(1) + "/5");
+                            $this.text(this.value.toFixed(1) + '/5');
                         }
                     },
                     complete: () => {
                         $this.text(finalValue);
-                    },
+                    }
                 }
             );
         }
@@ -136,16 +113,14 @@ function animateStats() {
 }
 
 function initializeCharts(data) {
-    // Revenue Chart
-    const revenueCtx = document.getElementById("revenueChart");
+    const revenueCtx = document.getElementById('revenueChart');
 
     if (revenueCtx && data.revenueTrends) {
-        // Destroy previous instance if exists
         if (revenueChartInstance) {
             revenueChartInstance.destroy();
         }
 
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const currentMonth = new Date().getMonth() + 1;
         const labels = monthNames.slice(0, currentMonth);
 
@@ -160,68 +135,67 @@ function initializeCharts(data) {
         }
 
         revenueChartInstance = new Chart(revenueCtx, {
-            type: "line",
+            type: 'line',
             data: {
                 labels: labels,
                 datasets: [
                     {
-                        label: "Revenue",
+                        label: 'Revenue',
                         data: revenueData,
-                        borderColor: "#f08d11",
-                        backgroundColor: "rgba(240, 141, 17, 0.1)",
+                        borderColor: '#f08d11',
+                        backgroundColor: 'rgba(240, 141, 17, 0.1)',
                         tension: 0.4,
-                        fill: true,
-                    },
-                ],
+                        fill: true
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false,
-                    },
+                        display: false
+                    }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            callback: (value) => "$" + value.toLocaleString(),
-                        },
-                    },
-                },
-            },
+                            callback: (value) => '$' + value.toLocaleString()
+                        }
+                    }
+                }
+            }
         });
     }
 
-    // Order Distribution Chart
-    const orderCtx = document.getElementById("orderChart");
+    const orderCtx = document.getElementById('orderChart');
     if (orderCtx) {
         if (orderChartInstance) {
             orderChartInstance.destroy();
         }
 
         orderChartInstance = new Chart(orderCtx, {
-            type: "doughnut",
+            type: 'doughnut',
             data: {
-                labels: data.revenueDistribution.map(r => r.categoryName) || ["N/A"],
+                labels: data.revenueDistribution.map(r => r.categoryName) || ['N/A'],
                 datasets: [
                     {
                         data: data.revenueDistribution.map(r => r.percentageShare) || [100],
-                        backgroundColor: ["#f08d11", "#2563eb", "#10b981", "#8b5cf6"],
-                        borderWidth: 0,
-                    },
-                ],
+                        backgroundColor: ['#f08d11', '#2563eb', '#10b981', '#8b5cf6'],
+                        borderWidth: 0
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: "bottom",
-                    },
-                },
-            },
+                        position: 'bottom'
+                    }
+                }
+            }
         });
     }
 }
@@ -257,14 +231,10 @@ function populateRestaurantPerformance(data) {
         $performanceGrid.append(card);
     });
 
-    // Re-run animateStats for new metric-value elements
     animateStats();
 }
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
-// Page-local notification helper (console-based)
+// Page-local override of the global helper: logs to console only.
 function showNotification(message, type) {
     console.log(`${type}: ${message}`);
-    // Implement your notification logic here
 }

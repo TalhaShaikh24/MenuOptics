@@ -1,31 +1,17 @@
-﻿/* ============================================================================
- * restaurant.js — Admin restaurant management page (Views/Restaurant/Index.cshtml)
- * Restaurant table with stats, filters and add/edit modals.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+﻿// restaurant.js — Restaurant management page scripts.
 
 let allRestaurants = [];
 let currentFilters = { cuisine: 'all', status: 'all', search: '' };
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
+    table = initDataTable('#restaurantTable', {
+        order: [[0, 'asc']],
+        language: { searchPlaceholder: 'Search restaurant...' }
+    });
 
-    // Initialize DataTable once on page load
-    initDataTable();
-
-    // Load stats and restaurants
     refreshRestaurantStats();
     refreshRestaurantTable();
 
-
-    // Event handler for add restaurant
     $('#saveRestaurantBtn').on('click', function () {
         const formData = new FormData($('#addRestaurantForm')[0]);
         if (isFormValid("#addRestaurantForm")) {
@@ -35,7 +21,6 @@ $(document).ready(function () {
         }
     });
 
-    // Event handler for update restaurant
     $('#updateRestaurantBtn').on('click', function () {
         const formData = new FormData($('#editRestaurantForm')[0]);
         if (isFormValid("#editRestaurantForm")) {
@@ -45,13 +30,11 @@ $(document).ready(function () {
         }
     });
 
-    // Search filter
     $('#restaurantSearch').on('input', function () {
         currentFilters.search = $(this).val().toLowerCase();
         filterAndRenderRestaurants();
     });
 
-    // Toggle filter dropdowns
     $('.filter-dropdown .btn').on('click', function (e) {
         e.preventDefault();
         const $dropdown = $(this).closest('.filter-dropdown');
@@ -60,14 +43,12 @@ $(document).ready(function () {
         $menu.toggleClass('active');
     });
 
-    // Close dropdowns when clicking outside
     $(document).on('click', function (e) {
         if (!$(e.target).closest('.filter-dropdown').length) {
             $('.dropdown-menu').removeClass('active');
         }
     });
 
-    // Toggle action dropdowns
     $('.data-table').on('click', '.dropdown-toggle', function (e) {
         e.preventDefault();
         const $menu = $(this).siblings('.dropdown-menu');
@@ -75,7 +56,6 @@ $(document).ready(function () {
         $menu.toggleClass('active');
     });
 
-    // Profile picture preview
     $('#addProfilePicFile').on('change', function () {
         const file = this.files[0];
         if (file) {
@@ -100,9 +80,6 @@ $(document).ready(function () {
     });
 });
 
-/* ── Validation ───────────────────────────────────────────────────────── */
-
-// Validate restaurant data
 function validateRestaurantData(formData) {
     const restaurantName = formData.get('restaurantName');
     const cuisineType = formData.get('cuisineType');
@@ -112,12 +89,9 @@ function validateRestaurantData(formData) {
     const username = formData.get('username');
     const email = formData.get('email');
     const phone = formData.get('phone');
-    return restaurantName && cuisineType && restaurantSize && firstName && lastName && username && email && phone && (formData.get('userId') );
+    return restaurantName && cuisineType && restaurantSize && firstName && lastName && username && email && phone && (formData.get('userId'));
 }
 
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
-
-// Add restaurant
 function addRestaurant(formData) {
     ajaxRequest({
         url: '/api/UserApi/CreateUser',
@@ -138,7 +112,6 @@ function addRestaurant(formData) {
     });
 }
 
-// Get restaurant by ID
 function getRestaurantById(id) {
     ajaxRequest({
         url: `/api/UserApi/GetUser/${id}`,
@@ -153,7 +126,7 @@ function getRestaurantById(id) {
             $('#editRestaurantForm [name="firstName"]').val(restaurant.firstName);
             $('#editRestaurantForm [name="lastName"]').val(restaurant.lastName);
             $('#editRestaurantForm [name="username"]').val(restaurant.username).attr("disabled",true);
-            $('#editRestaurantForm [name="email"]').val(restaurant.email).attr("disabled", true);;
+            $('#editRestaurantForm [name="email"]').val(restaurant.email).attr("disabled", true);
             $('#editRestaurantForm [name="phone"]').val(restaurant.phone);
             $('#editRestaurantForm [name="address"]').val(restaurant.address);
             $('#editRestaurantForm [name="country"]').val(restaurant.country);
@@ -162,7 +135,7 @@ function getRestaurantById(id) {
             $('#editRestaurantForm [name="zip"]').val(restaurant.zip);
             $('#editRestaurantForm [name="profilePic"]').val(restaurant.profilePic);
             if (restaurant.profilePic) {
-                $('#editProfilePicPreview').attr('src', imageBaseUrl+restaurant.profilePic).show();
+                $('#editProfilePicPreview').attr('src', imageBaseUrl + restaurant.profilePic).show();
                 $('#editProfilePicLabel').text('Replace profile picture');
             } else {
                 $('#editProfilePicPreview').hide();
@@ -176,7 +149,6 @@ function getRestaurantById(id) {
     });
 }
 
-// Update restaurant
 function updateRestaurant(formData) {
     ajaxRequest({
         url: '/api/UserApi/UpdateUser',
@@ -195,7 +167,6 @@ function updateRestaurant(formData) {
     });
 }
 
-// Toggle restaurant active status
 function toggleRestaurantActive(id) {
     ajaxRequest({
         url: `/api/UserApi/ToggleUserActive/${id}`,
@@ -212,9 +183,6 @@ function toggleRestaurantActive(id) {
     });
 }
 
-
-
-// Refresh restaurant stats
 function refreshRestaurantStats() {
     ajaxRequest({
         url: '/api/UserApi/GetRestaurantStats',
@@ -234,27 +202,9 @@ function refreshRestaurantStats() {
     });
 }
 
-// Initialize DataTable
-function initDataTable() {
-    table = $('#restaurantTable').DataTable({
-        paging: true,
-        searching: true,
-        ordering: false,
-        order: [[0, 'asc']], // Sort by Name column by default
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search restaurant...'
-        }
-    });
-}
-
-
-// Refresh restaurant table
 function refreshRestaurantTable() {
     LoadingComponent.showForTable('#restaurantTable', 'Loading restaurants...');
-    
+
     ajaxRequest({
         url: '/api/UserApi/GetAllRestaurants',
         method: 'GET',
@@ -271,9 +221,6 @@ function refreshRestaurantTable() {
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-// Filter and render restaurants
 function filterAndRenderRestaurants() {
     const filteredRestaurants = allRestaurants.filter(restaurant => {
         const search = currentFilters.search;
@@ -289,7 +236,6 @@ function filterAndRenderRestaurants() {
         return matchesSearch && matchesCuisine && matchesStatus;
     });
 
-    // Clear existing rows
     table.clear();
 
     filteredRestaurants.forEach(restaurant => {
@@ -326,11 +272,9 @@ function filterAndRenderRestaurants() {
         `;
         table.row.add($(row));
     });
-    // Redraw the table
     table.draw();
 }
 
-// Filter restaurants by cuisine or status
 window.filterRestaurants = function (type, value) {
     currentFilters[type] = value;
     $('#' + type + 'FilterLabel').text(value.charAt(0).toUpperCase() + value.slice(1));

@@ -1,33 +1,16 @@
-/* ============================================================================
- * recipes.js — Recipe management page (Views/Recipe/Index.cshtml)
- * Recipe table with ingredient Select2 pickers and unit-converted pricing.
- * Requires shared unitConversions.js to be loaded BEFORE this file.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// recipes.js — Recipes page scripts.
 
 let recipeTable;
 let ingredientsWithPrices = [];
-let recipeDescriptions = {}
+let recipeDescriptions = {};
 let cachedRecipes = [];
 let pendingPreloadedIngredientData = {};
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    // Initialize Select2 for ingredients — one shared API call initializes
-    // both the Add and Edit selects (see initializeIngredientsSelects below)
     initializeIngredientsSelects();
 
-    // Initialize DataTable
     initRecipeTable();
 
-    // ── Unit change: dynamically show selected unit badge on Recipe Size label ──
     $('#recipeUnit').on('change', function () {
         updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
     });
@@ -38,14 +21,12 @@ $(document).ready(function () {
         updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
     });
 
-    // Initialize unit badges on ready
     updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
     updateRecipeSizeUnitBadge('#editRecipeUnit', '#editRecipeSizeUnitBadge', '#editRecipeSize');
 
-    // Event handlers
     $('#saveRecipeBtn').on('click', function () {
         const recipeData = getRecipeFormData('#addRecipeForm', '#ingredientsDetails');
-        if (validateRecipeData(recipeData) && isFormValid("#addRecipeForm")) {
+        if (validateRecipeData(recipeData) && isFormValid('#addRecipeForm')) {
             addRecipe(recipeData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
@@ -55,19 +36,17 @@ $(document).ready(function () {
     $('#updateRecipeBtn').on('click', function () {
         const recipeData = getRecipeFormData('#editRecipeForm', '#editIngredientsDetails');
         recipeData.append('recipeId', $('#editRecipeId').val());
-        if (validateRecipeData(recipeData) && isFormValid("#editRecipeForm")) {
+        if (validateRecipeData(recipeData) && isFormValid('#editRecipeForm')) {
             updateRecipe(recipeData);
         } else {
             showNotification('Please fill in all required fields.', 'error');
         }
     });
 
-    // Search filter (DataTable built-in)
     $('#recipeSearch').on('input', function () {
         recipeTable.search(this.value).draw();
     });
 
-    // Export all recipes to PDF. The Employee Facing checkbox removes pricing information.
     $('#exportRecipesPdfBtn').on('click', function () {
         ajaxRequest({
             url: '/api/RecipeApi/GetAllRecipes',
@@ -84,40 +63,21 @@ $(document).ready(function () {
         });
     });
 
-
-
     refreshRecipesTable();
 });
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-// Show full description in popup
 function showRecipeDescription(recipeId) {
     const desc = recipeDescriptions[recipeId] || '';
     $('#recipeDescriptionPopupText').text(desc);
     openModal('recipeDescriptionModal');
 }
 
-
-// Initialize DataTable
 function initRecipeTable() {
-    recipeTable = $('#recipesTable').DataTable({
-        paging: true,
-        searching: true,
-        ordering: false,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search recipes...'
-        }
+    recipeTable = initDataTable('#recipesTable', {
+        language: { searchPlaceholder: 'Search recipes...' }
     });
 }
 
-// Initialize Select2 for ingredients.
-// GetAllActiveIngredientsByUserId is fetched ONCE here and the same data
-// initializes both the Add and Edit selects — previously there was one API
-// call per select, so the endpoint was hit twice on every page load.
 function initializeIngredientsSelects() {
     ajaxRequest({
         url: '/api/IngredientApi/GetAllActiveIngredientsByUserId',
@@ -132,10 +92,10 @@ function initializeIngredientsSelects() {
                 id: ing.ingredientId,
                 text: ing.name,
                 price: ing.price,
-                unit: ing.unit, // Storage unit
-                size: ing.size, // Size
+                unit: ing.unit,
+                size: ing.size,
                 packSize: ing.packSize,
-                unitOfMeasure: ing.unitOfMeasure || ing.unit, // Display unit
+                unitOfMeasure: ing.unitOfMeasure || ing.unit,
                 vendorProductId: ing.vendorProductId
             }));
 
@@ -148,14 +108,12 @@ function initializeIngredientsSelects() {
     });
 }
 
-// Initialize a single ingredients Select2 from the already-fetched
-// ingredientsWithPrices data (no API call in this function).
 function setupIngredientsSelect(selectId, modalId, detailsId, priceInputId) {
     if ($(selectId).hasClass('select2-hidden-accessible')) {
         $(selectId).select2('destroy');
     }
 
-    $(selectId).empty(); // existing options clear karo
+    $(selectId).empty();
 
     $(selectId).select2({
         tags: false,
@@ -166,7 +124,6 @@ function setupIngredientsSelect(selectId, modalId, detailsId, priceInputId) {
         matcher: function (param, data) {
             var searchText = ($.trim(param.term) || '').toLowerCase();
 
-            // No search term typed yet -> show everything
             if (searchText === '') {
                 return data;
             }
@@ -206,7 +163,6 @@ function setupIngredientsSelect(selectId, modalId, detailsId, priceInputId) {
     });
 }
 
-// Render ingredient details
 function renderIngredientDetails(selected, detailsId, priceInputId) {
     let existingData = {};
     if (pendingPreloadedIngredientData[detailsId]) {
@@ -257,24 +213,14 @@ function renderIngredientDetails(selected, detailsId, priceInputId) {
     });
     $(detailsId).html(html);
 
-    // Recompute prices for any restored rows and refresh the total
     $(`${detailsId} .ingredient-detail-row`).each(function () {
         const input = $(this).find('input[name^="ingredient_quantity_"]');
         if (input.val()) updateIngredientPrice(input, detailsId, priceInputId);
     });
     updateTotalCost(detailsId, priceInputId);
 
-    // Remove handler
-    //$(detailsId).off('click', '.remove-ingredient').on('click', '.remove-ingredient', function () {
-    //    const id = $(this).data('id');
-    //    $(this).closest('.ingredient-detail-row').remove();
-    //    const select = $(selectId);
-    //    const selected = select.val() || [];
-    //    select.val(selected.filter(s => s != id)).trigger('change');
-    //});
 }
 
-// Update ingredient price with unit conversion
 function updateIngredientPrice($el, detailsId, priceInputId) {
     const row = $el.closest('.ingredient-detail-row');
     const $quantityInput = row.find('input[name^="ingredient_quantity_"]');
@@ -303,7 +249,6 @@ function updateIngredientPrice($el, detailsId, priceInputId) {
     updateTotalCost(detailsId, priceInputId);
 }
 
-// Update total cost
 function updateTotalCost(detailsId, priceInputId) {
     let total = 0;
     $(`${detailsId} .ingredient-detail-row`).each(function () {
@@ -312,15 +257,9 @@ function updateTotalCost(detailsId, priceInputId) {
     $(priceInputId).val(total.toFixed(2));
 }
 
-// Unit conversion is provided by the shared unitConversions.js
-// (convertUnit / getAllowedUomForUnit / buildUomOptionsHtml). Ensure that
-// script is loaded on this page BEFORE recipes.js. The previous local
-// pass-through convertUnit stub has been removed so real numeric conversion
-// (e.g. KG <-> GM / LB / OZ / LT / ML / FL / GA) is used.
+// Unit conversion (convertUnit / buildUomOptionsHtml) is provided by unitConversions.js, loaded before this file.
 
-// Get form data with proper unit conversion
 function getRecipeFormData(formId, detailsId) {
-
     const formData = new FormData($(formId)[0]);
     const ingredients = [];
 
@@ -349,9 +288,6 @@ function getRecipeFormData(formId, detailsId) {
     return formData;
 }
 
-/* ── Validation ───────────────────────────────────────────────────────── */
-
-// Validate data
 function validateRecipeData(formData) {
     const name = formData.get('name');
     const unit = formData.get('unit');
@@ -359,9 +295,6 @@ function validateRecipeData(formData) {
     return name && unit && ingredients.length > 0;
 }
 
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
-
-// Add recipe
 function addRecipe(formData) {
     ajaxRequest({
         url: '/api/RecipeApi/CreateRecipe',
@@ -383,7 +316,6 @@ function addRecipe(formData) {
     });
 }
 
-// Update recipe
 function updateRecipe(formData) {
     ajaxRequest({
         url: '/api/RecipeApi/UpdateRecipe',
@@ -402,7 +334,6 @@ function updateRecipe(formData) {
     });
 }
 
-// Get recipe by ID
 function getRecipeById(id) {
     ajaxRequest({
         url: `/api/RecipeApi/GetRecipe/${id}`,
@@ -447,7 +378,6 @@ function getRecipeById(id) {
 
             pendingPreloadedIngredientData['#editIngredientsDetails'] = preloadedData;
 
-            // Trigger select2 change to render rows synchronously with quantities and computed prices
             const ingredientIds = (recipe.ingredients || []).map(ing => ing.ingredientId);
             $('#editIngredientsSelect').val(ingredientIds).trigger('change');
 
@@ -461,7 +391,6 @@ function getRecipeById(id) {
     });
 }
 
-// Toggle active
 function toggleRecipeActive(id) {
     if (confirm('Are you sure you want to toggle the active status?')) {
         ajaxRequest({
@@ -479,7 +408,6 @@ function toggleRecipeActive(id) {
     }
 }
 
-// Refresh table
 function refreshRecipesTable() {
     LoadingComponent.showForTable('#recipesTable', 'Loading recipes...');
     ajaxRequest({
@@ -498,9 +426,7 @@ function refreshRecipesTable() {
                 const created = DateFormatter.formatWithComma(item.createdOn);
                 recipeDescriptions[item.recipeId] = item.description || '';
 
-                // Get the ingredient names as a comma-separated string
                 const ingredientNames = item.ingredients ? item.ingredients.map(ingredient => ingredient.ingredientName).join(', ') : '';
-
 
                 const cls = item.isActive ? 'good' : 'critical';
                 const lbl = item.isActive ? 'Active' : 'In Active';
@@ -572,7 +498,6 @@ function refreshRecipesTable() {
     });
 }
 
-// Export one recipe to PDF.
 function exportSingleRecipePDF(id) {
     ajaxRequest({
         url: `/api/RecipeApi/GetRecipe/${id}`,
@@ -589,7 +514,7 @@ function exportSingleRecipePDF(id) {
     });
 }
 
-// Generate recipe PDF. When Employee Facing is checked, pricing is omitted.
+// When Employee Facing is checked, pricing is omitted.
 async function generateRecipePDF(recipeData, filename) {
     const isEmployeeFacing = document.getElementById('employeeFacingRecipe')?.checked || false;
     const logoPath = getRecipeExportLogoPath();
@@ -754,7 +679,6 @@ async function getImageAsPngBase64(url) {
 
 
 function getRecipeIngredientExportPrice(ingredient) {
-    // Prefer any price/cost returned by the API when present.
     const directPrice = parseFloat(ingredient.currentCost);
     if (Number.isFinite(directPrice) && directPrice > 0) {
         return directPrice;
@@ -796,14 +720,12 @@ function wrapPdfText(value) {
     return (value || '').toString().replace(/([^\s]{45})(?=[^\s])/g, '$1\u200B');
 }
 
-// ── Helper to open Add Recipe modal and ensure badge is displayed ───────────
 function openAddRecipeModal() {
     updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
     openModal('addRecipeModal');
     updateRecipeSizeUnitBadge('#recipeUnit', '#recipeSizeUnitBadge', '#recipeSize');
 }
 
-// ── Update selected unit badge next to Recipe Size label ─────────────────────
 function updateRecipeSizeUnitBadge(unitSelectSelector, badgeSelector, inputSelector) {
     const $select = $(unitSelectSelector);
     const $badge = $(badgeSelector);
@@ -843,7 +765,6 @@ function updateRecipeSizeUnitBadge(unitSelectSelector, badgeSelector, inputSelec
     }
 }
 
-// Show recipe cost breakdown modal (uses data already received in GetAllRecipes)
 function showRecipeCostBreakdown(recipeId) {
     const $tbody = $('#recipeCostBreakdownTableBody');
     $tbody.empty();
@@ -880,7 +801,6 @@ function showRecipeCostBreakdown(recipeId) {
             };
         });
 
-        // Sort descending by highest percentage at top
         list.sort((a, b) => b.costPercent - a.costPercent);
 
         list.forEach(ing => {

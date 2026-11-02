@@ -1,21 +1,8 @@
-/* ============================================================================
- * VendorIngredients.js — Vendor ingredients page (Views/Ingredient/VendorIngredients.cshtml)
- * Server-side DataTable with CRUD modals and bulk actions.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// VendorIngredients.js — Vendor ingredients page scripts.
 
 let table;
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-
     $('#addIngredientBtn').on('click', function () {
         openModal('addIngredientModal');
     });
@@ -49,11 +36,9 @@ $(document).ready(function () {
         }
     });
 
-    // Bulk actions
     $('#bulkDeleteBtn').on('click', function () { bulkDeleteIngredients(); });
-    $('#bulkToggleBtn').on('click',  function () { bulkToggleIngredients(); });
+    $('#bulkToggleBtn').on('click', function () { bulkToggleIngredients(); });
 
-    // Select all checkbox
     $('#selectAllIngredients').on('change', function () {
         $('.ingredient-checkbox').prop('checked', this.checked);
     });
@@ -61,15 +46,8 @@ $(document).ready(function () {
     initIngredientsTable();
 });
 
-// ─── Server-side DataTable ─────────────────────────────────────────────────────
-/* ── 6. Helpers — server-side DataTable ───────────────────────────────── */
-
 function initIngredientsTable() {
-    if ($.fn.DataTable.isDataTable('.ingredients-table')) {
-        $('.ingredients-table').DataTable().destroy();
-    }
-
-    table = $('.ingredients-table').DataTable({
+    table = initDataTable('.ingredients-table', {
         serverSide: true,
         processing: true,
         loadingMessage: 'Loading ingredients...',
@@ -162,12 +140,9 @@ function initIngredientsTable() {
                 }
             }
         ],
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
         ordering: true,
         order: [[1, 'asc']],
         language: {
-            search: '',
             searchPlaceholder: 'Search ingredients...'
         },
         drawCallback: function () {
@@ -190,10 +165,6 @@ function refreshIngredientsTable() {
         initIngredientsTable();
     }
 }
-
-// ─── CRUD Functions ────────────────────────────────────────────────────────────
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function addIngredientByUserId(ingredientData) {
     ajaxRequest({
@@ -353,9 +324,6 @@ function bulkToggleIngredients() {
         });
     }
 }
-
-// ─── Utility ───────────────────────────────────────────────────────────────────
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
 
 function openModal(modalId) {
     $(`#${modalId}`).addClass('active');

@@ -1,13 +1,4 @@
-/* ============================================================================
- * invoices.js — Inventory Invoices page (Views/Inventory/Invoices.cshtml)
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// invoices.js — Inventory invoices page scripts.
 
 let table;
 let allInvoices = [];
@@ -16,18 +7,15 @@ let invoiceItems = [];
 let editInvoiceItems = [];
 let vendorIngredients = [];
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    // Initialize DataTable once on page load
-    initDataTable();
+    table = initDataTable('#invoicesTable', {
+        language: { searchPlaceholder: 'Search invoices...' }
+    });
 
-    // Event handler for add invoice modal
     $('#addInvoiceBtn').on('click', function () {
         openAddInvoiceModal();
     });
 
-    // Event handlers for filters
     $('#invoiceSearch').on('input', function () {
         table.search(this.value).draw();
     });
@@ -37,11 +25,6 @@ $(document).ready(function () {
         table.search('').draw();
     });
 
-   
-
-    
-
-    // CSV Import and Sample Download bindings
     $('#importInvoiceCsvBtn').on('click', function () {
         const vendorId = $('#newInvoiceVendor').val();
         if (!vendorId) {
@@ -60,26 +43,21 @@ $(document).ready(function () {
         downloadInvoiceSampleCsv();
     });
 
-    // Update Ingredient Prices toggle – Add modal
     $('#addUpdatePricesToggle').on('change', function () {
         const on = this.checked;
         $('#addUpdatePricesLabel').text(on ? 'Yes' : 'No').toggleClass('active', on);
         $('#addUpdatePricesContainer').toggleClass('active', on);
     });
 
-    // Update Ingredient Prices toggle – Edit modal
     $('#editUpdatePricesToggle').on('change', function () {
         const on = this.checked;
         $('#editUpdatePricesLabel').text(on ? 'Yes' : 'No').toggleClass('active', on);
         $('#editUpdatePricesContainer').toggleClass('active', on);
     });
 
-    // Initial load
     refreshInvoicesTable();
     loadVendors();
 });
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function refreshInvoicesTable() {
     LoadingComponent.showForTable('#invoicesTable', 'Loading invoices...');
@@ -217,7 +195,6 @@ function loadEditIngredientsByVendor(vendorId) {
                     item.hasPackSize = hasPackSize;
                     item.packSize = hasPackSize ? (item.packSize ?? ing.packSize) : null;
 
-                    // Keep vendorProductId from invoice item, fallback to ingredient master
                     item.vendorProductId = item.vendorProductId || ing.vendorProductId || null;
                 }
             });
@@ -403,22 +380,6 @@ function submitEditInvoice() {
             $('#updateInvoiceBtn')
                 .prop('disabled', false)
                 .html('<i class="fas fa-save"></i> Update Invoice');
-        }
-    });
-}
-
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
-function initDataTable() {
-    table = $('#invoicesTable').DataTable({
-        paging: true,
-        searching: true,
-        ordering: false,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
-        language: {
-            search: '',
-            searchPlaceholder: 'Search invoices...'
         }
     });
 }
@@ -657,7 +618,6 @@ function openAddInvoiceModal() {
         .prop('disabled', false)
         .html('<i class="fas fa-save"></i> Save Invoice');
 
-    // Reset Update Prices toggle
     $('#addUpdatePricesToggle').prop('checked', false).trigger('change');
 
     openModal('addInvoiceModal');
@@ -827,7 +787,6 @@ function editInvoice(inventoryInvoiceId) {
             .prop('disabled', false)
             .html('<i class="fas fa-save"></i> Update Invoice');
 
-        // Reset Update Prices toggle
         $('#editUpdatePricesToggle').prop('checked', false).trigger('change');
 
         openModal('editInvoiceModal');
@@ -1189,8 +1148,6 @@ function syncInvoiceItemsView() {
     }
 }
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
 function parseItems(itemsJson) {
     try {
         return typeof itemsJson === 'string'
@@ -1220,8 +1177,6 @@ function formatInvoiceDate(dateStr) {
         return dateStr;
     }
 }
-
-/* ── CSV Import / Export for Add Invoice Modal ────────────────────────────── */
 
 function escapeCsvValue(val) {
     if (val == null) return '""';
@@ -1264,7 +1219,6 @@ function downloadInvoiceSampleCsv() {
 function generateInvoiceSampleCsv(ingredients) {
     const supplierName = $('#newInvoiceVendor option:selected').text() || 'Supplier';
 
-    // Columns: Product ID, Brand, Description, Pack/Size, Weight/Qty, Catch Weight, Price
     const headers = ["Product ID", "Brand", "Description", "Pack/Size", "Weight/Qty", "Catch Weight", "Price"];
     const rows = [headers.join(",")];
 
@@ -1275,7 +1229,7 @@ function generateInvoiceSampleCsv(ingredients) {
         const isCatchWeight = (ing.packSize == null || Number(ing.packSize) <= 0);
         const catchWeightStr = isCatchWeight ? 'Yes' : 'No';
 
-        // Pack/Size or Weight/Qty: in dono mai se koi aik hoga, dono nahi ho sakte
+        // pack/size and weight/qty are mutually exclusive
         let packSize = '';
         if (!isCatchWeight) {
             const p = ing.packSize ?? ing.PackSize;
@@ -1455,7 +1409,7 @@ function processInvoiceCsv(csvText) {
 
     // Map headers (case and punctuation insensitive)
     const headerRow = rows[0].map(h => (h || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''));
-    
+
     const idxProductId = headerRow.findIndex(h => h.includes('productid') || h === 'product' || h === 'id' || h === 'itemid');
     const idxBrand = headerRow.findIndex(h => h.includes('brand'));
     const idxDescription = headerRow.findIndex(h => h.includes('desc') || h.includes('name') || h.includes('ingredient'));
@@ -1479,8 +1433,6 @@ function processInvoiceCsv(csvText) {
         const cellPrice = idxPrice !== -1 ? (row[idxPrice] || '').trim() : '';
         const cellCatchWeight = idxCatchWeight !== -1 ? (row[idxCatchWeight] || '').trim().toLowerCase() : '';
 
-
-        // Skip rows where Weight/Qty and Price are not present in CSV
         const parsedWeight = parseWeightQtyValue(cellWeightQty);
         const hasWeight = parsedWeight && parsedWeight.qty !== null && !isNaN(parsedWeight.qty) && parsedWeight.qty > 0;
         const cleanPrice = cellPrice.replace(/[^0-9.]/g, '');
@@ -1491,8 +1443,7 @@ function processInvoiceCsv(csvText) {
             continue;
         }
 
-        // Matching strategy:
-        // 1. By Product ID (vendorProductId)
+        // 1. Match by product ID (vendorProductId)
         let matched = null;
         if (cellProductId) {
             matched = vendorIngredients.find(v => {
@@ -1517,7 +1468,6 @@ function processInvoiceCsv(csvText) {
             });
         }
 
-        
         const parsedPack = parsePackSizeValue(cellPackSize);
         const hasPack = parsedPack.packSize !== null || parsedPack.size !== null;
 
@@ -1529,10 +1479,6 @@ function processInvoiceCsv(csvText) {
         let size = parsedPack.size ?? null;
         let packSize = parsedPack.packSize ?? null;
 
-        
-
-
-
         if (matched) {
             ingredientId = matched.ingredientId;
             ingredientName = matched.name;
@@ -1542,7 +1488,7 @@ function processInvoiceCsv(csvText) {
             if (size == null && matched.size != null) size = Number(matched.size);
             if (packSize == null && matched.packSize != null) packSize = Number(matched.packSize);
         } else {
-            // New ingredient row added in CSV!
+            // No match: treat as a new ingredient row
             ingredientId = 'new_' + (cellProductId ? cellProductId.replace(/[^a-zA-Z0-9_-]/g, '') : ('row' + r)) + '_' + Date.now();
 
             if (cellBrand && cellDescription) {
@@ -1553,7 +1499,6 @@ function processInvoiceCsv(csvText) {
                 ingredientName = cellDescription || cellBrand || cellProductId || `New Item ${r}`;
             }
 
-            // Determine catch weight
             if (cellCatchWeight === 'yes' || cellCatchWeight === 'true' || cellCatchWeight === '1' || cellCatchWeight === 'y') {
                 isCatchWeight = true;
             } else if (cellCatchWeight === 'no' || cellCatchWeight === 'false' || cellCatchWeight === '0' || cellCatchWeight === 'n') {
@@ -1577,7 +1522,6 @@ function processInvoiceCsv(csvText) {
         const qty = parsedWeight.qty;
         const price = priceVal;
 
-        // Upsert in invoiceItems
         const existingIdx = invoiceItems.findIndex(i =>
             (matched && i.ingredientId === matched.ingredientId) ||
             (i.ingredientName && ingredientName && i.ingredientName.toLowerCase() === ingredientName.toLowerCase())

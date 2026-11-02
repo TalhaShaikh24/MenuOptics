@@ -1,13 +1,4 @@
-/* ============================================================================
- * vendor-activity-log.js — Admin Vendor Activity Logs (Views/ActivityLog/VendorActivityLog.cshtml)
- *
- * Project convention — section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: referenced by inline handlers.
- * ==========================================================================*/
-
-/* ── 2. State ─────────────────────────────────────────────────────────── */
+// vendor-activity-log.js — Vendor activity log page scripts.
 
 let table = null;
 let logCache = {};
@@ -35,10 +26,7 @@ let currentFilters = {
     endDate: defaultRange.endDate
 };
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
-
 $(document).ready(function () {
-    // Initialize Select2 filter for Vendors
     $('#vendorFilter').select2({
         placeholder: 'All Vendors',
         allowClear: false,
@@ -48,7 +36,6 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 
-    // Initialize Date Range filter with optional time
     $('#vendorActivityDateRange').customRangeFilter({
         enableTime: true,
         initialFilter: "Last 7 Days",
@@ -79,7 +66,6 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 
-    // Initialize Select2 filter for Endpoints
     $('#vendorLogRequestFilter').select2({
         placeholder: 'All Endpoints',
         allowClear: false,
@@ -100,8 +86,6 @@ $(document).ready(function () {
         if (table) table.draw();
     });
 });
-
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function loadVendorsDropdown() {
     ajaxRequest({
@@ -128,19 +112,11 @@ function loadVendorsDropdown() {
 }
 
 function initVendorActivityTable() {
-    if ($.fn.DataTable.isDataTable('#vendorActivityTable')) {
-        $('#vendorActivityTable').DataTable().destroy();
-    }
-
-    table = $('#vendorActivityTable').DataTable({
+    table = initDataTable('#vendorActivityTable', {
         serverSide: true,
         processing: true,
         loadingMessage: 'Loading activity log...',
-        ordering: false,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
         language: {
-            search: '',
             searchPlaceholder: 'Search logs...',
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',
             paginate: {
@@ -274,8 +250,6 @@ function initVendorActivityTable() {
     });
 }
 
-/* ── 6. Helpers ───────────────────────────────────────────────────────── */
-
 function updateStatsCards(logs, total, counts) {
     let successCount = 0;
     let errorCount = 0;
@@ -370,8 +344,6 @@ function viewVendorLogDetails(logId) {
     openModal('vendorLogDetailsModal');
 }
 
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
 function getMethodBadgeHtml(requestType) {
     if (!requestType) return '';
 
@@ -448,16 +420,6 @@ function copyJsonToClipboard(elementId) {
     }).catch(() => {
         showNotification('Failed to copy.', 'error');
     });
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    return text.toString()
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
 }
 
 function formatDateTimeForApi(d) {

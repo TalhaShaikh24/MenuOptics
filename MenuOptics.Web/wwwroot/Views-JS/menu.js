@@ -1,26 +1,20 @@
-/* ============================================================================
- * menu.js — Menu management page (Views/Menu/Index.cshtml)
- * Menu grid with ingredient/recipe cost building, categories and PDF export.
- *
- * Project convention — every Views-JS file follows this section order:
- *   1. Constants  2. State  3. Initialization  4. Event bindings
- *   5. AJAX / CRUD  6. Helpers  7. Utilities
- * Functions stay global: they are referenced by inline onclick handlers.
- * ==========================================================================*/
+// menu.js — Menu management page scripts.
 
-/* ── 3. Initialization / 4. Event bindings ────────────────────────────── */
+let ingredientsWithPrices = [];
+let recipesWithPrices = [];
+let allRecipesData = [];
+let categories = [];
+let cachedMenuItems = [];
+let pendingPreloadedIngredientData = {};
+let pendingPreloadedRecipeData = {};
+let isStaffFacing = false;
 
 $(document).ready(function () {
-
-    // Initialize Select2 for ingredients, recipes and categories.
-    // Each endpoint is fetched ONCE and initializes both the Add and Edit
-    // selects (previously one call per select — see the loaders below).
-    // The single categories fetch also renders the category tabs.
+    // Each endpoint is fetched once and feeds both the Add and Edit selects; the categories fetch also renders the tabs.
     initializeIngredientsSelects();
     initializeRecipesSelects();
     initializeCategorySelects();
 
-    // Event handler for add menu item
     $('#saveMenuItemBtn').on('click', function () {
         const menuData = getMenuFormData('#addMenuItemForm', '#ingredientsDetails', '#recipesDetails');
         if (validateMenuData(menuData)) {
@@ -30,7 +24,6 @@ $(document).ready(function () {
         }
     });
 
-    // Event handler for update menu item
     $('#updateMenuItemBtn').on('click', function () {
         const menuData = getMenuFormData('#editMenuItemForm', '#editIngredientsDetails', '#editRecipesDetails');
         menuData.append('menuItemId', $('#editMenuItemId').val());
@@ -41,65 +34,24 @@ $(document).ready(function () {
         }
     });
 
-    // Category tabs are rendered by initializeCategorySelects() above from
-    // the same categories response — no separate fetch on page load.
-    // (refreshCategoryTabs() is still used after a new category is added.)
-
-    // Search filter
+    // Category tabs render from the same categories response — no separate fetch.
     $('#menuSearch').on('input', function () {
         const activeCategoryId = $('.tab-btn.active').data('category') ?? 'all';
         filterMenuItems(activeCategoryId);
     });
 
     refreshMenuGrid();
-});
 
-/* ── 2. State ─────────────────────────────────────────────────────────── */
-
-// Store ingredients, recipes and categories data globally
-let ingredientsWithPrices = [];
-let recipesWithPrices = [];
-let allRecipesData = [];
-let categories = [];
-let cachedMenuItems = [];
-let pendingPreloadedIngredientData = {};
-let pendingPreloadedRecipeData = {};
-
-
-let isStaffFacing = false;
-
-
-/* ── 7. Utilities ─────────────────────────────────────────────────────── */
-
-async function getImageAsPngBase64(url) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-
-        img.onload = function () {
-            const targetWidth = 350;
-            const aspectRatio = img.naturalHeight / img.naturalWidth;
-            const targetHeight = Math.round(targetWidth * aspectRatio);
-
-            const canvas = document.createElement('canvas');
-            canvas.width = targetWidth;
-            canvas.height = targetHeight;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-
-            const pngBase64 = canvas.toDataURL('image/png');
-            resolve(pngBase64);
-        };
-
-        img.onerror = () => reject("Image load failed");
-        img.src = url;
+    $('#exportMenuPdfBtn').on('click', function () {
+        ajaxRequest({
+            url: '/api/MenuApi/GetAllMenuItems',
+            method: 'GET',
+            onSuccess: function (response) {
+                generateMenuPDF(response.data, 'Full_Menu_Report');
+            }
+        });
     });
-}
-
-
-// Initialize Select2 for ingredients
-/* ── 6. Helpers — Select2 setup / cost calculations ───────────────────── */
+});
 
 function initializeIngredientsSelects() {
     ajaxRequest({
@@ -108,7 +60,6 @@ function initializeIngredientsSelects() {
         showMessage: false,
         isQuery: false,
         onSuccess: function (response) {
-            
             ingredientsWithPrices = response.data.map(ing => ({
                 id: ing.ingredientId,
                 text: ing.name,
@@ -129,7 +80,6 @@ function initializeIngredientsSelects() {
     });
 }
 
-// Initialize a single ingredients select from the already-fetched data (no API call in this function).
 function setupIngredientsSelect(selectId, modalId, detailsId, costInputId) {
     $(selectId).select2({
         data: ingredientsWithPrices,
@@ -139,7 +89,6 @@ function setupIngredientsSelect(selectId, modalId, detailsId, costInputId) {
         matcher: function (param, data) {
             var searchText = ($.trim(param.term) || '').toLowerCase();
 
-            // No search term typed yet -> show everything
             if (searchText === '') {
                 return data;
             }
@@ -152,7 +101,7 @@ function setupIngredientsSelect(selectId, modalId, detailsId, costInputId) {
                 return text.includes(word);
             });
 
-            // VendorProductId: search using the ENTIRE search text 
+            // vendorProductId matches the full search text; names match per word
             var vendorProductIdMatches = vendorProductId.includes(searchText);
             if (nameMatches || vendorProductIdMatches) {
                 return data;
@@ -175,7 +124,6 @@ function setupIngredientsSelect(selectId, modalId, detailsId, costInputId) {
         updateIngredientPrice($(this).closest('.ingredient-detail-row'), detailsId, costInputId);
     });
 }
-// Initialize Select2 for recipes
 function initializeRecipesSelects() {
     ajaxRequest({
         url: '/api/RecipeApi/GetAllRecipes',
@@ -201,7 +149,6 @@ function initializeRecipesSelects() {
     });
 }
 
-// Initialize a single recipes select from the already-fetched data (no API call in this function).
 function setupRecipesSelect(selectId, modalId, detailsId, costInputId) {
     $(selectId).select2({
         data: recipesWithPrices,
@@ -219,10 +166,7 @@ function setupRecipesSelect(selectId, modalId, detailsId, costInputId) {
         updateRecipePrice($(this), detailsId, costInputId);
     });
 }
-// Build <option> HTML for the ingredient-detail-row "Unit of Measure" dropdown.
-// Restricted to the ALLOWED_UNIT_OF_MEASURE_LABELS set AND to units convertible
-// with the ingredient's base unit (e.g. an ingredient stocked in KG offers the
-// allowed weight/volume units GM/KG/LB/OZ/ML/LT/FL/GA, but not length or count).
+// UOM options are limited to units convertible with the ingredient's base unit.
 function buildUomOptionsHtml(baseUnit, selectedUnit) {
     const placeholder = `<option value="" disabled${selectedUnit ? '' : ' selected'}>Select unit of measure</option>`;
 
@@ -249,7 +193,6 @@ function buildUomOptionsHtml(baseUnit, selectedUnit) {
     return optionsHtml;
 }
 
-// Update ingredient price with unit conversion, using the UOM the user picked in this row
 function updateIngredientPrice(row, detailsId, costInputId) {
     const quantityInput = row.find('input[name^="ingredient_quantity_"]');
     const uomSelect = row.find('select[name^="ingredient_uom_"]');
@@ -260,8 +203,8 @@ function updateIngredientPrice(row, detailsId, costInputId) {
 
     if (ingredientData && quantity > 0) {
         const userUnit = uomSelect.val() || ingredientData.unitOfMeasure || ingredientData.unit;
-        const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
-        const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
+        const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1; // pack size is 1 for catch-weight items
+        const size = ingredientData.packSize != null ? ingredientData.size : 1; // size is 1 for catch-weight items
         const pricePerUnit = (ingredientData.price / packSize) / size;
 
         const convertedQuantity = convertUnit(quantity, userUnit, ingredientData.unit, ingredientData.size);
@@ -274,7 +217,6 @@ function updateIngredientPrice(row, detailsId, costInputId) {
     updateTotalCost(detailsId, costInputId);
 }
 
-// Update recipe price
 function updateRecipePrice($quantityInput, detailsId, costInputId) {
     const recipeId = $quantityInput.attr('name').split('_')[2];
     const quantity = parseFloat($quantityInput.val()) || 0;
@@ -292,7 +234,6 @@ function updateRecipePrice($quantityInput, detailsId, costInputId) {
     updateTotalCost(detailsId, costInputId);
 }
 
-// Initialize Select2 for categories
 function initializeCategorySelects() {
     ajaxRequest({
         url: `/api/CategoryApi/GetAllCategories/${true}`,
@@ -314,7 +255,6 @@ function initializeCategorySelects() {
     });
 }
 
-// Initialize a single category select from the already-fetched data (no API call in this function).
 function setupCategorySelect(selectId, modalId) {
     $(selectId).select2({
         tags: true,
@@ -356,7 +296,6 @@ function setupCategorySelect(selectId, modalId) {
         }
     });
 }
-// Render ingredient details with unit conversion dropdown
 function renderIngredientDetails(selected, detailsId, costInputId) {
     let existingData = {};
     if (pendingPreloadedIngredientData[detailsId]) {
@@ -403,8 +342,8 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
         let displayPrice = '0.00';
         if (savedQuantity) {
             const convertedQuantity = convertUnit(parseFloat(savedQuantity), savedUom, ingredientData.unit, ingredientData.size);
-            const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1;//Pack size will be 1 in case of catch weight item
-            const size = ingredientData.packSize != null ? ingredientData.size : 1;//Size will be 1 in case of catch weight item
+            const packSize = ingredientData.packSize != null ? ingredientData.packSize : 1; // pack size is 1 for catch-weight items
+            const size = ingredientData.packSize != null ? ingredientData.size : 1; // size is 1 for catch-weight items
             const pricePerUnit = (ingredientData.price / packSize) / size;
             displayPrice = (pricePerUnit * convertedQuantity).toFixed(2);
         }
@@ -425,7 +364,6 @@ function renderIngredientDetails(selected, detailsId, costInputId) {
     updateTotalCost(detailsId, costInputId);
 }
 
-// Render recipe details
 function renderRecipeDetails(selected, detailsId, costInputId) {
     let existingData = {};
     if (pendingPreloadedRecipeData[detailsId]) {
@@ -478,25 +416,19 @@ function renderRecipeDetails(selected, detailsId, costInputId) {
     updateTotalCost(detailsId, costInputId);
 }
 
-// Update total cost with unit conversion for ingredients and recipes
 function updateTotalCost(detailsId, costInputId) {
-    
     let totalCost = 0;
 
-    // Calculate ingredient costs
     const ingredientsDetailsId = detailsId.includes('ingredient') ? detailsId : detailsId.replace('recipes', 'ingredients').replace('Recipes', 'Ingredients');
     const recipesDetailsId = detailsId.includes('recipe') ? detailsId : detailsId.replace('ingredients', 'recipes').replace('Ingredients', 'Recipes');
 
-    // Get both containers
     const $ingredientsContainer = $(ingredientsDetailsId);
     const $recipesContainer = $(recipesDetailsId);
 
-    // Calculate ingredient costs
     $ingredientsContainer.find('.ingredient-detail-row').each(function () {
         totalCost += parseFloat($(this).find('.ingredient-price').text().split('$')[1]);
     });
 
-    // Calculate recipe costs
     $recipesContainer.find('.recipe-detail-row').each(function () {
         totalCost += parseFloat($(this).find('.recipe-price').text().split('$')[1]);
     });
@@ -504,7 +436,6 @@ function updateTotalCost(detailsId, costInputId) {
     $(costInputId).val(totalCost.toFixed(2));
 }
 
-// Close category modal
 window.closeCategoryModal = function (selectId) {
     selectId = selectId.replace('#', '');
 
@@ -516,7 +447,6 @@ window.closeCategoryModal = function (selectId) {
     $('#categoryModal').remove();
 };
 
-// Add new category
 window.addNewCategory = function (categoryName, selectId) {
     const $select = $(selectId);
     const selected = $select.val() || [];
@@ -562,13 +492,11 @@ window.addNewCategory = function (categoryName, selectId) {
     });
 };
 
-// Get form data with unit conversion for ingredients and recipes
 function getMenuFormData(formId, ingredientsDetailsId, recipesDetailsId) {
     const formData = new FormData($(formId)[0]);
     const ingredients = [];
     const recipes = [];
 
-    // Process ingredients
     $(`${ingredientsDetailsId} .ingredient-detail-row`).each(function () {
         const ingredientId = $(this).find('input[name^="ingredient_quantity_"]').attr('name').split('_')[2];
         const quantity = parseFloat($(this).find('input[name^="ingredient_quantity_"]').val()) || 0;
@@ -588,7 +516,6 @@ function getMenuFormData(formId, ingredientsDetailsId, recipesDetailsId) {
         }
     });
 
-    // Process recipes
     $(`${recipesDetailsId} .recipe-detail-row`).each(function () {
         const recipeId = $(this).find('input[name^="recipe_quantity_"]').attr('name').split('_')[2];
         const quantity = parseFloat($(this).find('input[name^="recipe_quantity_"]').val()) || 0;
@@ -607,7 +534,6 @@ function getMenuFormData(formId, ingredientsDetailsId, recipesDetailsId) {
     return formData;
 }
 
-// Validate menu data
 function validateMenuData(formData) {
     const name = formData.get('name');
     const description = formData.get('description');
@@ -617,12 +543,8 @@ function validateMenuData(formData) {
     const ingredients = JSON.parse(formData.get('ingredients') || '[]');
     const recipes = JSON.parse(formData.get('recipes') || '[]');
 
-    // At least one ingredient or recipe should be present
     return name && description && categoryId && cost > 0 && sellingPrice > 0 && (ingredients.length > 0 || recipes.length > 0);
 }
-
-// Add menu item
-/* ── 5. AJAX / CRUD ───────────────────────────────────────────────────── */
 
 function addMenuItem(formData) {
     ajaxRequest({
@@ -645,7 +567,6 @@ function addMenuItem(formData) {
     });
 }
 
-// Get menu item by ID
 function getMenuItemById(id) {
     ajaxRequest({
         url: `/api/MenuApi/GetMenuItem/${id}`,
@@ -669,7 +590,7 @@ function getMenuItemById(id) {
                 $('#editFeaturedImageLabel').text('Choose new featured image');
             }
 
-            // Preload ingredients synchronously
+            // Preload first: the change handlers below consume this pending data when rendering.
             const preloadedIngs = {};
             (menuItem.ingredients || []).forEach(ing => {
                 const ingredientData = ingredientsWithPrices.find(item => item.id == ing.ingredientId);
@@ -685,14 +606,12 @@ function getMenuItemById(id) {
             });
             pendingPreloadedIngredientData['#editIngredientsDetails'] = preloadedIngs;
 
-            // Preload recipes synchronously
             const preloadedRecs = {};
             (menuItem.recipes || []).forEach(rec => {
                 preloadedRecs[rec.recipeId] = rec.quantity;
             });
             pendingPreloadedRecipeData['#editRecipesDetails'] = preloadedRecs;
 
-            // Set ingredients & recipes and trigger synchronous render
             $('#editIngredientsSelect').val((menuItem.ingredients || []).map(ing => ing.ingredientId)).trigger('change');
             $('#editRecipesSelect').val((menuItem.recipes || []).map(rec => rec.recipeId)).trigger('change');
 
@@ -706,7 +625,6 @@ function getMenuItemById(id) {
     });
 }
 
-// Update menu item
 function updateMenuItem(formData) {
     ajaxRequest({
         url: '/api/MenuApi/UpdateMenuItem',
@@ -724,7 +642,6 @@ function updateMenuItem(formData) {
     });
 }
 
-// Refresh category tabs
 function refreshCategoryTabs() {
     ajaxRequest({
         url: `/api/CategoryApi/GetAllCategories/${true}`,
@@ -739,7 +656,6 @@ function refreshCategoryTabs() {
     });
 }
 
-// Build the category tab buttons from a raw categories list (no API call here)
 function renderCategoryTabs(categoryList) {
     const currentActiveCategory = $('.tab-btn.active').data('category') || 'all';
     const tabContainer = $('#categoryTabs');
@@ -758,7 +674,6 @@ function renderCategoryTabs(categoryList) {
     });
 }
 
-// Function to toggle menu item active status
 function toggleMenuItemActive(id) {
     if (confirm('Are you sure you want to toggle the active status of this menu item?')) {
         ajaxRequest({
@@ -776,8 +691,7 @@ function toggleMenuItemActive(id) {
     }
 }
 
-// Refresh menu grid (loading shown by the shared LoadingComponent —
-// the Menu page has no DataTable, the overlay covers the #menuGrid itself)
+// Loading overlay covers #menuGrid itself (this page has no DataTable).
 function refreshMenuGrid() {
     LoadingComponent.show('#menuGrid', 'Loading menu items...');
     ajaxRequest({
@@ -882,12 +796,10 @@ function refreshMenuGrid() {
                     grid.append(row);
                 });
                 
-                // Compute the average once, after all items have been summed
                 const avgCostPercentage = activeItemCount > 0 ? (totalCostPercentage / activeItemCount).toFixed(2) : "0.00";
 
                 $('#avgFoodCost').html(`${avgCostPercentage}%`);
 
-                // Re-apply currently active category tab filter
                 const activeCategoryId = $('.tab-btn.active').data('category') ?? 'all';
                 filterMenuItems(activeCategoryId);
             }
@@ -902,7 +814,6 @@ function refreshMenuGrid() {
     });
 }
 
-// Filter menu items by category and search
 function filterMenuItems(categoryId) {
     if (categoryId === undefined || categoryId === null) {
         categoryId = $('.tab-btn.active').data('category') ?? 'all';
@@ -945,14 +856,10 @@ function filterMenuItems(categoryId) {
     }
 }
 
-// Edit menu item
 function editMenuItem(id) {
     getMenuItemById(id);
 }
 
-
-
-// 1. Single Menu Item Export with Ingredients
 function exportSingleMenuPDF(id) {
     ajaxRequest({
         url: `/api/MenuApi/GetMenuItem/${id}`,
@@ -963,17 +870,31 @@ function exportSingleMenuPDF(id) {
     });
 }
 
-// 2. Event Listener for All Menu Items
-$('#exportMenuPdfBtn').on('click', function () {
-    ajaxRequest({
-        url: '/api/MenuApi/GetAllMenuItems',
-        method: 'GET',
-        onSuccess: function (response) {
-            generateMenuPDF(response.data, 'Full_Menu_Report');
-        }
-    });
-});
+async function getImageAsPngBase64(url) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
 
+        img.onload = function () {
+            const targetWidth = 350;
+            const aspectRatio = img.naturalHeight / img.naturalWidth;
+            const targetHeight = Math.round(targetWidth * aspectRatio);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+            const pngBase64 = canvas.toDataURL('image/png');
+            resolve(pngBase64);
+        };
+
+        img.onerror = () => reject("Image load failed");
+        img.src = url;
+    });
+}
 
 async function generateMenuPDF(menuData, filename) {
     const value = localStorage.getItem("profilePic");
@@ -991,7 +912,6 @@ async function generateMenuPDF(menuData, filename) {
     for (const [index, item] of menuData.entries()) {
         if (index > 0) content.push({ text: '', pageBreak: 'before' });
 
-        // --- NEW: Fetch Item Image ---
         let itemImageBase64 = null;
         if (item.featuredImage) {
             try {
@@ -1004,7 +924,6 @@ async function generateMenuPDF(menuData, filename) {
         const foodCostPercent = (item.cost / item.sellingPrice) * 100;
         const marginPercent = ((item.sellingPrice - item.cost) / item.sellingPrice) * 100;
 
-        // Header with Branding
         content.push({
             columns: [
                 {
@@ -1018,11 +937,10 @@ async function generateMenuPDF(menuData, filename) {
             margin: [0, 0, 0, 15]
         });
 
-        // --- NEW: Insert Item Image Section ---
         if (itemImageBase64) {
             content.push({
                 image: itemImageBase64,
-                width: 200, // Adjust size as needed
+                width: 200,
                 alignment: 'center',
                 margin: [0, 0, 0, 15]
             });
@@ -1030,7 +948,6 @@ async function generateMenuPDF(menuData, filename) {
 
         if (isStaffFacing) {
 
-            // Financials Table
             content.push({
                 table: {
                     widths: ['*'],
@@ -1049,7 +966,6 @@ async function generateMenuPDF(menuData, filename) {
 
         } else {
 
-            // Financials Table
             content.push({
                 table: {
                     widths: ['*', 'auto', 'auto', 'auto', 'auto'],
@@ -1075,7 +991,6 @@ async function generateMenuPDF(menuData, filename) {
             });
 
         }
-        // Ingredients Breakdown
         if (item.ingredients && item.ingredients.length > 0) {
             content.push({ text: 'Detailed Ingredients List', style: 'sectionHeader' });
 
@@ -1098,8 +1013,6 @@ async function generateMenuPDF(menuData, filename) {
             });
         }
 
-
-        // Recipes Breakdown
         if (item.recipes && item.recipes.length > 0) {
             content.push({ text: 'Detailed Recipes List', style: 'sectionHeader' });
             const ingRows = item.recipes.map(ing => [
@@ -1134,7 +1047,7 @@ async function generateMenuPDF(menuData, filename) {
     pdfMake.createPdf(docDefinition).download(`${filename}.pdf`);
 }
 
-// Show menu item cost breakdown modal (uses data already received in GetAllMenuItems)
+// Uses the cached GetAllMenuItems data — no refetch.
 function showMenuCostBreakdown(menuItemId) {
     const $tbody = $('#costBreakdownTableBody');
     $tbody.empty();
@@ -1171,7 +1084,6 @@ function showMenuCostBreakdown(menuItemId) {
             };
         });
 
-        // Sort descending by highest percentage at top
         list.sort((a, b) => b.costPercent - a.costPercent);
 
         list.forEach(ing => {
