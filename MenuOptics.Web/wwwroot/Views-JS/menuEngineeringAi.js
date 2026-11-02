@@ -1,6 +1,7 @@
 // menuEngineeringAi.js — Menu Engineering AI page scripts.
 
 let currentFullAiReportData = null;
+let aiAnalysisInProgress = false;
 
 $(document).ready(function () {
     $('#btnOpenAiInsightsModal').on('click', function () {
@@ -21,6 +22,21 @@ function openFullAiInsightsModal() {
     $('#aiLoadingIndicator').show();
     $('#aiReportContainer').hide();
 
+    aiAnalysisInProgress = true;
+
+    // Info message shown WHILE the analysis runs (disappears with the loader)
+    if ($('#aiAnalysisWaitMsg').length === 0) {
+        $('#aiLoadingIndicator').append(`
+            <div id="aiAnalysisWaitMsg" class="ai-section-box" style="border-left: 4px solid #3b82f6; background: #eff6ff; max-width: 640px; margin: 18px auto 0; text-align: left;">
+                <div class="ai-section-title"><i class="fas fa-file-pdf" style="color: #2563eb;"></i> Menu Design Audit \u2014 From Your Actual Menu</div>
+                <p style="font-size: 13px; color: #374151; margin: 0;">
+                    This report is based on your sales data. You can also upload your restaurant's menu PDF, and our AI will analyze the real menu your guests see \u2014 its layout, item placement, prices and descriptions \u2014 against 14 research-backed menu design principles, and add a full design audit to this report.
+                    <strong>Please note: the menu PDF analysis may take a few minutes to complete.</strong>
+                </p>
+            </div>
+        `);
+    }
+
     let url = `/api/MenuEngineeringInsightsApi/GetAiAnalysis?`;
     if (typeof startDate !== 'undefined' && startDate) url += `startDate=${startDate}&`;
     if (typeof endDate !== 'undefined' && endDate) url += `endDate=${endDate}`;
@@ -34,11 +50,13 @@ function openFullAiInsightsModal() {
                 currentFullAiReportData = response.data;
                 renderFullAiReport(response.data);
             } else {
+                aiAnalysisInProgress = false;
                 $('#aiLoadingIndicator').hide();
                 showNotification(response?.responseMsg || "Failed to generate AI insights.", "error");
             }
         },
         onError: function (xhr) {
+            aiAnalysisInProgress = false;
             $('#aiLoadingIndicator').hide();
             const msg = xhr.responseJSON?.responseMsg || "Unable to generate AI analysis. Please ensure menu items are added.";
             showNotification(msg, "error");
@@ -47,6 +65,7 @@ function openFullAiInsightsModal() {
 }
 
 function renderFullAiReport(data) {
+    aiAnalysisInProgress = false;
     $('#aiModalModelBadge').html(`<i class="fas fa-microchip"></i> ${data.sourceModel || 'MenuOptics AI'}`);
     $('#aiDateRangeBadge').text(data.dateRange || 'Last 30 Days');
     $('#aiLocationBadge').html(`<i class="fas fa-map-marker-alt" style="color:#ef4444;"></i> ${data.location || 'Trade Area'}`);
@@ -143,22 +162,68 @@ function renderFullAiReport(data) {
         });
     }
 
+    renderMenuDesignRecommendations(data);
+
     const $timeline = $('#aiTimelineContainer');
     $timeline.empty();
-    const actions = data.actionPlan || [];
-    actions.forEach((act, idx) => {
-        const cls = idx === 0 ? 'immediate' : (idx === 1 ? 'short' : 'medium');
-        $timeline.append(`
-            <div class="timeline-item ${cls}">
-                <div class="timeline-header">${act.timeframe || ''}: ${act.actionTitle || ''}</div>
-                <div class="timeline-desc">${act.details || ''}</div>
-                <div class="timeline-impact"><i class="fas fa-arrow-trend-up"></i> Projected Impact: <strong>${act.expectedImpact || ''}</strong></div>
-            </div>
+    const checklist = data.menuPlanningChecklist || [];
+    if (checklist.length === 0) {
+        $timeline.append(`<div class="timeline-item"><div class="timeline-desc">No checklist items — the menu is already well planned.</div></div>`);
+    } else {
+        checklist.forEach(item => {
+            $timeline.append(`
+            <label class="timeline-item" style="display: flex; gap: 10px; align-items: flex-start; cursor: pointer;">
+                <input type="checkbox" style="margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; accent-color: #f08d11;">
+                <span style="flex: 1;">
+                    <span class="timeline-header" style="display: block;">${escapeHtml(item.task || '')}
+                        ${item.area ? `<span class="badge-pill" style="background: #eef2ff; color: #4338ca; font-size: 10.5px; margin-left: 6px;">${escapeHtml(item.area)}</span>` : ''}
+                    </span>
+                    ${item.details ? `<span class="timeline-desc" style="display: block;">${escapeHtml(item.details)}</span>` : ''}
+                </span>
+            </label>
         `);
-    });
+        });
+    }
 
     $('#aiLoadingIndicator').hide();
     $('#aiReportContainer').fadeIn(200);
+}
+
+function renderMenuDesignRecommendations(data) {
+    $('#aiDesignSection').remove();
+
+    const recs = data.menuDesignRecommendations || [];
+    if (recs.length === 0) return;
+
+    const cards = recs.map(rec => `
+        <div class="timeline-item">
+            <div class="timeline-header">
+                ${escapeHtml(rec.itemName || rec.category || 'Whole Menu')}
+                <span class="badge-pill success" style="margin-left: 8px;"><i class="fas fa-brain"></i> ${escapeHtml(rec.principle || 'Menu Psychology')}</span>
+            </div>
+            <div class="timeline-desc">${escapeHtml(rec.recommendation || '')}</div>
+            <div class="timeline-desc" style="color:#6b7280;">${escapeHtml(rec.reasoning || '')}</div>
+            ${rec.expectedImpact ? `<div class="timeline-impact"><i class="fas fa-arrow-trend-up"></i> Expected Impact: <strong>${escapeHtml(rec.expectedImpact)}</strong></div>` : ''}
+        </div>`).join('');
+
+    const sectionHtml = `
+        <div class="ai-section-box" id="aiDesignSection">
+            <div class="ai-section-title">
+                <span><i class="fas fa-brain" style="color: #9333ea;"></i> Menu Design &amp; Psychology</span>
+                <span class="ai-badge">${recs.length} recommendation${recs.length === 1 ? '' : 's'}</span>
+            </div>
+            <p style="font-size: 12px; color: #6b7280; margin: 0 0 12px 0;">Placement, formatting and wording advice from Aaron Allen &amp; Associates — \u201CThe Psychology of Menu Design\u201D.</p>
+            <div class="ai-action-timeline">
+                ${cards}
+            </div>
+        </div>`;
+
+    const $planBox = $('#aiTimelineContainer').closest('.ai-section-box');
+    if ($planBox.length) {
+        $planBox.before(sectionHtml);
+    } else {
+        $('#aiReportContainer').append(sectionHtml);
+    }
 }
 
 async function exportAiInsightsPdf(reportData) {
@@ -172,7 +237,8 @@ async function exportAiInsightsPdf(reportData) {
     const removals = reportData.removalRecommendations || [];
     const titles = reportData.titleImprovements || [];
     const pricing = reportData.pricingOptimizations || [];
-    const plan = reportData.actionPlan || [];
+    const checklist = reportData.menuPlanningChecklist || [];
+    const design = reportData.menuDesignRecommendations || [];
 
     let logoBase64 = null;
     try {
@@ -328,29 +394,27 @@ async function exportAiInsightsPdf(reportData) {
                 layout: 'lightHorizontalLines'
             },
 
-            ...(titles.length > 0 ? [
-                { text: '4. TREND CULINARY VERBIAGE & TITLE ENHANCEMENTS', style: 'sectionHeader' },
-                {
-                    table: {
-                        widths: ['22%', '28%', '22%', '28%'],
-                        body: [
-                            [
-                                { text: 'Current Title', style: 'tableHeader' },
-                                { text: 'Suggested Trend Title', style: 'tableHeader' },
-                                { text: 'Trend Verbiage', style: 'tableHeader' },
-                                { text: 'Competitor & Appetite Rationale', style: 'tableHeader' }
-                            ],
-                            ...titles.map(t => [
-                                { text: t.currentTitle || '', style: 'tableCell', color: '#6b7280' },
-                                { text: t.suggestedTitle || '', bold: true, color: '#6d28d9', style: 'tableCell' },
-                                { text: t.trendVerbiageUsed || 'Modern Culinary', style: 'tableCell', color: '#6b21a8' },
-                                { text: t.reasoning || '', style: 'tableCell', fontSize: 7.5 }
-                            ])
-                        ]
-                    },
-                    layout: 'lightHorizontalLines'
-                }
-            ] : []),
+            { text: '4. TREND CULINARY VERBIAGE & TITLE ENHANCEMENTS', style: 'sectionHeader' },
+            {
+                table: {
+                    widths: ['22%', '28%', '22%', '28%'],
+                    body: [
+                        [
+                            { text: 'Current Title', style: 'tableHeader' },
+                            { text: 'Suggested Trend Title', style: 'tableHeader' },
+                            { text: 'Trend Verbiage', style: 'tableHeader' },
+                            { text: 'Competitor & Appetite Rationale', style: 'tableHeader' }
+                        ],
+                        ...(titles.length > 0 ? titles.map(t => [
+                            { text: t.currentTitle || '', style: 'tableCell', color: '#6b7280' },
+                            { text: t.suggestedTitle || '', bold: true, color: '#6d28d9', style: 'tableCell' },
+                            { text: t.trendVerbiageUsed || 'Modern Culinary', style: 'tableCell', color: '#6b21a8' },
+                            { text: t.reasoning || '', style: 'tableCell', fontSize: 7.5 }
+                        ]) : [[{ text: 'All current titles already use strong culinary verbiage.', colSpan: 4, alignment: 'center', style: 'tableCell' }, {}, {}, {}]])
+                    ]
+                },
+                layout: 'lightHorizontalLines'
+            },
 
             { text: '5. RESEARCHED MENU ENGINEERING PRICING & MARGIN OPTIMIZATION', style: 'sectionHeader' },
             {
@@ -378,18 +442,52 @@ async function exportAiInsightsPdf(reportData) {
                 layout: 'lightHorizontalLines'
             },
 
-            { text: '6. MENU ADJUSTMENT PLAN', style: 'sectionHeader' },
-            {
-                stack: plan.map(act => ({
-                    margin: [0, 2, 0, 5],
-                    stack: [
-                        { text: `${act.timeframe || ''}: ${act.actionTitle || ''}`, bold: true, color: '#111827' },
-                        { text: act.details || '', color: '#4b5563', margin: [0, 1, 0, 1] },
-                        { text: `Expected Impact: ${act.expectedImpact || ''}`, color: '#059669', bold: true }
-                    ]
-                }))
-            },
+            ...(design.length > 0 ? [
+                { text: '6. MENU DESIGN & PSYCHOLOGY RECOMMENDATIONS', style: 'sectionHeader' },
+                {
+                    table: {
+                        widths: ['18%', '20%', '32%', '30%'],
+                        body: [
+                            [
+                                { text: 'Principle', style: 'tableHeader' },
+                                { text: 'Applies To', style: 'tableHeader' },
+                                { text: 'Recommendation', style: 'tableHeader' },
+                                { text: 'Research Reasoning & Impact', style: 'tableHeader' }
+                            ],
+                            ...design.map(d => [
+                                { text: d.principle || 'Menu Psychology', bold: true, style: 'tableCell', color: '#6d28d9' },
+                                { text: d.itemName || d.category || 'Whole Menu', style: 'tableCell' },
+                                { text: d.recommendation || '', style: 'tableCell' },
+                                { text: `${d.reasoning || ''}${d.expectedImpact ? ` Impact: ${d.expectedImpact}` : ''}`, style: 'tableCell', fontSize: 7.5 }
+                            ])
+                        ]
+                    },
+                    layout: 'lightHorizontalLines'
+                }
+            ] : []),
 
+            { text: '7. MENU PLANNING CHECKLIST', style: 'sectionHeader' },
+            ...(checklist.length > 0 ? [{
+                table: {
+                    widths: [14, '*'],
+                    body: checklist.map(item => [
+                        {
+                            canvas: [{ type: 'rect', x: 0, y: 2.5, w: 9, h: 9, lineWidth: 0.9, lineColor: '#374151' }],
+                            border: [false, false, false, false]
+                        },
+                        {
+                            border: [false, false, false, false],
+                            margin: [0, 1, 0, 3],
+                            text: [
+                                { text: `${item.task || ''}`, bold: true, color: '#111827' },
+                                ...(item.area ? [{ text: `  [${item.area}]`, fontSize: 7.5, color: '#4338ca', bold: true }] : []),
+                                ...(item.details ? [{ text: ` \u2014 ${item.details}`, color: '#4b5563' }] : [])
+                            ]
+                        }
+                    ])
+                },
+                layout: 'noBorders'
+            }] : [{ text: 'No checklist items \u2014 the menu is already well planned.', color: '#6b7280' }]),
             { text: '', margin: [0, 6, 0, 0] },
             {
                 table: {
@@ -439,9 +537,43 @@ function openCenteredModal(modalId) {
 }
 
 function closeCenteredModal(modalId) {
+    // While the AI analysis is running, warn before closing the insights modal
+    if (modalId === 'aiInsightsModal' && aiAnalysisInProgress) {
+        showAiCloseConfirm();
+        return;
+    }
     $('#' + modalId).fadeOut(200, function () {
         $(this).removeClass('show').css('display', 'none');
     });
+}
+
+function showAiCloseConfirm() {
+    if ($('#aiCloseConfirmOverlay').length === 0) {
+        $('#aiInsightsModal').append(`
+            <div id="aiCloseConfirmOverlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 60;">
+                <div style="background: #fff; border-radius: 12px; padding: 24px; max-width: 400px; width: calc(100% - 48px); text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+                    <div style="font-size: 30px; color: #f59e0b; margin-bottom: 8px;"><i class="fas fa-triangle-exclamation"></i></div>
+                    <div style="font-weight: 700; font-size: 16px; color: #111827; margin-bottom: 6px;">Analysis in Progress</div>
+                    <p style="font-size: 13px; color: #4b5563; margin: 0 0 18px;">Your AI menu analysis is still being generated. If you close this window now, the analysis will be interrupted and the report will not be completed.</p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button type="button" class="btn btn-primary" id="btnKeepWaitingAi">Keep Waiting</button>
+                        <button type="button" class="btn btn-outline" id="btnCloseAnywayAi" style="color: #dc2626; border-color: #dc2626;">Close Anyway</button>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        $(document).on('click', '#btnKeepWaitingAi', function () {
+            $('#aiCloseConfirmOverlay').css('display', 'none');
+        });
+
+        $(document).on('click', '#btnCloseAnywayAi', function () {
+            $('#aiCloseConfirmOverlay').css('display', 'none');
+            aiAnalysisInProgress = false;
+            closeCenteredModal('aiInsightsModal');
+        });
+    }
+    $('#aiCloseConfirmOverlay').css('display', 'flex');
 }
 
 async function getImageAsPngBase64(url) {

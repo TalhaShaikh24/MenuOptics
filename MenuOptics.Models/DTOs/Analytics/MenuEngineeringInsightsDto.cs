@@ -6,6 +6,7 @@ namespace MenuOptics.Models
     {
         public int UserId { get; set; }
         public int MenuItemId { get; set; }
+        public required string CategoryName { get; set; }
         public bool isActive { get; set; }
         public string? Name { get; set; }
         public string? FeaturedImage { get; set; }

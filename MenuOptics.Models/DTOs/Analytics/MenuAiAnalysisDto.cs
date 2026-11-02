@@ -18,7 +18,8 @@ namespace MenuOptics.Models
         public List<AiRemovalRecommendationDto> RemovalRecommendations { get; set; } = new();
         public List<AiPricingOptimizationDto> PricingOptimizations { get; set; } = new();
         public List<AiTitleImprovementDto> TitleImprovements { get; set; } = new();
-        public List<AiActionStepDto> ActionPlan { get; set; } = new();
+        public List<AiChecklistItemDto> MenuPlanningChecklist { get; set; } = new();
+        public List<AiMenuDesignRecommendationDto> MenuDesignRecommendations { get; set; } = new();
     }
 
     public class AiExecutiveSummaryDto
@@ -79,11 +80,21 @@ namespace MenuOptics.Models
         public string? Reasoning { get; set; }
     }
 
-    public class AiActionStepDto
+    public class AiChecklistItemDto
     {
-        public string? Timeframe { get; set; }
-        public string? ActionTitle { get; set; }
+        public string? Task { get; set; }
         public string? Details { get; set; }
+        public string? Area { get; set; }
+    }
+
+    public class AiMenuDesignRecommendationDto
+    {
+        public string? Principle { get; set; }
+        public string? Category { get; set; }
+        public int? MenuItemId { get; set; }
+        public string? ItemName { get; set; }
+        public string? Recommendation { get; set; }
+        public string? Reasoning { get; set; }
         public string? ExpectedImpact { get; set; }
     }
 }
