@@ -251,21 +251,12 @@ namespace MenuOptics.API.Middleware
             }
         }
 
-        private static int? GetUserId(
+        private static int GetUserId(
             HttpContext context)
         {
             var userIdValue = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (int.TryParse(
-                userIdValue,
-                out var userId))
-            {
-                return userId;
-            }
-
-            return null;
+            return Convert.ToInt32(userIdValue);
         }
-
-       
     }
 }

@@ -8,7 +8,7 @@ namespace MenuOptics.Services.VendorApiServices.Interfaces
         Task LogAsync(
             int? vendorId,
             string requestType,
-            string? payload,
+            string payload,
             string? ResponseDto,
             string logLevel // "Success" | "Error" | "Warning"
         );

@@ -6,7 +6,7 @@ namespace MenuOptics.Services
     public interface IActivityLogService
     {
         Task LogAsync(
-            int? userId,
+            int userId,
             string requestType,
             string? payload,
             string? ResponseDto,

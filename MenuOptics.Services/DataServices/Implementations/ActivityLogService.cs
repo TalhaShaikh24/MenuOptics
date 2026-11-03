@@ -17,7 +17,7 @@ namespace MenuOptics.Services
         }
 
         public async Task LogAsync(
-            int? userId,
+            int userId,
             string requestType,
             string? payload,
             string? ResponseDto,
