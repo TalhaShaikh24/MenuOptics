@@ -5,6 +5,7 @@ namespace MenuOptics.Models.DTOs
         public int LogId { get; set; }
         public long UserId { get; set; }
         public string? RestaurantName { get; set; }
+        public required string UserName { get; set; }
         public required string UserEmail { get; set; }
         public required string RequestType { get; set; }
         public required string Payload { get; set; }
