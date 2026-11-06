@@ -174,7 +174,7 @@ namespace MenuOptics.API.Middleware
                 string? responseContent = null;
 
                 if (context.Response.ContentType?.Contains(
-                        "application/json",
+                        "json",
                         StringComparison.OrdinalIgnoreCase) == true)
                 {
                     using var reader = new StreamReader(

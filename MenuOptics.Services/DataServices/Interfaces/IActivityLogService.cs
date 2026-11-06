@@ -9,9 +9,9 @@ namespace MenuOptics.Services
             int userId,
             string requestType,
             string? payload,
-            string? ResponseDto,
+            string ResponseDto,
             string logLevel,
-            string? ipAddress = null
+            string? ipAddress
         );
 
         Task<DataTablesResponseDTO<GetActivityLogDTO>> GetAllUserActivityLogsAsync(FilterActivityLogDTO? filter = null);
