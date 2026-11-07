@@ -496,7 +496,7 @@ function updateStats() {
 
 function viewInvoiceDetails(inventoryInvoiceId) {
     const invoice = allInvoices.find(i => i.inventoryInvoiceId === inventoryInvoiceId);
-
+    debugger
     if (!invoice) {
         return;
     }
@@ -513,9 +513,7 @@ function viewInvoiceDetails(inventoryInvoiceId) {
     $('#modalVendorName').text(vendorName);
     $('#modalTotal').text(formatCurrency(invoice.total));
 
-    const items = invoice.items || (
-        invoice.itemsJson ? parseItems(invoice.itemsJson) : []
-    );
+    const items = invoice.itemsJson ? parseItems(invoice.itemsJson) : []
 
     $('#modalItemsCount').text(items.length);
 
@@ -1159,9 +1157,15 @@ function syncInvoiceItemsView() {
 
 function parseItems(itemsJson) {
     try {
-        return typeof itemsJson === 'string'
+        const arr = typeof itemsJson === 'string'
             ? JSON.parse(itemsJson)
             : itemsJson;
+
+        return (arr || []).map(o =>
+            Object.fromEntries(
+                Object.entries(o).map(([k, v]) => [k.charAt(0).toLowerCase() + k.slice(1), v])
+            )
+        );
     } catch {
         return [];
     }
