@@ -1,4 +1,5 @@
 using MenuOptics.API.Middleware;
+using MenuOptics.Models;
 using MenuOptics.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -37,6 +38,14 @@ namespace MenuOptics.Controllers.Api
         public async Task<IActionResult> GetAiAnalysis([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
         {
             var responseData = await _menuAiAnalysisService.GenerateMenuAiAnalysisAsync(CurrentUserId, startDate, endDate);
+            return StatusCode(responseData.Status, responseData);
+        }
+
+        [HttpPost("AnalyzeMenuPdf")]
+        [RequestSizeLimit(25_000_000)]
+        public async Task<IActionResult> AnalyzeMenuPdf([FromBody] MenuPdfAnalysisRequestDto request)
+        {
+            var responseData = await _menuAiAnalysisService.AnalyzeMenuPdfAsync(CurrentUserId, request);
             return StatusCode(responseData.Status, responseData);
         }
     }

@@ -2,6 +2,13 @@
 
 let currentFullAiReportData = null;
 let aiAnalysisInProgress = false;
+let currentMenuPdfAudit = null;
+let currentSuggestionImages = [];
+let menuPdfAnalysisInProgress = false;
+
+// TEMPORARY (client request, 2026-11-04): the 'Menu Design & Psychology'
+// section is hidden in the report POPUP too. Set to true to restore it.
+const SHOW_DESIGN_SECTION_POPUP = false;
 
 $(document).ready(function () {
     $('#btnOpenAiInsightsModal').on('click', function () {
@@ -19,23 +26,69 @@ $(document).ready(function () {
 
 function openFullAiInsightsModal() {
     openCenteredModal('aiInsightsModal');
-    $('#aiLoadingIndicator').show();
-    $('#aiReportContainer').hide();
+    $('#aiLoadingIndicator').hide();
 
-    aiAnalysisInProgress = true;
+    buildAiStartPanel();
+    $('#aiStartPanel').show();
 
-    // Info message shown WHILE the analysis runs (disappears with the loader)
-    if ($('#aiAnalysisWaitMsg').length === 0) {
-        $('#aiLoadingIndicator').append(`
-            <div id="aiAnalysisWaitMsg" class="ai-section-box" style="border-left: 4px solid #3b82f6; background: #eff6ff; max-width: 640px; margin: 18px auto 0; text-align: left;">
-                <div class="ai-section-title"><i class="fas fa-file-pdf" style="color: #2563eb;"></i> Menu Design Audit \u2014 From Your Actual Menu</div>
+    // Show an existing report/audit from this session under the panel,
+    // so the user can still re-run the analysis or upload another file.
+    if (currentFullAiReportData || currentMenuPdfAudit) {
+        $('#aiReportContainer').show();
+    } else {
+        $('#aiReportContainer').hide();
+    }
+}
+
+// The panel shown BEFORE the analysis starts: the info message, the menu
+// upload option, and the Start button — so the user gets the chance to
+// upload their menu file first instead of the analysis starting at once.
+function buildAiStartPanel() {
+    if ($('#aiStartPanel').length > 0) return;
+
+    $('#aiLoadingIndicator').before(`
+        <div id="aiStartPanel" style="display: none; padding: 4px 0 8px;">
+            <div class="ai-section-box" style="border-left: 4px solid #3b82f6; background: #eff6ff; max-width: 680px; margin: 0 auto 12px; text-align: left;">
+                <div class="ai-section-title"><i class="fas fa-file-pdf" style="color: #2563eb;"></i> Menu Design Audit — From Your Actual Menu</div>
                 <p style="font-size: 13px; color: #374151; margin: 0;">
-                    This report is based on your sales data. You can also upload your restaurant's menu PDF, and our AI will analyze the real menu your guests see \u2014 its layout, item placement, prices and descriptions \u2014 against 14 research-backed menu design principles, and add a full design audit to this report.
+                    This report is based on your sales data. You can also upload your restaurant's menu PDF, and our AI will analyze the real menu your guests see — its layout, item placement, prices and descriptions — against 14 research-backed menu design principles, and add a full design audit to this report.
                     <strong>Please note: the menu PDF analysis may take a few minutes to complete.</strong>
                 </p>
             </div>
+            <div class="ai-section-box" id="aiMenuUploadCard" style="max-width: 680px; margin: 0 auto 12px; text-align: left;">
+                <div class="ai-section-title"><i class="fas fa-upload" style="color: #f08d11;"></i> Upload Your Menu (PDF or Image)</div>
+                <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">Choose your menu PDF or a photo/scan of your menu. Our AI will audit the real menu your guests see and create annotated suggestion images you can download.</p>
+                <label class="btn btn-primary" for="menuPdfFileInput" style="cursor: pointer;"><i class="fas fa-file-upload"></i> Choose Menu File</label>
+                <input type="file" id="menuPdfFileInput" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" style="display: none;">
+                <div id="aiMenuUploadStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
+            </div>
+            <div style="max-width: 680px; margin: 0 auto; text-align: center;">
+                <button type="button" class="btn btn-primary" id="btnStartAiAnalysis" style="padding: 10px 28px; font-size: 14px;"><i class="fas fa-brain"></i> Start AI Analysis</button>
+                <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Runs the sales-data analysis for the selected dates. Uploading a menu file is optional — you can do it before or after the analysis.</p>
+            </div>
+        </div>
+    `);
+}
+
+$(document).on('click', '#btnStartAiAnalysis', function () {
+    startFullAiAnalysis();
+});
+
+function startFullAiAnalysis() {
+    $('#aiStartPanel').hide();
+    $('#aiReportContainer').hide();
+    $('#aiLoadingIndicator').show();
+
+    // Short wait note while the analysis runs
+    if ($('#aiAnalysisWaitMsg').length === 0) {
+        $('#aiLoadingIndicator').append(`
+            <p id="aiAnalysisWaitMsg" style="font-size: 13px; color: #4b5563; max-width: 640px; margin: 14px auto 0;">
+                Analyzing your menu data — <strong>this may take a few minutes</strong>. Please keep this window open.
+            </p>
         `);
     }
+
+    aiAnalysisInProgress = true;
 
     let url = `/api/MenuEngineeringInsightsApi/GetAiAnalysis?`;
     if (typeof startDate !== 'undefined' && startDate) url += `startDate=${startDate}&`;
@@ -52,12 +105,14 @@ function openFullAiInsightsModal() {
             } else {
                 aiAnalysisInProgress = false;
                 $('#aiLoadingIndicator').hide();
+                $('#aiStartPanel').show();
                 showNotification(response?.responseMsg || "Failed to generate AI insights.", "error");
             }
         },
         onError: function (xhr) {
             aiAnalysisInProgress = false;
             $('#aiLoadingIndicator').hide();
+            $('#aiStartPanel').show();
             const msg = xhr.responseJSON?.responseMsg || "Unable to generate AI analysis. Please ensure menu items are added.";
             showNotification(msg, "error");
         }
@@ -192,6 +247,8 @@ function renderFullAiReport(data) {
 function renderMenuDesignRecommendations(data) {
     $('#aiDesignSection').remove();
 
+    if (!SHOW_DESIGN_SECTION_POPUP) return;
+
     const recs = data.menuDesignRecommendations || [];
     if (recs.length === 0) return;
 
@@ -226,6 +283,321 @@ function renderMenuDesignRecommendations(data) {
     }
 }
 
+// ================= Menu PDF / Image Design Audit =================
+
+$(document).on('change', '#menuPdfFileInput', function () {
+    const file = this.files && this.files[0];
+    this.value = '';
+    if (file) startMenuPdfAnalysis(file);
+});
+
+function startMenuPdfAnalysis(file) {
+    const $status = $('#aiMenuUploadStatus');
+    if (menuPdfAnalysisInProgress) return;
+    if (file.size > 10 * 1024 * 1024) {
+        $status.html('<span style="color:#dc2626;">That file is too large — please use a file under 10 MB.</span>');
+        return;
+    }
+
+    menuPdfAnalysisInProgress = true;
+    $status.html(`<i class="fas fa-spinner fa-spin"></i> Analyzing "${escapeHtml(file.name)}" — this may take a few minutes. Please keep this window open.`);
+
+    const reader = new FileReader();
+    reader.onload = function () {
+        const base64 = String(reader.result || '').split(',')[1] || '';
+        ajaxRequest({
+            url: '/api/MenuEngineeringInsightsApi/AnalyzeMenuPdf',
+            method: 'POST',
+            data: JSON.stringify({ fileName: file.name, mediaType: file.type, base64Data: base64 }),
+            showMessage: false,
+            onSuccess: async function (response) {
+                if (response && response.status === 200 && response.data) {
+                    currentMenuPdfAudit = response.data;
+                    await buildSuggestionImages(file, response.data);
+                    renderMenuPdfAuditSection();
+                    menuPdfAnalysisInProgress = false;
+                    $status.html('<span style="color:#059669;">Menu design audit is ready — see the top of your report.</span>');
+                    showNotification('Menu design audit generated successfully.', 'success');
+                } else {
+                    menuPdfAnalysisInProgress = false;
+                    $status.html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'Menu analysis failed.')}</span>`);
+                }
+            },
+            onError: function (xhr) {
+                menuPdfAnalysisInProgress = false;
+                const msg = xhr.responseJSON?.responseMsg || 'Unable to analyze the menu file. Please try again.';
+                $status.html(`<span style="color:#dc2626;">${escapeHtml(msg)}</span>`);
+            }
+        });
+    };
+    reader.onerror = function () {
+        menuPdfAnalysisInProgress = false;
+        $status.html('<span style="color:#dc2626;">Could not read that file. Please try again.</span>');
+    };
+    reader.readAsDataURL(file);
+}
+
+let pdfJsLoaderPromise = null;
+function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfJsLoaderPromise) return pdfJsLoaderPromise;
+    pdfJsLoaderPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        s.onload = function () {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            resolve(window.pdfjsLib);
+        };
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+    return pdfJsLoaderPromise;
+}
+
+// Plans which highlights actually get drawn on a page: page-sized boxes are
+// dropped (menu-wide advice lives in the text), heavily overlapping boxes are
+// merged into one box that carries all their numbers, smallest first.
+function planAnnotations(highlights) {
+    const items = (highlights || [])
+        .map(h => ({ ...h, area: (h.width * h.height) / 10000 }))
+        .filter(h => h.width >= 3 && h.height >= 2 && h.area <= 0.60)
+        .sort((a, b) => a.area - b.area);
+
+    const accepted = [];
+    items.forEach(h => {
+        let host = null;
+        for (const a of accepted) {
+            const ox = Math.max(0, Math.min(h.x + h.width, a.x + a.width) - Math.max(h.x, a.x));
+            const oy = Math.max(0, Math.min(h.y + h.height, a.y + a.height) - Math.max(h.y, a.y));
+            const overlap = (ox * oy) / Math.min(h.width * h.height, a.width * a.height);
+            if (overlap > 0.45) { host = a; break; }
+        }
+        if (host) host.ns.push(h.n);
+        else if (accepted.length < 8) accepted.push({ x: h.x, y: h.y, width: h.width, height: h.height, ns: [h.n] });
+    });
+    return accepted;
+}
+
+function roundedRectPath(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + w - rr, y);
+    ctx.arcTo(x + w, y, x + w, y + rr, rr);
+    ctx.lineTo(x + w, y + h - rr);
+    ctx.arcTo(x + w, y + h, x + w - rr, y + h, rr);
+    ctx.lineTo(x + rr, y + h);
+    ctx.arcTo(x, y + h, x, y + h - rr, rr);
+    ctx.lineTo(x, y + rr);
+    ctx.arcTo(x, y, x + rr, y, rr);
+    ctx.closePath();
+}
+
+// Draws the planned boxes: soft fill, one clean outline, and a single pill
+// badge on the top-left corner carrying the recommendation number(s).
+function drawMenuAnnotations(ctx, planned, W, H) {
+    planned.forEach(a => {
+        const x = (a.x / 100) * W, y = (a.y / 100) * H;
+        const w = (a.width / 100) * W, h = (a.height / 100) * H;
+
+        roundedRectPath(ctx, x, y, w, h, Math.max(8, W / 90));
+        ctx.fillStyle = 'rgba(240, 141, 17, 0.10)';
+        ctx.fill();
+        ctx.strokeStyle = '#f08d11';
+        ctx.lineWidth = Math.max(2, W / 450);
+        ctx.stroke();
+
+        const label = a.ns.join(' · ');
+        const fontPx = Math.max(13, W / 52);
+        ctx.font = `bold ${fontPx}px Arial`;
+        const pillW = ctx.measureText(label).width + fontPx * 1.3;
+        const pillH = fontPx * 1.7;
+        const px = Math.min(Math.max(x - pillW / 2, 2), W - pillW - 2);
+        const py = Math.min(Math.max(y - pillH / 2, 2), H - pillH - 2);
+
+        roundedRectPath(ctx, px, py, pillW, pillH, pillH / 2);
+        ctx.fillStyle = '#f08d11';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, px + pillW / 2, py + pillH / 2 + 1);
+    });
+}
+
+// Adds a clean legend strip under the page so a downloaded image explains
+// itself: marker number -> principle name, for this page's highlights only.
+function finalizeAnnotatedCanvas(pageCanvas, highlights, audit, pageNo) {
+    const planned = planAnnotations(highlights);
+    drawMenuAnnotations(pageCanvas.getContext('2d'), planned, pageCanvas.width, pageCanvas.height);
+
+    const entries = [];
+    (audit.recommendations || []).forEach((rec, idx) => {
+        const hl = rec.highlight;
+        if (hl && (hl.page || 1) === pageNo && hl.width > 0 && hl.height > 0) {
+            entries.push(`${idx + 1} — ${rec.principle || 'Suggestion'}`);
+        }
+    });
+    if (entries.length === 0) return pageCanvas.toDataURL('image/png');
+
+    const W = pageCanvas.width;
+    const fontPx = Math.max(14, W / 46);
+    const lineH = fontPx * 1.55;
+    const pad = fontPx * 1.1;
+    const meas = document.createElement('canvas').getContext('2d');
+    meas.font = `${fontPx}px Arial`;
+    const lines = [];
+    let line = '';
+    entries.forEach(e => {
+        const trial = line ? line + '      ' + e : e;
+        if (meas.measureText(trial).width > W - pad * 2 && line) { lines.push(line); line = e; }
+        else line = trial;
+    });
+    if (line) lines.push(line);
+
+    const footerH = pad * 1.6 + lineH * (lines.length + 1);
+    const out = document.createElement('canvas');
+    out.width = W;
+    out.height = pageCanvas.height + footerH;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.drawImage(pageCanvas, 0, 0);
+    ctx.fillStyle = '#f08d11';
+    ctx.fillRect(0, pageCanvas.height, W, 3);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#6b7280';
+    ctx.font = `bold ${Math.round(fontPx * 0.78)}px Arial`;
+    ctx.fillText('SUGGESTIONS ON THIS PAGE', pad, pageCanvas.height + pad * 1.15);
+    ctx.fillStyle = '#111827';
+    ctx.font = `${fontPx}px Arial`;
+    lines.forEach((l, i) => {
+        ctx.fillText(l, pad, pageCanvas.height + pad * 1.15 + lineH * (i + 1));
+    });
+
+    return out.toDataURL('image/png');
+}
+
+// Builds the annotated "suggestion images" from the uploaded file itself:
+// PDF pages are rendered in the browser, photos are drawn onto a canvas,
+// then the AI's highlight areas are marked on top.
+async function buildSuggestionImages(file, audit) {
+    currentSuggestionImages = [];
+    const byPage = {};
+    (audit.recommendations || []).forEach((rec, idx) => {
+        const hl = rec.highlight;
+        if (hl && hl.width > 0 && hl.height > 0) {
+            const pg = hl.page || 1;
+            (byPage[pg] = byPage[pg] || []).push({ ...hl, n: idx + 1 });
+        }
+    });
+    const pages = Object.keys(byPage).map(Number).sort((a, b) => a - b).slice(0, 4);
+    if (pages.length === 0) return;
+
+    try {
+        if (file.type === 'application/pdf') {
+            const pdfjsLib = await loadPdfJs();
+            const buf = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+            for (const pg of pages) {
+                if (pg < 1 || pg > pdf.numPages) continue;
+                const page = await pdf.getPage(pg);
+                const baseViewport = page.getViewport({ scale: 1 });
+                const scale = Math.min(2, 1100 / baseViewport.width);
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                currentSuggestionImages.push({ page: pg, dataUrl: finalizeAnnotatedCanvas(canvas, byPage[pg], audit, pg) });
+            }
+        } else if (file.type.indexOf('image/') === 0) {
+            const url = URL.createObjectURL(file);
+            try {
+                const img = await new Promise((resolve, reject) => {
+                    const i = new Image();
+                    i.onload = () => resolve(i);
+                    i.onerror = reject;
+                    i.src = url;
+                });
+                const natW = img.naturalWidth || img.width;
+                const natH = img.naturalHeight || img.height;
+                const scale = Math.min(1, 1300 / natW);
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(natW * scale);
+                canvas.height = Math.round(natH * scale);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                currentSuggestionImages.push({ page: 1, dataUrl: finalizeAnnotatedCanvas(canvas, byPage[1] || [], audit, 1) });
+            } finally {
+                URL.revokeObjectURL(url);
+            }
+        }
+    } catch (e) {
+        // Suggestion images are a bonus — the text audit still renders.
+        currentSuggestionImages = [];
+    }
+}
+
+function renderMenuPdfAuditSection() {
+    const audit = currentMenuPdfAudit;
+    if (!audit) return;
+    $('#aiMenuPdfAuditSection').remove();
+
+    const score = audit.designScore || 0;
+    const scoreColor = score >= 75 ? '#059669' : (score >= 50 ? '#d97706' : '#dc2626');
+    const recs = audit.recommendations || [];
+
+    const cards = recs.map((rec, idx) => `
+        <div class="timeline-item">
+            <div class="timeline-header">
+                <span class="badge-pill" style="background: #f08d11; color: #fff;">${idx + 1}</span>
+                ${escapeHtml(rec.itemName || rec.category || 'Whole Menu')}
+                <span class="badge-pill success" style="margin-left: 8px;"><i class="fas fa-brain"></i> ${escapeHtml(rec.principle || 'Menu Psychology')}</span>
+                ${rec.highlight ? `<span class="badge-pill" style="background: #eff6ff; color: #2563eb; margin-left: 6px;">Page ${rec.highlight.page || 1}</span>` : ''}
+            </div>
+            <div class="timeline-desc">${escapeHtml(rec.recommendation || '')}</div>
+            <div class="timeline-desc" style="color:#6b7280;">${escapeHtml(rec.reasoning || '')}</div>
+            ${rec.expectedImpact ? `<div class="timeline-impact"><i class="fas fa-arrow-trend-up"></i> Expected Impact: <strong>${escapeHtml(rec.expectedImpact)}</strong></div>` : ''}
+        </div>`).join('');
+
+    const strengths = (audit.strengths || []).map(s => `<li style="margin-bottom: 3px;"><i class="fas fa-check-circle" style="color: #059669;"></i> ${escapeHtml(s)}</li>`).join('');
+    const issues = (audit.criticalIssues || []).map(s => `<li style="margin-bottom: 3px;"><i class="fas fa-exclamation-circle" style="color: #dc2626;"></i> ${escapeHtml(s)}</li>`).join('');
+
+    const images = currentSuggestionImages.map(img => `
+        <div style="margin-bottom: 14px;">
+            <img src="${img.dataUrl}" alt="Annotated menu page ${img.page}" style="width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <div style="margin-top: 6px;">
+                <a class="btn btn-outline btn-sm" href="${img.dataUrl}" download="menu-suggestions-page-${img.page}.png"><i class="fas fa-download"></i> Download annotated page ${img.page}</a>
+            </div>
+        </div>`).join('');
+
+    const html = `
+        <div class="ai-section-box" id="aiMenuPdfAuditSection" style="border-left: 4px solid #f08d11;">
+            <div class="ai-section-title"><i class="fas fa-file-magnifying-glass" style="color: #f08d11;"></i> Menu Design Audit — From Your Menu File
+                <span class="badge-pill" style="background: ${scoreColor}; color: #fff; margin-left: 8px;">Design Score: ${score}/100</span>
+            </div>
+            <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">${escapeHtml(audit.summary || '')}</p>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 6px;">
+                ${strengths ? `<div style="flex: 1; min-width: 220px;"><strong style="font-size: 12.5px; color: #065f46;">What is working</strong><ul style="list-style: none; padding: 0; margin: 6px 0 0; font-size: 12.5px; color: #374151;">${strengths}</ul></div>` : ''}
+                ${issues ? `<div style="flex: 1; min-width: 220px;"><strong style="font-size: 12.5px; color: #991b1b;">Needs attention first</strong><ul style="list-style: none; padding: 0; margin: 6px 0 0; font-size: 12.5px; color: #374151;">${issues}</ul></div>` : ''}
+            </div>
+            ${cards}
+            ${images ? `<div style="margin-top: 12px;"><strong style="font-size: 13px; color: #111827;">Your menu, annotated</strong><p style="font-size: 12px; color: #6b7280; margin: 2px 0 10px;">Numbered markers match the recommendations above — each box shows where that suggestion applies.</p>${images}</div>` : ''}
+        </div>
+    `;
+
+    $('#aiReportContainer').prepend(html);
+    if (!aiAnalysisInProgress) {
+        $('#aiLoadingIndicator').hide();
+        $('#aiReportContainer').show();
+    }
+}
+
 async function exportAiInsightsPdf(reportData) {
     if (!reportData) {
         showNotification('Report data unavailable for PDF export.', 'error');
@@ -239,6 +611,11 @@ async function exportAiInsightsPdf(reportData) {
     const pricing = reportData.pricingOptimizations || [];
     const checklist = reportData.menuPlanningChecklist || [];
     const design = reportData.menuDesignRecommendations || [];
+
+    // TEMPORARY (client request, 2026-11-04): the PDF section 'MENU DESIGN &
+    // PSYCHOLOGY RECOMMENDATIONS' is hidden. Set this to true to restore it.
+    const SHOW_DESIGN_SECTION_PDF = false;
+    const checklistSectionNo = SHOW_DESIGN_SECTION_PDF ? 7 : 6;
 
     let logoBase64 = null;
     try {
@@ -442,7 +819,7 @@ async function exportAiInsightsPdf(reportData) {
                 layout: 'lightHorizontalLines'
             },
 
-            ...(design.length > 0 ? [
+            ...(SHOW_DESIGN_SECTION_PDF && design.length > 0 ? [
                 { text: '6. MENU DESIGN & PSYCHOLOGY RECOMMENDATIONS', style: 'sectionHeader' },
                 {
                     table: {
@@ -466,7 +843,7 @@ async function exportAiInsightsPdf(reportData) {
                 }
             ] : []),
 
-            { text: '7. MENU PLANNING CHECKLIST', style: 'sectionHeader' },
+            { text: checklistSectionNo + '. MENU PLANNING CHECKLIST', style: 'sectionHeader' },
             ...(checklist.length > 0 ? [{
                 table: {
                     widths: [14, '*'],
@@ -488,6 +865,44 @@ async function exportAiInsightsPdf(reportData) {
                 },
                 layout: 'noBorders'
             }] : [{ text: 'No checklist items \u2014 the menu is already well planned.', color: '#6b7280' }]),
+
+            ...(currentMenuPdfAudit ? [
+                { text: (checklistSectionNo + 1) + '. MENU DESIGN AUDIT — FROM YOUR MENU FILE', style: 'sectionHeader' },
+                {
+                    text: [
+                        { text: 'Design Score: ', bold: true, color: '#111827' },
+                        { text: `${currentMenuPdfAudit.designScore || 0}/100`, bold: true, color: '#f08d11' },
+                        { text: `    File: ${currentMenuPdfAudit.fileName || ''}`, color: '#6b7280', fontSize: 8 }
+                    ],
+                    margin: [0, 0, 0, 4]
+                },
+                { text: currentMenuPdfAudit.summary || '', color: '#374151', margin: [0, 0, 0, 6] },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['18%', '16%', '33%', '33%'],
+                        body: [
+                            [
+                                { text: 'Principle', style: 'tableHeader' },
+                                { text: 'Applies To', style: 'tableHeader' },
+                                { text: 'Recommendation', style: 'tableHeader' },
+                                { text: 'Reasoning & Impact', style: 'tableHeader' }
+                            ],
+                            ...(currentMenuPdfAudit.recommendations || []).map(r => [
+                                { text: r.principle || '', style: 'tableCell', bold: true },
+                                { text: r.itemName || r.category || 'Whole Menu', style: 'tableCell' },
+                                { text: r.recommendation || '', style: 'tableCell' },
+                                { text: `${r.reasoning || ''}${r.expectedImpact ? ` Impact: ${r.expectedImpact}` : ''}`, style: 'tableCell', fontSize: 7.5 }
+                            ])
+                        ]
+                    },
+                    layout: 'lightHorizontalLines'
+                },
+                ...currentSuggestionImages.slice(0, 3).flatMap(img => [
+                    { text: `Annotated menu — page ${img.page} (numbered markers match the audit recommendations above)`, fontSize: 8, bold: true, color: '#374151', margin: [0, 10, 0, 2] },
+                    { image: img.dataUrl, width: 500, margin: [0, 0, 0, 6] }
+                ])
+            ] : []),
             { text: '', margin: [0, 6, 0, 0] },
             {
                 table: {
@@ -538,7 +953,7 @@ function openCenteredModal(modalId) {
 
 function closeCenteredModal(modalId) {
     // While the AI analysis is running, warn before closing the insights modal
-    if (modalId === 'aiInsightsModal' && aiAnalysisInProgress) {
+    if (modalId === 'aiInsightsModal' && (aiAnalysisInProgress || menuPdfAnalysisInProgress)) {
         showAiCloseConfirm();
         return;
     }

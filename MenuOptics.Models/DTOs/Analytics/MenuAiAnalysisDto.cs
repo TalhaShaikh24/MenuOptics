@@ -96,5 +96,39 @@ namespace MenuOptics.Models
         public string? Recommendation { get; set; }
         public string? Reasoning { get; set; }
         public string? ExpectedImpact { get; set; }
+        public AiMenuHighlightDto? Highlight { get; set; }
+    }
+
+    // Approximate area of a menu page that a design recommendation refers to.
+    // Coordinates are percentages (0-100) of the page width/height, Page is 1-based.
+    public class AiMenuHighlightDto
+    {
+        public int Page { get; set; } = 1;
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+
+    // Upload payload for the menu PDF / image design audit.
+    public class MenuPdfAnalysisRequestDto
+    {
+        public string? FileName { get; set; }
+        public string? MediaType { get; set; }
+        public string? Base64Data { get; set; }
+    }
+
+    // Result of auditing the restaurant's actual menu file (PDF or image)
+    // against the menu-design psychology principles.
+    public class MenuPdfAuditDto
+    {
+        public int DesignScore { get; set; }
+        public string? Summary { get; set; }
+        public List<string> Strengths { get; set; } = new();
+        public List<string> CriticalIssues { get; set; } = new();
+        public List<AiMenuDesignRecommendationDto> Recommendations { get; set; } = new();
+        public string? SourceModel { get; set; }
+        public string? FileName { get; set; }
+        public string? AnalyzedDate { get; set; }
     }
 }

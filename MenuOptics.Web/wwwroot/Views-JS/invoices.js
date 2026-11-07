@@ -71,10 +71,10 @@ $(document).ready(function () {
                 data: null,
                 className: 'text-center',
                 render: function (data, type, row) {
+                    debugger
                     const invoice = row;
-                    const items = invoice.items || (invoice.itemsJson ? parseItems(invoice.itemsJson) : []);
                     return `
-                <span class="status-badge good">${items.length}</span>`;
+                <span class="status-badge good">${invoice.itemsJson ? parseItems(invoice.itemsJson).length : []}</span>`;
                 }
             },
             {

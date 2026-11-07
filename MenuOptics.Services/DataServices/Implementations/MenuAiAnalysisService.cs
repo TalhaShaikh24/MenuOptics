@@ -106,6 +106,214 @@ namespace MenuOptics.Services
             }
         }
 
+
+        // Audits the restaurant's ACTUAL menu file (PDF or image) with Claude's
+        // document/vision reading: layout, placement, prices and descriptions as
+        // the guest sees them, checked against the 14 menu-design principles.
+        // There is no heuristic fallback for this — a visual audit needs the AI.
+        public async Task<ResponseDto> AnalyzeMenuPdfAsync(int currentUserId, MenuPdfAnalysisRequestDto request)
+        {
+            var responseDto = new ResponseDto();
+
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Base64Data))
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "No menu file was received. Please choose a PDF or an image of your menu.";
+                    return responseDto;
+                }
+
+                string mediaType = (request.MediaType ?? "").Trim().ToLowerInvariant();
+                bool isPdf = mediaType == "application/pdf";
+                bool isImage = mediaType == "image/jpeg" || mediaType == "image/png" ||
+                               mediaType == "image/webp" || mediaType == "image/gif";
+                if (!isPdf && !isImage)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "Only PDF files or images (JPG, PNG, WEBP) of the menu are supported.";
+                    return responseDto;
+                }
+
+                byte[] fileBytes;
+                try
+                {
+                    fileBytes = Convert.FromBase64String(request.Base64Data);
+                }
+                catch
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "The uploaded file could not be read. Please try again.";
+                    return responseDto;
+                }
+
+                if (fileBytes.Length > 12 * 1024 * 1024)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "The menu file is too large. Please upload a file under 12 MB.";
+                    return responseDto;
+                }
+
+                if (isPdf && (fileBytes.Length < 5 || fileBytes[0] != '%' || fileBytes[1] != 'P' || fileBytes[2] != 'D' || fileBytes[3] != 'F'))
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "The uploaded file does not look like a valid PDF.";
+                    return responseDto;
+                }
+
+                var anthropicApiKey = _configuration["Anthropic:ApiKey"];
+                bool hasValidClaudeKey = !string.IsNullOrWhiteSpace(anthropicApiKey) &&
+                                         !anthropicApiKey.Contains("YOUR_CLAUDE_API_KEY", StringComparison.OrdinalIgnoreCase);
+                if (!hasValidClaudeKey)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "Menu PDF analysis requires the AI service to be configured on the server.";
+                    return responseDto;
+                }
+
+                var userResponse = await _userService.GetUserAsync(currentUserId);
+                var user = userResponse.Data as GetUserDTO;
+                var restaurantName = user?.RestaurantName ?? user?.Username ?? "My Restaurant";
+
+                var audit = await CallClaudeMenuPdfAuditAsync(anthropicApiKey!, mediaType, request.Base64Data, restaurantName);
+                audit.FileName = request.FileName;
+                audit.AnalyzedDate = DateTime.UtcNow.ToString("MMM dd, yyyy HH:mm UTC");
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "Menu design audit generated successfully.";
+                responseDto.Data = audit;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = $"Error analyzing menu file: {ex.Message}";
+                return responseDto;
+            }
+        }
+
+        private async Task<MenuPdfAuditDto> CallClaudeMenuPdfAuditAsync(string apiKey, string mediaType, string base64Data, string restaurantName)
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(5);
+            client.DefaultRequestHeaders.Add("x-api-key", apiKey);
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+
+            bool isPdf = mediaType == "application/pdf";
+            if (isPdf)
+            {
+                client.DefaultRequestHeaders.Add("anthropic-beta", "pdfs-2024-09-25");
+            }
+
+            var modelName = _configuration["Anthropic:Model"] ?? "claude-3-7-sonnet-20250219";
+
+            string systemPrompt = @"You are a world-class menu design auditor for '" + restaurantName + @"'. You are looking at the restaurant's ACTUAL menu — the exact document/image guests see. Audit what is REALLY on the pages: layout and reading flow, where items sit, how prices are printed, description wording and length, colors, boxes/highlights, photos, and white space. Never invent items, prices or sections that are not visible.
+
+Judge the menu against these 14 research-backed menu-design psychology principles (Aaron Allen & Associates, 'The Psychology of Menu Design'):
+1. The Golden Triangle — eyes land center first, then top-right, then top-left; the highest-margin items belong in those zones.
+2. Feeding the Imagination — specific sensory adjectives ('line-caught', 'sun-dried', 'slow-braised') sell; vague superlatives ('world's best') are ignored.
+3. Subconscious Scheming — the first 2 items in each section are ordered most; the last item is the third most profitable slot.
+4. Covert Currency — currency signs ($/£) pull attention to cost; prices should be printed as bare numbers.
+5. Controlled Costing — charm endings (.95/.50) signal value; round numbers signal premium quality.
+6. Limited Choices — about 7 items per section is the comfort zone; more stresses guests and suppresses ordering.
+7. A Blast From the Past — nostalgia cues ('Grandma's', 'classic', 'old-fashioned') create comfort and trust.
+8. Decoy Dishes — one premium-priced anchor dish makes the rest look like bargains.
+9. Storytelling — longer, richer descriptions on high-margin items make them stand out and justify price.
+10. Empowering the Customer — helpful information (ingredients, sourcing, spice level) reduces ordering anxiety and lifts orders.
+11. Negative Space — white space isolates and spotlights high-value items; crowded menus hide them.
+12. Material World — the menu's material/format signals quality (print finish for PDFs, presentation for images).
+13. Glossaries — unfamiliar dishes/terms should be briefly explained so guests are not afraid to order them.
+14. Color Confusion — green signals freshness, orange stimulates appetite, yellow grabs happy attention, red drives action and sells the highest-margin meals.
+
+OUTPUT RULES:
+- Return ONLY a valid JSON object (no markdown, no commentary) in the exact schema shown in the user message.
+- Recommendations: return EXACTLY 14 — ONE for EACH principle above, in the same order, using the exact Principle names: 'The Golden Triangle', 'Feeding the Imagination', 'Subconscious Scheming', 'Covert Currency', 'Controlled Costing', 'Limited Choices', 'A Blast From the Past', 'Decoy Dishes', 'Storytelling', 'Empowering the Customer', 'Negative Space', 'Material World', 'Glossaries', 'Color Confusion'. Never skip, merge or repeat a principle. If the menu already does a principle well, say what is working and how to protect/extend it.
+- Ground every recommendation in something actually visible on the pages (name the item/section you saw). If a principle cannot be judged from the file, base the recommendation on the closest visible evidence and say so in Reasoning.
+- Highlight: for each recommendation, give the approximate area of the page it refers to as percentages of the page size (X, Y = top-left corner; Width, Height = box size; all 0-100) and the 1-based Page number. Keep every Highlight SMALL and specific — one item row, one price column, or one section header; never box a whole section group or most of a page. If the recommendation is about the menu overall rather than one spot, return Highlight as null.
+- DesignScore: 0-100 overall menu-design score. Strengths: 2-5 short points. CriticalIssues: 2-5 short points, most damaging first.";
+
+            string userText = @"Audit the attached menu file page by page, then return ONLY this JSON:
+{
+  ""DesignScore"": 0,
+  ""Summary"": ""2-3 sentence overall verdict on this menu's design"",
+  ""Strengths"": [""...""],
+  ""CriticalIssues"": [""...""],
+  ""Recommendations"": [
+    {
+      ""Principle"": ""The Golden Triangle"",
+      ""Category"": ""Section name it applies to, or 'Whole Menu'"",
+      ""ItemName"": ""Item it applies to, or 'Whole Menu'"",
+      ""Recommendation"": ""The exact change to make"",
+      ""Reasoning"": ""What you saw on the page + the research logic"",
+      ""ExpectedImpact"": ""Expected effect"",
+      ""Highlight"": { ""Page"": 1, ""X"": 0, ""Y"": 0, ""Width"": 0, ""Height"": 0 }
+    }
+  ]
+}";
+
+            var fileBlock = new
+            {
+                type = isPdf ? "document" : "image",
+                source = new { type = "base64", media_type = mediaType, data = base64Data }
+            };
+
+            var requestBody = new
+            {
+                model = modelName,
+                max_tokens = 8192,
+                system = systemPrompt,
+                messages = new[]
+                {
+                    new
+                    {
+                        role = "user",
+                        content = new object[] { fileBlock, new { type = "text", text = userText } }
+                    }
+                }
+            };
+
+            var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("https://api.anthropic.com/v1/messages", jsonContent);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string apiError = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Claude API returned {(int)response.StatusCode}: {apiError}");
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+
+            // Find the first text block — never assume it sits at content[0],
+            // and surface the raw response when it has an unexpected shape.
+            string contentText = "{}";
+            bool foundText = false;
+            if (doc.RootElement.TryGetProperty("content", out var contentArray) && contentArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var block in contentArray.EnumerateArray())
+                {
+                    if (block.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+                    {
+                        contentText = textEl.GetString() ?? "{}";
+                        foundText = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundText)
+            {
+                string raw = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Unexpected response from Claude (no text content): {raw}");
+            }
+
+            contentText = CleanJsonMarkdown(contentText);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var audit = JsonSerializer.Deserialize<MenuPdfAuditDto>(contentText, options) ?? new MenuPdfAuditDto();
+            audit.SourceModel = $"Claude 3.7 ({modelName})";
+            return audit;
+        }
+
         #region Full Analysis Callers & Heuristic Engine
 
         private async Task<MenuAiAnalysisReportDto> CallClaudeFullAnalysisApiAsync(
