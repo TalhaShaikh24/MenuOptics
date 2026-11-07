@@ -17,10 +17,10 @@ namespace MenuOptics.Services.VendorApiServices.Implementations
         }
 
         public async Task LogAsync(
-            int? vendorId,
+            int vendorId,
             string requestType,
             string payload,
-            string? ResponseDto,
+            string ResponseDto,
             string logLevel)
         {
             try
