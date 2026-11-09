@@ -4936,7 +4936,14 @@ body:has(.menu-engineering-table) .btn-outline {
 
 .quadrant-tag.dog { background: #fee2e2; color: #b91c1c; }
 
+#btnOpenAiInsightsModal, #btnOpenMenuAuditModal {
+    height: 44px;
+    width: max-content;
+}
 
+#exportButtons .dt-buttons {
+    display: flex;
+}
 
 .ai-summary-grid {
     display: grid;
