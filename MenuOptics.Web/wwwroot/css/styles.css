@@ -4762,7 +4762,7 @@ body:has(.menu-engineering-table) .btn {
     border-radius: 8px !important;
     font-size: 14px !important;
     font-weight: 500 !important;
-    cursor: pointer !important;
+    cursor: pointer;
     transition: all 0.2s ease !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -5044,7 +5044,7 @@ body:has(.menu-engineering-table) .btn-outline {
     margin: 0 0 12px 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: start;
 }
 
 
