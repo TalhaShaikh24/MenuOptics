@@ -901,10 +901,12 @@ Return ONLY a valid JSON object (no markdown, no commentary):
 Rules:
 - Every dish's main ingredients must come from the provided lists. Basic pantry staples (salt, pepper, cooking oil, flour, sugar, water) may be assumed, but never build a dish around a main ingredient that was not provided.
 - Organize the dishes into clear menu sections (for example Starters, Mains, Grill, Sides, Desserts, Drinks) — use only sections that fit the ingredients. If an ingredient group has a meaningful name, its dishes may sit under that name.
-- Create 3-6 dishes per ingredient group. Each dish: an appealing name, a realistic price as a plain number with NO currency symbol (e.g. 249 or 12.50), and a Description written as a DIRECTION — one flowing line that tells how the dish is prepared, using its ingredients with cooking verbs and the cooking sequence, in exactly this style: 'bistro shrimp sautéed in garlic butter and white wine, then baked with mozzarella cheese and garlic bread'. Just the direction line — no label, no bullet points.
+- Create 3-6 dishes per ingredient group. Each dish: an appealing name, a realistic price as a plain number with NO currency symbol (e.g. 249 or 12.50), and a Description written as a DIRECTION — one flowing line that tells how the dish is prepared, using its ingredients with cooking verbs and the cooking sequence, in exactly this style: 'bistro shrimp sautéed in garlic butter and white wine, then baked with mozzarella cheese and garlic bread'. The direction MUST explicitly name at least two of the dish's own ingredients. Just the direction line — no label, no bullet points.
+- IngredientsUsed (per dish): the dish's main ingredients, copied from the provided lists — names only, without any amounts.
 - RestaurantName: use the restaurant name if one is given; otherwise invent a short, fitting name for the place based on the ingredients.
+- Tagline: one short inviting line for under the menu name, built around 2-3 of the star ingredients provided (e.g. 'Built around fresh shrimp, garlic and mozzarella').
 - Return ONLY a valid JSON object (no markdown, no commentary) in exactly this shape:
-{ ""RestaurantName"": """", ""Sections"": [ { ""Name"": """", ""Items"": [ { ""Name"": """", ""Description"": """", ""PriceText"": """" } ] } ] }";
+{ ""RestaurantName"": """", ""Tagline"": """", ""Sections"": [ { ""Name"": """", ""Items"": [ { ""Name"": """", ""Description"": """", ""PriceText"": """", ""IngredientsUsed"": [""""] } ] } ] }";
 
             var requestBody = new
             {
@@ -953,29 +955,71 @@ Rules:
             contentText = CleanJsonMarkdown(contentText);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var menu = JsonSerializer.Deserialize<ExtractedMenuDto>(contentText, options) ?? new ExtractedMenuDto();
-            return SanitizeIngredientMenu(menu, request.RestaurantName);
+            return SanitizeIngredientMenu(menu, request);
         }
 
-        private static ExtractedMenuDto SanitizeIngredientMenu(ExtractedMenuDto menu, string? requestedName)
+        private static ExtractedMenuDto SanitizeIngredientMenu(ExtractedMenuDto menu, IngredientMenuRequestDto request)
         {
             menu ??= new ExtractedMenuDto();
-            menu.RestaurantName = !string.IsNullOrWhiteSpace(requestedName)
-                ? requestedName.Trim()
+            menu.RestaurantName = !string.IsNullOrWhiteSpace(request.RestaurantName)
+                ? request.RestaurantName.Trim()
                 : (string.IsNullOrWhiteSpace(menu.RestaurantName) ? "Our Restaurant" : menu.RestaurantName.Trim());
+            var tagline = ClampText(menu.Tagline, "", 90);
+            menu.Tagline = tagline.Length == 0 ? null : tagline;
+
+            // The pool of ingredient names the user actually provided (amounts stripped).
+            var pool = new List<string>();
+            foreach (var sec in request.Sections ?? new List<IngredientSectionInputDto>())
+            {
+                foreach (var raw in sec.Ingredients ?? new List<string>())
+                {
+                    var name = (raw ?? "").Trim();
+                    var paren = name.IndexOf('(');
+                    if (paren > 0) name = name.Substring(0, paren).Trim();
+                    if (name.Length > 0 && !pool.Contains(name, StringComparer.OrdinalIgnoreCase)) pool.Add(name);
+                }
+            }
 
             var sections = new List<ExtractedMenuSectionDto>();
             foreach (var sec in (menu.Sections ?? new List<ExtractedMenuSectionDto>()).Take(10))
             {
-                var items = (sec.Items ?? new List<ExtractedMenuItemDto>())
-                    .Where(i => !string.IsNullOrWhiteSpace(i.Name))
-                    .Take(14)
-                    .Select(i => new ExtractedMenuItemDto
+                var items = new List<ExtractedMenuItemDto>();
+                foreach (var i in (sec.Items ?? new List<ExtractedMenuItemDto>()).Where(x => !string.IsNullOrWhiteSpace(x.Name)).Take(14))
+                {
+                    // Keep only ingredients that truly came from the user's lists.
+                    var used = (i.IngredientsUsed ?? new List<string>())
+                        .Select(u => (u ?? "").Trim())
+                        .Where(u => u.Length > 0 && pool.Contains(u, StringComparer.OrdinalIgnoreCase))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Take(6)
+                        .ToList();
+
+                    var direction = string.IsNullOrWhiteSpace(i.Description) ? "" : i.Description.Trim();
+
+                    // Guarantee: the direction line must actually name the dish's
+                    // ingredients — if the AI wrote a vague line, the server weaves
+                    // them in itself instead of trusting the prompt alone.
+                    if (used.Count > 0)
+                    {
+                        var named = used.Count(u => direction.Contains(u, StringComparison.OrdinalIgnoreCase));
+                        var needed = Math.Min(2, used.Count);
+                        if (named < needed)
+                        {
+                            var withList = string.Join(", ", used);
+                            direction = direction.Length == 0
+                                ? $"Prepared with {withList}."
+                                : $"{direction.TrimEnd('.', ' ')} — with {withList}.";
+                        }
+                    }
+
+                    items.Add(new ExtractedMenuItemDto
                     {
                         Name = i.Name.Trim(),
-                        Description = string.IsNullOrWhiteSpace(i.Description) ? null : i.Description.Trim(),
-                        PriceText = (i.PriceText ?? "").Trim()
-                    })
-                    .ToList();
+                        Description = direction.Length == 0 ? null : direction,
+                        PriceText = (i.PriceText ?? "").Trim(),
+                        IngredientsUsed = used
+                    });
+                }
                 if (items.Count == 0) continue;
                 sections.Add(new ExtractedMenuSectionDto
                 {

@@ -139,6 +139,7 @@ namespace MenuOptics.Models
     public class ExtractedMenuDto
     {
         public string? RestaurantName { get; set; }
+        public string? Tagline { get; set; }
         public List<ExtractedMenuSectionDto> Sections { get; set; } = new();
     }
 
@@ -153,6 +154,9 @@ namespace MenuOptics.Models
         public string? Name { get; set; }
         public string? Description { get; set; }
         public string? PriceText { get; set; }
+        // The provided ingredients this dish is built from (AI-chef flow) — the
+        // server uses them to guarantee the direction line actually names them.
+        public List<string> IngredientsUsed { get; set; } = new();
     }
 
     // One AI-generated design concept for the recreated menu. Claude chooses only

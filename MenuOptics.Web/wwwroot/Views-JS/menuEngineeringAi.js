@@ -690,7 +690,7 @@ function generateAiDesignVariations() {
                     aiDesignSpecs['ai' + i] = { name: s.name, tagline: s.tagline, template: specToTemplate(s) };
                 });
                 let titleNote = '';
-                if (currentDesignSource === 'manual' && response.data.suggestedTitle) {
+                if (currentDesignSource === 'manual' && !currentDesignMenu.tagline && response.data.suggestedTitle) {
                     currentDesignMenu.restaurantName = response.data.suggestedTitle;
                     currentDesignMenu.tagline = response.data.suggestedTagline || null;
                     titleNote = ` The AI also named your menu: "${escapeHtml(response.data.suggestedTitle)}".`;
