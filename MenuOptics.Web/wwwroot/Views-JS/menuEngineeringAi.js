@@ -9,6 +9,7 @@ let aiProgress = null;
 let auditProgress = null;
 let currentDesignMenu = null;
 let currentDesignTemplate = 'midnight';
+let currentDesignFormat = 'single';
 let lastDesignImageUrl = null;
 
 // TEMPORARY (client request, 2026-11-04): the 'Menu Design & Psychology'
@@ -344,6 +345,7 @@ $(document).on('change', '#menuPdfFileInput', function () {
 
 function setMenuAuditState(state) {
     $('#menuAuditUploadState').toggle(state === 'upload');
+    $('#menuAuditManualState').toggle(state === 'manual');
     $('#menuAuditProgressState').toggle(state === 'progress');
     $('#menuAuditReportContainer').toggle(state === 'report');
 }
@@ -352,7 +354,7 @@ function openMenuAuditModal() {
     buildMenuAuditModal();
     openCenteredModal('menuAuditModal');
     if (menuPdfAnalysisInProgress) setMenuAuditState('progress');
-    else if (currentMenuPdfAudit) setMenuAuditState('report');
+    else if (currentMenuPdfAudit || currentDesignMenu) setMenuAuditState('report');
     else setMenuAuditState('upload');
 }
 
@@ -402,6 +404,30 @@ function buildMenuAuditModal() {
                         <button type="button" class="btn btn-outline" id="btnDesignFromSystemMenu"><i class="fas fa-wand-magic-sparkles"></i> Generate Design From My Menu Items</button>
                         <div id="aiSystemMenuStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
                     </div>
+                    <div style="max-width: 680px; margin: 18px auto 0; text-align: center;">
+                        <div style="display: flex; align-items: center; gap: 12px; color: #9ca3af; font-size: 12px; margin-bottom: 10px;">
+                            <span style="flex: 1; height: 1px; background: #e5e7eb;"></span> OR <span style="flex: 1; height: 1px; background: #e5e7eb;"></span>
+                        </div>
+                        <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">Or type your menu in yourself — add sections and items, then generate the design.</p>
+                        <button type="button" class="btn btn-outline" id="btnManualMenuEntry"><i class="fas fa-pen"></i> Enter Menu Manually</button>
+                    </div>
+                </div>
+
+                <div id="menuAuditManualState" style="display: none;">
+                    <div style="max-width: 720px; margin: 8px auto 0; text-align: left;">
+                        <div class="ai-section-title"><i class="fas fa-pen" style="color: #f08d11;"></i> Build Your Menu</div>
+                        <p style="font-size: 13px; color: #374151; margin: 0 0 12px;">Add a section (for example Starters), then add its items one row at a time. Add as many sections and items as you like — the design is generated from exactly what you type here.</p>
+                        <label style="font-size: 12px; font-weight: 600; color: #374151;">Restaurant name</label>
+                        <input type="text" id="manualRestaurantName" placeholder="e.g. House of Us" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13.5px; box-sizing: border-box; margin: 4px 0 14px;">
+                        <div id="manualSections"></div>
+                        <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-outline btn-sm" id="btnAddManualSection"><i class="fas fa-plus"></i> Add Section</button>
+                            <span style="flex: 1;"></span>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnBackFromManual">Back</button>
+                            <button type="button" class="btn btn-primary btn-sm" id="btnGenerateManualDesign"><i class="fas fa-wand-magic-sparkles"></i> Generate Design</button>
+                        </div>
+                        <div id="aiManualStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
+                    </div>
                 </div>
 
                 <div id="menuAuditProgressState" class="ai-loading-container" style="display: none;">
@@ -433,12 +459,120 @@ $(document).on('click', '#btnDesignFromSystemMenu', function () {
 });
 
 $(document).on('click', '.design-template-btn', function () {
-    drawRecreatedMenu($(this).data('template'));
+    currentDesignTemplate = $(this).data('template');
+    drawRecreatedMenu();
+});
+
+$(document).on('click', '.design-format-btn', function () {
+    currentDesignFormat = $(this).data('format');
+    drawRecreatedMenu();
 });
 
 $(document).on('click', '#btnDownloadRecreatedMenu', function () {
     downloadRecreatedMenuImage();
 });
+
+$(document).on('click', '#btnManualMenuEntry', function () {
+    openManualEntry();
+});
+
+$(document).on('click', '#btnAddManualSection', function () {
+    $('#manualSections').append(manualSectionBlock());
+});
+
+$(document).on('click', '.btnAddManualItem', function () {
+    $(this).closest('.manual-section').find('.manual-items').append(manualItemRow());
+});
+
+$(document).on('click', '.btnRemoveManualSection', function () {
+    $(this).closest('.manual-section').remove();
+});
+
+$(document).on('click', '.btnRemoveManualItem', function () {
+    $(this).closest('.manual-item').remove();
+});
+
+$(document).on('click', '#btnBackFromManual', function () {
+    setMenuAuditState('upload');
+});
+
+$(document).on('click', '#btnGenerateManualDesign', function () {
+    generateManualDesign();
+});
+
+// ---------- Manual menu entry (sections + item rows typed by the user) ----------
+
+const MANUAL_INPUT = 'padding: 7px 9px; border: 1px solid #d1d5db; border-radius: 7px; font-size: 13px; box-sizing: border-box;';
+
+function manualItemRow() {
+    return `<div class="manual-item" style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center;">
+        <input type="text" class="m-item-name" placeholder="Item name" style="${MANUAL_INPUT} flex: 3; min-width: 0;">
+        <input type="text" class="m-item-price" placeholder="Price" style="${MANUAL_INPUT} flex: 1; min-width: 0;">
+        <input type="text" class="m-item-desc" placeholder="Description (optional)" style="${MANUAL_INPUT} flex: 3; min-width: 0;">
+        <button type="button" class="btn btn-outline btn-sm btnRemoveManualItem" title="Remove item"><i class="fas fa-times"></i></button>
+    </div>`;
+}
+
+function manualSectionBlock() {
+    return `<div class="manual-section" style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #ffffff;">
+        <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
+            <input type="text" class="m-section-name" placeholder="Section name — e.g. Starters" style="${MANUAL_INPUT} flex: 1; font-weight: 600;">
+            <button type="button" class="btn btn-outline btn-sm btnRemoveManualSection" title="Remove section"><i class="fas fa-trash"></i></button>
+        </div>
+        <div class="manual-items"></div>
+        <button type="button" class="btn btn-outline btn-sm btnAddManualItem"><i class="fas fa-plus"></i> Add Item</button>
+    </div>`;
+}
+
+function openManualEntry() {
+    if ($('#manualSections .manual-section').length === 0) {
+        $('#manualSections').append(manualSectionBlock());
+        $('#manualSections .manual-section').first().find('.manual-items').append(manualItemRow());
+    }
+    setMenuAuditState('manual');
+}
+
+function collectManualMenu() {
+    const sections = [];
+    $('#manualSections .manual-section').each(function () {
+        const name = $(this).find('.m-section-name').val().trim();
+        const items = [];
+        $(this).find('.manual-item').each(function () {
+            const n = $(this).find('.m-item-name').val().trim();
+            if (!n) return;
+            items.push({
+                name: n,
+                priceText: $(this).find('.m-item-price').val().trim(),
+                description: $(this).find('.m-item-desc').val().trim() || null
+            });
+        });
+        if (name || items.length) sections.push({ name: name || 'Menu', items });
+    });
+    return {
+        restaurantName: $('#manualRestaurantName').val().trim() || 'Our Restaurant',
+        sections
+    };
+}
+
+function generateManualDesign() {
+    const menu = collectManualMenu();
+    const totalItems = menu.sections.reduce((n, s) => n + s.items.length, 0);
+    if (totalItems === 0) {
+        $('#aiManualStatus').html('<span style="color:#dc2626;">Please add at least one item first.</span>');
+        return;
+    }
+    currentDesignMenu = menu;
+    currentMenuPdfAudit = null;
+    currentSuggestionImages = [];
+    lastDesignImageUrl = null;
+    $('#menuAuditReportContainer').empty();
+    renderMenuDesignSection();
+    setMenuAuditState('report');
+    $('.btnDownloadMenuAuditPdf').prop('disabled', true).css('opacity', '0.55');
+    showNotification('Menu design generated from your manual menu.', 'success');
+}
+
+// ---------- Design from the restaurant's MenuOptics items ----------
 
 function generateDesignFromSystemMenu() {
     if (menuPdfAnalysisInProgress) return;
@@ -470,6 +604,8 @@ function generateDesignFromSystemMenu() {
     });
 }
 
+// ---------- Rendering: 2 styles x 4 formats ----------
+
 function renderMenuDesignSection() {
     const menu = currentDesignMenu;
     if (!menu || !(menu.sections || []).length) return;
@@ -482,16 +618,24 @@ function renderMenuDesignSection() {
     $('#menuDesignSection').html(`
         <div class="ai-section-box" style="border-left: 4px solid #d4a24e; margin-top: 16px;">
             <div class="ai-section-title"><i class="fas fa-wand-magic-sparkles" style="color: #d4a24e;"></i> Your Menu, Recreated — Premium Design</div>
-            <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">A brand-new premium menu design generated from ${fromUpload ? 'your uploaded menu' : 'your MenuOptics items'}. Pick a style, then download it as an image.</p>
-            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+            <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">A brand-new premium menu design generated from ${fromUpload ? 'your uploaded menu' : 'your menu items'}. Pick a style and a format, then download it as an image.</p>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 11.5px; font-weight: 700; color: #6b7280; letter-spacing: 1px; width: 58px;">STYLE</span>
                 <button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="midnight">Midnight Gold</button>
                 <button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="modern">Modern Light</button>
+            </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 11.5px; font-weight: 700; color: #6b7280; letter-spacing: 1px; width: 58px;">FORMAT</span>
+                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="single">Single Page</button>
+                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="booklet">Booklet</button>
+                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="trifold">Tri-Fold</button>
+                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="fourfold">Four-Fold</button>
                 <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu" style="margin-left: auto;"><i class="fas fa-download"></i> Download Menu Image</button>
             </div>
             <div id="recreatedMenuPreview" style="overflow: auto;"></div>
         </div>
     `);
-    drawRecreatedMenu(currentDesignTemplate);
+    drawRecreatedMenu();
 }
 
 const MENU_TEMPLATES = {
@@ -499,41 +643,86 @@ const MENU_TEMPLATES = {
     modern: { bg: '#fffaf2', ink: '#1f2937', sub: '#6b7280', accent: '#f08d11', price: '#ea580c', divider: '#e8cf9f', head: "'Segoe UI', Arial, sans-serif", body: "'Segoe UI', Arial, sans-serif" }
 };
 
-function drawRecreatedMenu(templateKey) {
+// Greedy balance: each section goes to the currently lightest panel.
+function distributeSections(sections, panelCount) {
+    const panels = Array.from({ length: panelCount }, () => []);
+    const weights = new Array(panelCount).fill(0);
+    (sections || []).forEach(sec => {
+        let target = 0;
+        for (let i = 1; i < panelCount; i++) if (weights[i] < weights[target]) target = i;
+        panels[target].push(sec);
+        weights[target] += (sec.items || []).length + 2;
+    });
+    return panels;
+}
+
+function menuSectionHtml(sec, t, compact) {
+    const titleSize = compact ? 16.5 : 21;
+    const nameSize = compact ? 13.5 : 15.5;
+    const priceSize = compact ? 13 : 15;
+    return `<div style="margin-top: ${compact ? 20 : 28}px;">
+        <div style="text-align: center; font-family: ${t.head}; letter-spacing: 2.5px; font-size: ${titleSize}px; font-weight: 700; color: ${t.accent}; text-transform: uppercase;">${escapeHtml(sec.name || 'Menu')}</div>
+        <div style="height: 2px; background: ${t.accent}; opacity: 0.55; margin: 8px auto 5px; width: 100px;"></div>
+        ${(sec.items || []).map(it => `
+            <div style="display: flex; align-items: baseline; gap: 8px; padding: 6px 2px;">
+                <div>
+                    <span style="font-family: ${t.body}; font-size: ${nameSize}px; font-weight: 600; color: ${t.ink};">${escapeHtml(it.name || '')}</span>
+                    ${it.description ? `<div style="font-size: ${compact ? 11 : 12}px; color: ${t.sub}; font-style: italic; margin-top: 1px;">${escapeHtml(it.description)}</div>` : ''}
+                </div>
+                <div style="flex: 1; border-bottom: 2px dotted ${t.divider};"></div>
+                <div style="font-family: ${t.body}; font-size: ${priceSize}px; font-weight: 700; color: ${t.price}; white-space: nowrap;">${escapeHtml(it.priceText || '')}</div>
+            </div>`).join('')}
+    </div>`;
+}
+
+function drawRecreatedMenu() {
     const menu = currentDesignMenu;
     if (!menu) return;
-    currentDesignTemplate = templateKey;
-    const t = MENU_TEMPLATES[templateKey] || MENU_TEMPLATES.midnight;
+    const t = MENU_TEMPLATES[currentDesignTemplate] || MENU_TEMPLATES.midnight;
+    const fmt = currentDesignFormat;
+    const panelCount = fmt === 'booklet' ? 2 : fmt === 'trifold' ? 3 : fmt === 'fourfold' ? 4 : 1;
+    const panels = distributeSections(menu.sections || [], panelCount);
 
-    const sections = (menu.sections || []).map(sec => `
-        <div style="margin-top: 28px;">
-            <div style="text-align: center; font-family: ${t.head}; letter-spacing: 3px; font-size: 21px; font-weight: 700; color: ${t.accent}; text-transform: uppercase;">${escapeHtml(sec.name || 'Menu')}</div>
-            <div style="height: 2px; background: ${t.accent}; opacity: 0.55; margin: 9px auto 6px; width: 120px;"></div>
-            ${(sec.items || []).map(it => `
-                <div style="display: flex; align-items: baseline; gap: 8px; padding: 7px 2px;">
-                    <div>
-                        <span style="font-family: ${t.body}; font-size: 15.5px; font-weight: 600; color: ${t.ink};">${escapeHtml(it.name || '')}</span>
-                        ${it.description ? `<div style="font-size: 12px; color: ${t.sub}; font-style: italic; margin-top: 1px;">${escapeHtml(it.description)}</div>` : ''}
-                    </div>
-                    <div style="flex: 1; border-bottom: 2px dotted ${t.divider};"></div>
-                    <div style="font-family: ${t.body}; font-size: 15px; font-weight: 700; color: ${t.price}; white-space: nowrap;">${escapeHtml(it.priceText || '')}</div>
-                </div>`).join('')}
-        </div>`).join('');
+    const header = `<div style="text-align: center;">
+        <div style="font-family: ${t.head}; font-size: 12.5px; letter-spacing: 5px; color: ${t.sub}; text-transform: uppercase;">Welcome to</div>
+        <div style="font-family: ${t.head}; font-size: 31px; font-weight: 700; color: ${t.ink}; margin-top: 4px;">${escapeHtml(menu.restaurantName || 'Our Restaurant')}</div>
+        <div style="height: 3px; background: ${t.accent}; width: 170px; margin: 12px auto 0;"></div>
+    </div>`;
+    const footer = `<div style="text-align: center; margin-top: 28px; font-size: 11.5px; letter-spacing: 2px; color: ${t.sub};">THANK YOU — PLEASE COME AGAIN</div>`;
 
-    $('#recreatedMenuPreview').html(`
-        <div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 38px 42px 30px; border-radius: 6px; max-width: 760px; margin: 0 auto;">
-            <div style="text-align: center;">
-                <div style="font-family: ${t.head}; font-size: 13px; letter-spacing: 5px; color: ${t.sub}; text-transform: uppercase;">Welcome to</div>
-                <div style="font-family: ${t.head}; font-size: 34px; font-weight: 700; color: ${t.ink}; margin-top: 4px;">${escapeHtml(menu.restaurantName || 'Our Restaurant')}</div>
-                <div style="height: 3px; background: ${t.accent}; width: 180px; margin: 12px auto 0;"></div>
+    let sheet;
+    if (fmt === 'booklet') {
+        sheet = `<div id="recreatedMenuSheet" style="display: flex; gap: 18px; justify-content: center; align-items: stretch;">
+            ${panels.map((secs, i) => `<div style="background: ${t.bg}; padding: 30px 26px 22px; border-radius: 6px; width: 400px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); display: flex; flex-direction: column;">
+                ${i === 0 ? header : `<div style="text-align: center; font-family: ${t.head}; font-size: 12px; letter-spacing: 4px; color: ${t.sub}; text-transform: uppercase;">${escapeHtml(menu.restaurantName || 'Menu')}</div>`}
+                <div style="flex: 1;">${secs.map(s => menuSectionHtml(s, t, true)).join('')}</div>
+                <div style="text-align: center; font-size: 11px; color: ${t.sub}; margin-top: 16px;">— ${i + 1} —</div>
+            </div>`).join('')}
+        </div>`;
+    } else if (panelCount > 1) {
+        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 30px 10px 24px; border-radius: 6px; max-width: 1150px; margin: 0 auto;">
+            ${header}
+            <div style="display: flex; align-items: stretch; margin-top: 6px;">
+                ${panels.map((secs, i) => `<div style="flex: 1; padding: 0 18px; ${i > 0 ? `border-left: 2px dashed ${t.divider};` : ''}">${secs.map(s => menuSectionHtml(s, t, true)).join('') || `<div style="text-align: center; color: ${t.sub}; font-size: 12px; padding-top: 34px;">—</div>`}</div>`).join('')}
             </div>
-            ${sections}
-            <div style="text-align: center; margin-top: 30px; font-size: 11.5px; letter-spacing: 2px; color: ${t.sub};">THANK YOU — PLEASE COME AGAIN</div>
-        </div>
-    `);
+            ${footer}
+        </div>`;
+    } else {
+        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 38px 42px 30px; border-radius: 6px; max-width: 760px; margin: 0 auto;">
+            ${header}
+            ${panels[0].map(s => menuSectionHtml(s, t, false)).join('')}
+            ${footer}
+        </div>`;
+    }
+
+    $('#recreatedMenuPreview').html(sheet);
 
     $('.design-template-btn').each(function () {
-        const active = $(this).data('template') === templateKey;
+        const active = $(this).data('template') === currentDesignTemplate;
+        $(this).css({ 'border-color': active ? '#f08d11' : '#d1d5db', 'background': active ? '#fff7e8' : '#ffffff', 'font-weight': active ? '700' : '400' });
+    });
+    $('.design-format-btn').each(function () {
+        const active = $(this).data('format') === currentDesignFormat;
         $(this).css({ 'border-color': active ? '#f08d11' : '#d1d5db', 'background': active ? '#fff7e8' : '#ffffff', 'font-weight': active ? '700' : '400' });
     });
 }
