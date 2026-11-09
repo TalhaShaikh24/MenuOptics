@@ -901,7 +901,7 @@ Return ONLY a valid JSON object (no markdown, no commentary):
 Rules:
 - Every dish's main ingredients must come from the provided lists. Basic pantry staples (salt, pepper, cooking oil, flour, sugar, water) may be assumed, but never build a dish around a main ingredient that was not provided.
 - Organize the dishes into clear menu sections (for example Starters, Mains, Grill, Sides, Desserts, Drinks) — use only sections that fit the ingredients. If an ingredient group has a meaningful name, its dishes may sit under that name.
-- Create 3-6 dishes per ingredient group. Each dish: an appealing name, a one-line appetizing description that names its key ingredients, and a realistic price as a plain number with NO currency symbol (e.g. 249 or 12.50).
+- Create 3-6 dishes per ingredient group. Each dish: an appealing name, a realistic price as a plain number with NO currency symbol (e.g. 249 or 12.50), and a Description written as a DIRECTION — one flowing line that tells how the dish is prepared, using its ingredients with cooking verbs and the cooking sequence, in exactly this style: 'bistro shrimp sautéed in garlic butter and white wine, then baked with mozzarella cheese and garlic bread'. Just the direction line — no label, no bullet points.
 - RestaurantName: use the restaurant name if one is given; otherwise invent a short, fitting name for the place based on the ingredients.
 - Return ONLY a valid JSON object (no markdown, no commentary) in exactly this shape:
 { ""RestaurantName"": """", ""Sections"": [ { ""Name"": """", ""Items"": [ { ""Name"": """", ""Description"": """", ""PriceText"": """" } ] } ] }";
