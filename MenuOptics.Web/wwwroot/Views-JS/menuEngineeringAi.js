@@ -374,7 +374,7 @@ function buildMenuAuditModal() {
                             <i class="fas fa-file-magnifying-glass" style="color: #f08d11;"></i> Menu Design Audit
                         </h3>
                         <div style="display: flex; gap: 6px; align-items: center;">
-                            <span class="ai-badge"><i class="fas fa-file-pdf"></i> From your actual menu file</span>
+                            <span class="ai-badge"><i class="fas fa-wand-magic-sparkles"></i> AI audit &amp; premium menu design</span>
                         </div>
                     </div>
                 </div>
@@ -388,35 +388,43 @@ function buildMenuAuditModal() {
 
             <div class="ai-modal-body">
                 <div id="menuAuditUploadState">
-                    <div class="ai-section-box" style="max-width: 680px; margin: 8px auto 0; text-align: left;">
-                        <div class="ai-section-title"><i class="fas fa-upload" style="color: #f08d11;"></i> Upload Your Menu (PDF or Image)</div>
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">
-                            Choose your menu PDF or a photo/scan of your menu. Our AI will analyze the real menu your guests see — its layout, item placement, prices and descriptions — against 14 research-backed menu design principles, and create annotated suggestion images you can download.
-                            <strong>Please note: this analysis may take a few minutes to complete.</strong>
-                        </p>
-                        <label class="btn btn-primary" for="menuPdfFileInput" style="cursor: pointer;"><i class="fas fa-file-upload"></i> Choose Menu File</label>
-                        <input type="file" id="menuPdfFileInput" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" style="display: none;">
-                        <div id="aiMenuUploadStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
+                    <div style="text-align: center; max-width: 640px; margin: 4px auto 16px;">
+                        <div style="font-size: 16px; font-weight: 700; color: #111827;">How would you like to start?</div>
+                        <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0;">Audit the menu you already have, or create a brand-new premium design — choose one:</p>
                     </div>
-                    <div style="max-width: 680px; margin: 18px auto 0; text-align: center;">
-                        <div style="display: flex; align-items: center; gap: 12px; color: #9ca3af; font-size: 12px; margin-bottom: 10px;">
-                            <span style="flex: 1; height: 1px; background: #e5e7eb;"></span> OR <span style="flex: 1; height: 1px; background: #e5e7eb;"></span>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(218px, 1fr)); gap: 14px; max-width: 900px; margin: 0 auto;">
+                        <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; text-align: left;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #fff3e0; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                                <i class="fas fa-file-arrow-up" style="color: #f08d11; font-size: 17px;"></i>
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: #111827;">Upload Your Menu</div>
+                            <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">AI audit of your real menu (PDF or photo) against 14 design principles, with annotated suggestions — plus a recreated premium design. Takes a few minutes.</p>
+                            <label class="btn btn-primary" for="menuPdfFileInput" style="cursor: pointer; text-align: center;"><i class="fas fa-file-upload"></i> Choose Menu File</label>
+                            <input type="file" id="menuPdfFileInput" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" style="display: none;">
+                            <div id="aiMenuUploadStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
                         </div>
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">No menu file handy? We can build a fresh premium menu design from the items already in your MenuOptics account.</p>
-                        <button type="button" class="btn btn-outline" id="btnDesignFromSystemMenu"><i class="fas fa-wand-magic-sparkles"></i> Generate Design From My Menu Items</button>
-                        <div id="aiSystemMenuStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
-                    </div>
-                    <div style="max-width: 680px; margin: 18px auto 0; text-align: center;">
-                        <div style="display: flex; align-items: center; gap: 12px; color: #9ca3af; font-size: 12px; margin-bottom: 10px;">
-                            <span style="flex: 1; height: 1px; background: #e5e7eb;"></span> OR <span style="flex: 1; height: 1px; background: #e5e7eb;"></span>
+                        <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; text-align: left;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #fff3e0; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                                <i class="fas fa-database" style="color: #f08d11; font-size: 17px;"></i>
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: #111827;">Use My Menu Items</div>
+                            <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">No file needed — we build a fresh premium menu design from the items already saved in your MenuOptics account.</p>
+                            <button type="button" class="btn btn-outline" id="btnDesignFromSystemMenu" style="text-align: center;"><i class="fas fa-wand-magic-sparkles"></i> Build From My Items</button>
+                            <div id="aiSystemMenuStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
                         </div>
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">Or type your menu in yourself — add sections and items, then generate the design.</p>
-                        <button type="button" class="btn btn-outline" id="btnManualMenuEntry"><i class="fas fa-pen"></i> Enter Menu Manually</button>
+                        <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; text-align: left;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: #fff3e0; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+                                <i class="fas fa-pen" style="color: #f08d11; font-size: 17px;"></i>
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: #111827;">Enter Manually</div>
+                            <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">Type your own sections and items, row by row — and turn them into a premium design, with an AI-created title.</p>
+                            <button type="button" class="btn btn-outline" id="btnManualMenuEntry" style="text-align: center;"><i class="fas fa-pen"></i> Start Typing</button>
+                        </div>
                     </div>
                 </div>
 
                 <div id="menuAuditManualState" style="display: none;">
-                    <div style="max-width: 720px; margin: 8px auto 0; text-align: left;">
+                    <div class="ai-section-box" style="max-width: 720px; margin: 8px auto 0; text-align: left;">
                         <div class="ai-section-title"><i class="fas fa-pen" style="color: #f08d11;"></i> Build Your Menu</div>
                         <p style="font-size: 13px; color: #374151; margin: 0 0 12px;">Add a section (for example Starters), then add its items one row at a time. Add as many sections and items as you like — the design is generated from exactly what you type here.</p>
                         <label style="font-size: 12px; font-weight: 600; color: #374151;">Restaurant name</label>
@@ -620,11 +628,17 @@ function generateDesignFromSystemMenu() {
 
 // ---------- AI design variations (Claude designs, the system renders) ----------
 
+function setDesignStatus(html) {
+    const $s = $('#aiDesignsStatus');
+    $s.html(html);
+    $s.toggle(!!html);
+}
+
 function generateAiDesignVariations() {
     if (!currentDesignMenu) return;
     const $btn = $('#btnAiDesignVariations');
     setBtnLoading($btn, true);
-    $('#aiDesignsStatus').html('');
+    setDesignStatus('');
     $('#aiDesignsProgress').html(aiProgressHtml('aiDesignsProgressInner'));
     const progress = startAiProgress($('#aiDesignsProgress'), [
         'Asking the AI designer for fresh concepts',
@@ -653,16 +667,16 @@ function generateAiDesignVariations() {
                 }
                 currentDesignTemplate = 'ai0';
                 drawRecreatedMenu();
-                $('#aiDesignsStatus').html(`<span style="color:#16a34a;">${designs.length} AI designs ready — click a design name in the STYLE row to preview it, then download the one you like.${titleNote}</span>`);
+                setDesignStatus(`<span style="color:#16a34a;">${designs.length} AI designs ready — click a design name in the STYLE row to preview it, then download the one you like.${titleNote}</span>`);
                 showNotification('AI design variations are ready.', 'success');
             } else {
-                $('#aiDesignsStatus').html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'The AI could not create designs this time.')}</span>`);
+                setDesignStatus(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'The AI could not create designs this time.')}</span>`);
             }
         },
         onError: function (xhr) {
             progress.done();
             $('#aiDesignsProgress').empty();
-            $('#aiDesignsStatus').html(`<span style="color:#dc2626;">${escapeHtml(xhr.responseJSON?.responseMsg || 'The AI could not create designs this time.')}</span>`);
+            setDesignStatus(`<span style="color:#dc2626;">${escapeHtml(xhr.responseJSON?.responseMsg || 'The AI could not create designs this time.')}</span>`);
         },
         onComplete: function () { setBtnLoading($btn, false); }
     });
@@ -733,29 +747,35 @@ function renderMenuDesignSection() {
 
     const fromUpload = !!currentMenuPdfAudit;
     $('#menuDesignSection').html(`
-        <div class="ai-section-box" style="border-left: 4px solid #d4a24e; margin-top: 16px;">
-            <div class="ai-section-title"><i class="fas fa-wand-magic-sparkles" style="color: #d4a24e;"></i> Your Menu, Recreated — Premium Design</div>
-            <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">A brand-new premium menu design generated from ${fromUpload ? 'your uploaded menu' : 'your menu items'}. Pick a style and a format — or let the AI design fresh variations for this menu — then download the one you like.</p>
-            <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
-                <span style="font-size: 11.5px; font-weight: 700; color: #6b7280; letter-spacing: 1px; width: 58px;">STYLE</span>
-                <div id="designStyleButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+        <div class="ai-section-box" style="border-left: 4px solid #d4a24e; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                <div>
+                    <div class="ai-section-title" style="margin-bottom: 2px;"><i class="fas fa-wand-magic-sparkles" style="color: #d4a24e;"></i> Your Menu, Recreated — Premium Design</div>
+                    <p style="font-size: 12.5px; color: #6b7280; margin: 0;">Generated from ${fromUpload ? 'your uploaded menu' : 'your menu items'}. Pick a style and a format — or let AI invent fresh designs.</p>
+                </div>
+                <button type="button" class="btn btn-ai-gradient btn-sm" id="btnAiDesignVariations"><i class="fas fa-wand-magic-sparkles"></i> Generate AI Variations</button>
             </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
-                <span style="font-size: 11.5px; font-weight: 700; color: #6b7280; letter-spacing: 1px; width: 58px;">FORMAT</span>
-                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="single">Single Page</button>
-                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="booklet">Booklet</button>
-                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="trifold">Tri-Fold</button>
-                <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="fourfold">Four-Fold</button>
-                <button type="button" class="btn btn-outline btn-sm" id="btnOpenDesignEditor" style="margin-left: auto;"><i class="fas fa-pen-to-square"></i> Edit in Full Editor</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu"><i class="fas fa-download"></i> Download Menu Image</button>
-            </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
-                <button type="button" class="btn btn-ai-gradient btn-sm" id="btnAiDesignVariations"><i class="fas fa-wand-magic-sparkles"></i> Generate AI Design Variations</button>
-                <span style="font-size: 12px; color: #6b7280;">4 brand-new designs by AI for this menu — every click gives fresh concepts.</span>
+            <div style="background: #f9fafb; border: 1px solid #eef0f2; border-radius: 10px; padding: 12px 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: 1.2px; width: 54px; flex-shrink: 0;">STYLE</span>
+                    <div id="designStyleButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: 1.2px; width: 54px; flex-shrink: 0;">FORMAT</span>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="single">Single Page</button>
+                        <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="booklet">Booklet</button>
+                        <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="trifold">Tri-Fold</button>
+                        <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="fourfold">Four-Fold</button>
+                    </div>
+                    <span style="flex: 1;"></span>
+                    <button type="button" class="btn btn-outline btn-sm" id="btnOpenDesignEditor"><i class="fas fa-pen-to-square"></i> Full Editor</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu"><i class="fas fa-download"></i> Download PNG</button>
+                </div>
             </div>
             <div id="aiDesignsProgress"></div>
-            <div id="aiDesignsStatus" style="font-size: 12.5px; color: #4b5563; margin-bottom: 8px;"></div>
-            <div id="recreatedMenuPreview" style="overflow: auto;"></div>
+            <div id="aiDesignsStatus" style="display: none; font-size: 12.5px; color: #4b5563; margin-top: 10px;"></div>
+            <div id="recreatedMenuPreview" style="overflow: auto; margin-top: 14px;"></div>
         </div>
     `);
     drawRecreatedMenu();
