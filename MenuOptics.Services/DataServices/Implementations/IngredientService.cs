@@ -31,7 +31,7 @@ namespace MenuOptics.Services
         {
             var ResponseDto = new ResponseDto();
 
-            if (!_allowedUnits.Contains(model.Unit?.ToLower()))
+            if (!_allowedUnits.Contains(model.Unit.ToLower()))
             {
                 ResponseDto.Status = 400;
                 ResponseDto.ResponseMsg = $"Invalid unit '{model.Unit}'. Allowed units: {string.Join(", ", _allowedUnits)}";

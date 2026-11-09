@@ -46,7 +46,7 @@ namespace MenuOptics.Services
                                 new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                             ) ?? new List<GetInvoiceItemDTO>();
                         }
-                        catch
+                        catch (Exception ex)
                         {
                             inv.Items = new List<GetInvoiceItemDTO>();
                         }
@@ -118,30 +118,30 @@ namespace MenuOptics.Services
                     if (item.Weight != null && item.Weight != 0)
                     {
                         quantity = item.Weight.Value;
-                        unitPrice = item.Weight.Value / item.TotalPrice;
+                        unitPrice = item.Price / item.Weight.Value;
                     }
                     else if (item.Quantity != null && item.Quantity != 0)
                     {
                         quantity = item.Quantity.Value;
-                        unitPrice = item.Quantity.Value / item.TotalPrice;
+                        unitPrice = item.Price / item.Quantity.Value;
                     }
                     else
                     {
                         quantity = 1;
                     }
 
-                    subtotal += item.TotalPrice;
+                    subtotal += item.Price;
 
                     table.Rows.Add(
                         (item.IngredientId.HasValue && item.IngredientId.Value > 0) ? (object)item.IngredientId.Value : DBNull.Value,
                         !string.IsNullOrWhiteSpace(item.VendorProductId) ? (object)item.VendorProductId : DBNull.Value,
-                        !string.IsNullOrWhiteSpace(item.Name) ? (object)item.Name : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.IngredientName) ? (object)item.IngredientName : DBNull.Value,
                         !string.IsNullOrWhiteSpace(item.Unit) ? (object)item.Unit : DBNull.Value,
                         item.Size.HasValue ? (object)item.Size.Value : DBNull.Value,
                         item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
                         quantity,
                         unitPrice,
-                        item.TotalPrice
+                        item.Price
                     );
                 }
 
@@ -233,30 +233,30 @@ namespace MenuOptics.Services
                     if (item.Weight != null && item.Weight != 0)
                     {
                         quantity = item.Weight.Value;
-                        unitPrice = item.Weight.Value / item.TotalPrice;
+                        unitPrice = item.Price / item.Weight.Value;
                     }
                     else if (item.Quantity != null && item.Quantity != 0)
                     {
                         quantity = item.Quantity.Value;
-                        unitPrice = item.Quantity.Value / item.TotalPrice;
+                        unitPrice = item.Price / item.Quantity.Value;
                     }
                     else
                     {
                         quantity = 1;
                     }
 
-                    subtotal += item.TotalPrice;
+                    subtotal += item.Price;
 
                     table.Rows.Add(
                         (item.IngredientId.HasValue && item.IngredientId.Value > 0) ? (object)item.IngredientId.Value : DBNull.Value,
                         !string.IsNullOrWhiteSpace(item.VendorProductId) ? (object)item.VendorProductId : DBNull.Value,
-                        !string.IsNullOrWhiteSpace(item.Name) ? (object)item.Name : DBNull.Value,
+                        !string.IsNullOrWhiteSpace(item.IngredientName) ? (object)item.IngredientName : DBNull.Value,
                         !string.IsNullOrWhiteSpace(item.Unit) ? (object)item.Unit : DBNull.Value,
                         item.Size.HasValue ? (object)item.Size.Value : DBNull.Value,
                         item.PackSize.HasValue ? (object)item.PackSize.Value : DBNull.Value,
                         quantity,
                         unitPrice,
-                        item.TotalPrice
+                        item.Price
                     );
                 }
 
