@@ -5,6 +5,11 @@ let aiAnalysisInProgress = false;
 let currentMenuPdfAudit = null;
 let currentSuggestionImages = [];
 let menuPdfAnalysisInProgress = false;
+let aiProgress = null;
+let auditProgress = null;
+let currentDesignMenu = null;
+let currentDesignTemplate = 'midnight';
+let lastDesignImageUrl = null;
 
 // TEMPORARY (client request, 2026-11-04): the 'Menu Design & Psychology'
 // section is hidden in the report POPUP too. Set to true to restore it.
@@ -15,6 +20,10 @@ $(document).ready(function () {
         openFullAiInsightsModal();
     });
 
+    $('#btnOpenMenuAuditModal').on('click', function () {
+        openMenuAuditModal();
+    });
+
     $('#btnDownloadAiPdfModal, #btnDownloadAiPdfFooter').on('click', function () {
         if (currentFullAiReportData) {
             exportAiInsightsPdf(currentFullAiReportData);
@@ -23,6 +32,42 @@ $(document).ready(function () {
         }
     });
 });
+
+// Small staged progress bar: creeps towards 90% with rotating step labels
+// while the real work runs, completes when done() is called.
+function aiProgressHtml(wrapId) {
+    return `<div id="${wrapId}" style="max-width: 520px; margin: 16px auto 0;">
+        <div style="height: 8px; background: #e5e7eb; border-radius: 99px; overflow: hidden;">
+            <div class="ai-progress-bar" style="height: 100%; width: 0%; background: #f08d11; border-radius: 99px; transition: width 0.6s ease;"></div>
+        </div>
+        <div class="ai-progress-label" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;">Starting...</div>
+    </div>`;
+}
+
+function startAiProgress($wrap, steps) {
+    let pct = 0;
+    let stepIdx = 0;
+    const $bar = $wrap.find('.ai-progress-bar');
+    const $label = $wrap.find('.ai-progress-label');
+    $bar.css('width', '0%');
+    if (steps && steps.length) $label.text(steps[0]);
+    const timer = setInterval(() => {
+        if (pct < 90) {
+            pct = Math.min(90, pct + Math.max(0.5, (90 - pct) * 0.05));
+            $bar.css('width', pct + '%');
+        }
+    }, 700);
+    const stepTimer = setInterval(() => {
+        if (steps && steps.length) {
+            stepIdx = (stepIdx + 1) % steps.length;
+            $label.text(steps[stepIdx]);
+        }
+    }, 5000);
+    return {
+        done: function () { clearInterval(timer); clearInterval(stepTimer); $bar.css('width', '100%'); },
+        stop: function () { clearInterval(timer); clearInterval(stepTimer); }
+    };
+}
 
 function openFullAiInsightsModal() {
     openCenteredModal('aiInsightsModal');
@@ -51,20 +96,13 @@ function buildAiStartPanel() {
             <div class="ai-section-box" style="border-left: 4px solid #3b82f6; background: #eff6ff; max-width: 680px; margin: 0 auto 12px; text-align: left;">
                 <div class="ai-section-title"><i class="fas fa-file-pdf" style="color: #2563eb;"></i> Menu Design Audit — From Your Actual Menu</div>
                 <p style="font-size: 13px; color: #374151; margin: 0;">
-                    This report is based on your sales data. You can also upload your restaurant's menu PDF, and our AI will analyze the real menu your guests see — its layout, item placement, prices and descriptions — against 14 research-backed menu design principles, and add a full design audit to this report.
+                    This report is based on your sales data. You can also upload your restaurant's menu PDF, and our AI will analyze the real menu your guests see — its layout, item placement, prices and descriptions — against 14 research-backed menu design principles — for that, use the separate Menu Design Audit button in the page header.
                     <strong>Please note: the menu PDF analysis may take a few minutes to complete.</strong>
                 </p>
             </div>
-            <div class="ai-section-box" id="aiMenuUploadCard" style="max-width: 680px; margin: 0 auto 12px; text-align: left;">
-                <div class="ai-section-title"><i class="fas fa-upload" style="color: #f08d11;"></i> Upload Your Menu (PDF or Image)</div>
-                <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">Choose your menu PDF or a photo/scan of your menu. Our AI will audit the real menu your guests see and create annotated suggestion images you can download.</p>
-                <label class="btn btn-primary" for="menuPdfFileInput" style="cursor: pointer;"><i class="fas fa-file-upload"></i> Choose Menu File</label>
-                <input type="file" id="menuPdfFileInput" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" style="display: none;">
-                <div id="aiMenuUploadStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
-            </div>
             <div style="max-width: 680px; margin: 0 auto; text-align: center;">
                 <button type="button" class="btn btn-primary" id="btnStartAiAnalysis" style="padding: 10px 28px; font-size: 14px;"><i class="fas fa-brain"></i> Start AI Analysis</button>
-                <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Runs the sales-data analysis for the selected dates. Uploading a menu file is optional — you can do it before or after the analysis.</p>
+                <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Runs the sales-data analysis for the selected dates. This may take a few minutes.</p>
             </div>
         </div>
     `);
@@ -90,6 +128,16 @@ function startFullAiAnalysis() {
 
     aiAnalysisInProgress = true;
 
+    if ($('#aiAnalysisProgress').length === 0) {
+        $('#aiLoadingIndicator').append(aiProgressHtml('aiAnalysisProgress'));
+    }
+    aiProgress = startAiProgress($('#aiAnalysisProgress'), [
+        'Collecting your sales data...',
+        'Analyzing food costs and popularity...',
+        'Checking margins and menu quadrants...',
+        'Writing recommendations and your checklist...'
+    ]);
+
     let url = `/api/MenuEngineeringInsightsApi/GetAiAnalysis?`;
     if (typeof startDate !== 'undefined' && startDate) url += `startDate=${startDate}&`;
     if (typeof endDate !== 'undefined' && endDate) url += `endDate=${endDate}`;
@@ -104,6 +152,7 @@ function startFullAiAnalysis() {
                 renderFullAiReport(response.data);
             } else {
                 aiAnalysisInProgress = false;
+                if (aiProgress) { aiProgress.stop(); aiProgress = null; }
                 $('#aiLoadingIndicator').hide();
                 $('#aiStartPanel').show();
                 showNotification(response?.responseMsg || "Failed to generate AI insights.", "error");
@@ -111,6 +160,7 @@ function startFullAiAnalysis() {
         },
         onError: function (xhr) {
             aiAnalysisInProgress = false;
+            if (aiProgress) { aiProgress.stop(); aiProgress = null; }
             $('#aiLoadingIndicator').hide();
             $('#aiStartPanel').show();
             const msg = xhr.responseJSON?.responseMsg || "Unable to generate AI analysis. Please ensure menu items are added.";
@@ -121,6 +171,7 @@ function startFullAiAnalysis() {
 
 function renderFullAiReport(data) {
     aiAnalysisInProgress = false;
+    if (aiProgress) { aiProgress.done(); aiProgress = null; }
     $('#aiModalModelBadge').html(`<i class="fas fa-microchip"></i> ${data.sourceModel || 'MenuOptics AI'}`);
     $('#aiDateRangeBadge').text(data.dateRange || 'Last 30 Days');
     $('#aiLocationBadge').html(`<i class="fas fa-map-marker-alt" style="color:#ef4444;"></i> ${data.location || 'Trade Area'}`);
@@ -291,16 +342,255 @@ $(document).on('change', '#menuPdfFileInput', function () {
     if (file) startMenuPdfAnalysis(file);
 });
 
-function startMenuPdfAnalysis(file) {
-    const $status = $('#aiMenuUploadStatus');
+function setMenuAuditState(state) {
+    $('#menuAuditUploadState').toggle(state === 'upload');
+    $('#menuAuditProgressState').toggle(state === 'progress');
+    $('#menuAuditReportContainer').toggle(state === 'report');
+}
+
+function openMenuAuditModal() {
+    buildMenuAuditModal();
+    openCenteredModal('menuAuditModal');
+    if (menuPdfAnalysisInProgress) setMenuAuditState('progress');
+    else if (currentMenuPdfAudit) setMenuAuditState('report');
+    else setMenuAuditState('upload');
+}
+
+function buildMenuAuditModal() {
+    if ($('#menuAuditModal').length > 0) return;
+
+    $('body').append(`
+    <div class="modal ai-modal-lg" id="menuAuditModal" style="display: none;">
+        <div class="modal-content">
+            <div class="ai-modal-header">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <img src="/images/menu optics_logo.png" alt="Menu Optics" style="height: 38px; object-fit: contain;" />
+                    <div>
+                        <h3 style="margin: 0 0 4px 0; font-size: 18px; color: #111827; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-file-magnifying-glass" style="color: #f08d11;"></i> Menu Design Audit
+                        </h3>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <span class="ai-badge"><i class="fas fa-file-pdf"></i> From your actual menu file</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn btn-primary btnDownloadMenuAuditPdf" disabled style="opacity: 0.55;">
+                        <i class="fas fa-file-pdf"></i> Download PDF Report
+                    </button>
+                    <button class="modal-close" onclick="closeCenteredModal('menuAuditModal')">&times;</button>
+                </div>
+            </div>
+
+            <div class="ai-modal-body">
+                <div id="menuAuditUploadState">
+                    <div class="ai-section-box" style="max-width: 680px; margin: 8px auto 0; text-align: left;">
+                        <div class="ai-section-title"><i class="fas fa-upload" style="color: #f08d11;"></i> Upload Your Menu (PDF or Image)</div>
+                        <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">
+                            Choose your menu PDF or a photo/scan of your menu. Our AI will analyze the real menu your guests see — its layout, item placement, prices and descriptions — against 14 research-backed menu design principles, and create annotated suggestion images you can download.
+                            <strong>Please note: this analysis may take a few minutes to complete.</strong>
+                        </p>
+                        <label class="btn btn-primary" for="menuPdfFileInput" style="cursor: pointer;"><i class="fas fa-file-upload"></i> Choose Menu File</label>
+                        <input type="file" id="menuPdfFileInput" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" style="display: none;">
+                        <div id="aiMenuUploadStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
+                    </div>
+                    <div style="max-width: 680px; margin: 18px auto 0; text-align: center;">
+                        <div style="display: flex; align-items: center; gap: 12px; color: #9ca3af; font-size: 12px; margin-bottom: 10px;">
+                            <span style="flex: 1; height: 1px; background: #e5e7eb;"></span> OR <span style="flex: 1; height: 1px; background: #e5e7eb;"></span>
+                        </div>
+                        <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">No menu file handy? We can build a fresh premium menu design from the items already in your MenuOptics account.</p>
+                        <button type="button" class="btn btn-outline" id="btnDesignFromSystemMenu"><i class="fas fa-wand-magic-sparkles"></i> Generate Design From My Menu Items</button>
+                        <div id="aiSystemMenuStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
+                    </div>
+                </div>
+
+                <div id="menuAuditProgressState" class="ai-loading-container" style="display: none;">
+                    <i class="fas fa-spinner ai-spinner"></i>
+                    <h4 style="margin: 0 0 6px 0; color: #111827;">Auditing Your Menu Design...</h4>
+                    <p style="margin: 0; color: #6b7280; font-size: 13px;">Our AI is reading your menu pages. Please keep this window open.</p>
+                    ${aiProgressHtml('menuAuditProgress')}
+                </div>
+
+                <div id="menuAuditReportContainer" style="display: none;"></div>
+            </div>
+
+            <div class="ai-modal-footer">
+                <button class="btn btn-outline" onclick="closeCenteredModal('menuAuditModal')">Close</button>
+                <button class="btn btn-primary btnDownloadMenuAuditPdf" disabled style="opacity: 0.55;">
+                    <i class="fas fa-file-pdf"></i> Download PDF Report
+                </button>
+            </div>
+        </div>
+    </div>
+    `);
+}
+
+
+// =============== Recreated Premium Menu Design ===============
+
+$(document).on('click', '#btnDesignFromSystemMenu', function () {
+    generateDesignFromSystemMenu();
+});
+
+$(document).on('click', '.design-template-btn', function () {
+    drawRecreatedMenu($(this).data('template'));
+});
+
+$(document).on('click', '#btnDownloadRecreatedMenu', function () {
+    downloadRecreatedMenuImage();
+});
+
+function generateDesignFromSystemMenu() {
     if (menuPdfAnalysisInProgress) return;
+    const $status = $('#aiSystemMenuStatus');
+    $status.html('<i class="fas fa-spinner fa-spin"></i> Loading your menu items...');
+    ajaxRequest({
+        url: '/api/MenuEngineeringInsightsApi/GetMenuDesignData',
+        method: 'GET',
+        showMessage: false,
+        onSuccess: function (response) {
+            if (response && response.status === 200 && response.data) {
+                currentDesignMenu = response.data;
+                currentMenuPdfAudit = null;
+                currentSuggestionImages = [];
+                lastDesignImageUrl = null;
+                $status.html('');
+                $('#menuAuditReportContainer').empty();
+                renderMenuDesignSection();
+                setMenuAuditState('report');
+                $('.btnDownloadMenuAuditPdf').prop('disabled', true).css('opacity', '0.55');
+                showNotification('Menu design generated from your items.', 'success');
+            } else {
+                $status.html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'Could not load your menu items.')}</span>`);
+            }
+        },
+        onError: function (xhr) {
+            $status.html(`<span style="color:#dc2626;">${escapeHtml(xhr.responseJSON?.responseMsg || 'Could not load your menu items.')}</span>`);
+        }
+    });
+}
+
+function renderMenuDesignSection() {
+    const menu = currentDesignMenu;
+    if (!menu || !(menu.sections || []).length) return;
+
+    if ($('#menuDesignSection').length === 0) {
+        $('#menuAuditReportContainer').append('<div id="menuDesignSection"></div>');
+    }
+
+    const fromUpload = !!currentMenuPdfAudit;
+    $('#menuDesignSection').html(`
+        <div class="ai-section-box" style="border-left: 4px solid #d4a24e; margin-top: 16px;">
+            <div class="ai-section-title"><i class="fas fa-wand-magic-sparkles" style="color: #d4a24e;"></i> Your Menu, Recreated — Premium Design</div>
+            <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">A brand-new premium menu design generated from ${fromUpload ? 'your uploaded menu' : 'your MenuOptics items'}. Pick a style, then download it as an image.</p>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="midnight">Midnight Gold</button>
+                <button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="modern">Modern Light</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu" style="margin-left: auto;"><i class="fas fa-download"></i> Download Menu Image</button>
+            </div>
+            <div id="recreatedMenuPreview" style="overflow: auto;"></div>
+        </div>
+    `);
+    drawRecreatedMenu(currentDesignTemplate);
+}
+
+const MENU_TEMPLATES = {
+    midnight: { bg: '#14100d', ink: '#f5ead9', sub: '#c9b18c', accent: '#d4a24e', price: '#d4a24e', divider: '#4a3820', head: "Georgia, 'Times New Roman', serif", body: "Georgia, 'Times New Roman', serif" },
+    modern: { bg: '#fffaf2', ink: '#1f2937', sub: '#6b7280', accent: '#f08d11', price: '#ea580c', divider: '#e8cf9f', head: "'Segoe UI', Arial, sans-serif", body: "'Segoe UI', Arial, sans-serif" }
+};
+
+function drawRecreatedMenu(templateKey) {
+    const menu = currentDesignMenu;
+    if (!menu) return;
+    currentDesignTemplate = templateKey;
+    const t = MENU_TEMPLATES[templateKey] || MENU_TEMPLATES.midnight;
+
+    const sections = (menu.sections || []).map(sec => `
+        <div style="margin-top: 28px;">
+            <div style="text-align: center; font-family: ${t.head}; letter-spacing: 3px; font-size: 21px; font-weight: 700; color: ${t.accent}; text-transform: uppercase;">${escapeHtml(sec.name || 'Menu')}</div>
+            <div style="height: 2px; background: ${t.accent}; opacity: 0.55; margin: 9px auto 6px; width: 120px;"></div>
+            ${(sec.items || []).map(it => `
+                <div style="display: flex; align-items: baseline; gap: 8px; padding: 7px 2px;">
+                    <div>
+                        <span style="font-family: ${t.body}; font-size: 15.5px; font-weight: 600; color: ${t.ink};">${escapeHtml(it.name || '')}</span>
+                        ${it.description ? `<div style="font-size: 12px; color: ${t.sub}; font-style: italic; margin-top: 1px;">${escapeHtml(it.description)}</div>` : ''}
+                    </div>
+                    <div style="flex: 1; border-bottom: 2px dotted ${t.divider};"></div>
+                    <div style="font-family: ${t.body}; font-size: 15px; font-weight: 700; color: ${t.price}; white-space: nowrap;">${escapeHtml(it.priceText || '')}</div>
+                </div>`).join('')}
+        </div>`).join('');
+
+    $('#recreatedMenuPreview').html(`
+        <div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 38px 42px 30px; border-radius: 6px; max-width: 760px; margin: 0 auto;">
+            <div style="text-align: center;">
+                <div style="font-family: ${t.head}; font-size: 13px; letter-spacing: 5px; color: ${t.sub}; text-transform: uppercase;">Welcome to</div>
+                <div style="font-family: ${t.head}; font-size: 34px; font-weight: 700; color: ${t.ink}; margin-top: 4px;">${escapeHtml(menu.restaurantName || 'Our Restaurant')}</div>
+                <div style="height: 3px; background: ${t.accent}; width: 180px; margin: 12px auto 0;"></div>
+            </div>
+            ${sections}
+            <div style="text-align: center; margin-top: 30px; font-size: 11.5px; letter-spacing: 2px; color: ${t.sub};">THANK YOU — PLEASE COME AGAIN</div>
+        </div>
+    `);
+
+    $('.design-template-btn').each(function () {
+        const active = $(this).data('template') === templateKey;
+        $(this).css({ 'border-color': active ? '#f08d11' : '#d1d5db', 'background': active ? '#fff7e8' : '#ffffff', 'font-weight': active ? '700' : '400' });
+    });
+}
+
+let html2canvasPromise = null;
+function loadHtml2Canvas() {
+    if (window.html2canvas) return Promise.resolve(window.html2canvas);
+    if (html2canvasPromise) return html2canvasPromise;
+    html2canvasPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = () => resolve(window.html2canvas);
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+    return html2canvasPromise;
+}
+
+async function downloadRecreatedMenuImage() {
+    const sheet = document.getElementById('recreatedMenuSheet');
+    if (!sheet) return;
+    try {
+        const html2canvas = await loadHtml2Canvas();
+        const canvas = await html2canvas(sheet, { scale: 2, useCORS: true });
+        lastDesignImageUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = lastDesignImageUrl;
+        a.download = 'recreated-menu.png';
+        a.click();
+        showNotification('Menu design image downloaded.', 'success');
+    } catch (e) {
+        showNotification('Could not generate the image in this browser. Please try again.', 'error');
+    }
+}
+
+function startMenuPdfAnalysis(file) {
+    if (menuPdfAnalysisInProgress || !file) return;
     if (file.size > 10 * 1024 * 1024) {
-        $status.html('<span style="color:#dc2626;">That file is too large — please use a file under 10 MB.</span>');
+        $('#aiMenuUploadStatus').html('<span style="color:#dc2626;">That file is too large — please use a file under 10 MB.</span>');
         return;
     }
 
     menuPdfAnalysisInProgress = true;
-    $status.html(`<i class="fas fa-spinner fa-spin"></i> Analyzing "${escapeHtml(file.name)}" — this may take a few minutes. Please keep this window open.`);
+    setMenuAuditState('progress');
+    auditProgress = startAiProgress($('#menuAuditProgress'), [
+        'Reading your menu pages...',
+        'Checking layout, placement and prices...',
+        'Scoring the 14 design principles...',
+        'Preparing your annotated suggestion images...'
+    ]);
+
+    const fail = function (msg) {
+        if (auditProgress) { auditProgress.stop(); auditProgress = null; }
+        menuPdfAnalysisInProgress = false;
+        setMenuAuditState('upload');
+        $('#aiMenuUploadStatus').html(`<span style="color:#dc2626;">${escapeHtml(msg)}</span>`);
+    };
 
     const reader = new FileReader();
     reader.onload = function () {
@@ -314,26 +604,25 @@ function startMenuPdfAnalysis(file) {
                 if (response && response.status === 200 && response.data) {
                     currentMenuPdfAudit = response.data;
                     await buildSuggestionImages(file, response.data);
-                    renderMenuPdfAuditSection();
+                    if (auditProgress) { auditProgress.done(); auditProgress = null; }
                     menuPdfAnalysisInProgress = false;
-                    $status.html('<span style="color:#059669;">Menu design audit is ready — see the top of your report.</span>');
+                    renderMenuPdfAuditSection();
+                    currentDesignMenu = response.data.extractedMenu || null;
+                    lastDesignImageUrl = null;
+                    renderMenuDesignSection();
+                    setMenuAuditState('report');
+                    $('.btnDownloadMenuAuditPdf').prop('disabled', false).css('opacity', '');
                     showNotification('Menu design audit generated successfully.', 'success');
                 } else {
-                    menuPdfAnalysisInProgress = false;
-                    $status.html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'Menu analysis failed.')}</span>`);
+                    fail(response?.responseMsg || 'Menu analysis failed.');
                 }
             },
             onError: function (xhr) {
-                menuPdfAnalysisInProgress = false;
-                const msg = xhr.responseJSON?.responseMsg || 'Unable to analyze the menu file. Please try again.';
-                $status.html(`<span style="color:#dc2626;">${escapeHtml(msg)}</span>`);
+                fail(xhr.responseJSON?.responseMsg || 'Unable to analyze the menu file. Please try again.');
             }
         });
     };
-    reader.onerror = function () {
-        menuPdfAnalysisInProgress = false;
-        $status.html('<span style="color:#dc2626;">Could not read that file. Please try again.</span>');
-    };
+    reader.onerror = function () { fail('Could not read that file. Please try again.'); };
     reader.readAsDataURL(file);
 }
 
@@ -591,12 +880,138 @@ function renderMenuPdfAuditSection() {
         </div>
     `;
 
-    $('#aiReportContainer').prepend(html);
-    if (!aiAnalysisInProgress) {
-        $('#aiLoadingIndicator').hide();
-        $('#aiReportContainer').show();
-    }
+    $('#menuAuditReportContainer').html(html);
 }
+
+// Standalone PDF for the menu design audit (separate from the AI analysis report)
+async function exportMenuAuditPdf() {
+    const audit = currentMenuPdfAudit;
+    if (!audit) {
+        showNotification('Please run the menu design audit first.', 'warning');
+        return;
+    }
+
+    let logoBase64 = null;
+    try {
+        logoBase64 = await getImageAsPngBase64('/images/menu optics_logo.png');
+    } catch (e) {
+        console.warn('Menu Optics logo load failed for PDF', e);
+    }
+
+    const score = audit.designScore || 0;
+    const scoreColor = score >= 75 ? '#059669' : (score >= 50 ? '#d97706' : '#dc2626');
+
+    const docDefinition = {
+        pageSize: 'A4',
+        pageOrientation: 'portrait',
+        pageMargins: [36, 36, 36, 36],
+        styles: {
+            reportTitle: { fontSize: 16, bold: true, color: '#f08d11', margin: [0, 0, 0, 3] },
+            reportSubtitle: { fontSize: 9.5, color: '#4b5563', margin: [0, 0, 0, 4] },
+            sectionHeader: { fontSize: 11.5, bold: true, color: '#111827', margin: [0, 10, 0, 5] },
+            tableHeader: { fontSize: 8.5, bold: true, color: '#ffffff', fillColor: '#374151', alignment: 'left' },
+            tableCell: { fontSize: 8, color: '#374151', margin: [0, 2, 0, 2] }
+        },
+        defaultStyle: { fontSize: 8.5, color: '#374151' },
+        content: [
+            {
+                columns: [
+                    {
+                        stack: [
+                            { text: 'MENU OPTICS — MENU DESIGN AUDIT', style: 'reportTitle' },
+                            { text: `File: ${audit.fileName || 'Menu file'} | Analyzed: ${audit.analyzedDate || ''} | Model: ${audit.sourceModel || 'MenuOptics AI'}`, style: 'reportSubtitle' },
+                            { text: 'An audit of the actual menu guests see — layout, placement, prices and descriptions — against 14 research-backed menu design principles.', fontSize: 8.5, color: '#6b7280' }
+                        ]
+                    },
+                    logoBase64 ? { image: logoBase64, width: 110, alignment: 'right' } : {}
+                ]
+            },
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 523, y2: 0, lineWidth: 1.5, lineColor: '#f08d11' }], margin: [0, 6, 0, 4] },
+
+            { text: 'DESIGN SCORE & SUMMARY', style: 'sectionHeader' },
+            {
+                text: [
+                    { text: 'Design Score: ', bold: true, color: '#111827' },
+                    { text: `${score}/100`, bold: true, color: scoreColor, fontSize: 12 }
+                ],
+                margin: [0, 0, 0, 4]
+            },
+            { text: audit.summary || '', margin: [0, 0, 0, 4] },
+            ...((audit.strengths || []).length > 0 ? [
+                { text: [{ text: 'What is working:  ', bold: true, color: '#065f46' }, (audit.strengths || []).join('  •  ')], margin: [0, 0, 0, 3] }
+            ] : []),
+            ...((audit.criticalIssues || []).length > 0 ? [
+                { text: [{ text: 'Needs attention first:  ', bold: true, color: '#991b1b' }, (audit.criticalIssues || []).join('  •  ')], margin: [0, 0, 0, 3] }
+            ] : []),
+
+            { text: 'RECOMMENDATIONS — 14 DESIGN PRINCIPLES', style: 'sectionHeader' },
+            {
+                table: {
+                    headerRows: 1,
+                    widths: ['18%', '16%', '33%', '33%'],
+                    body: [
+                        [
+                            { text: 'Principle', style: 'tableHeader' },
+                            { text: 'Applies To', style: 'tableHeader' },
+                            { text: 'Recommendation', style: 'tableHeader' },
+                            { text: 'Reasoning & Impact', style: 'tableHeader' }
+                        ],
+                        ...(audit.recommendations || []).map((r, idx) => [
+                            { text: `${idx + 1}. ${r.principle || ''}`, style: 'tableCell', bold: true },
+                            { text: r.itemName || r.category || 'Whole Menu', style: 'tableCell' },
+                            { text: r.recommendation || '', style: 'tableCell' },
+                            { text: `${r.reasoning || ''}${r.expectedImpact ? ` Impact: ${r.expectedImpact}` : ''}`, style: 'tableCell', fontSize: 7.5 }
+                        ])
+                    ]
+                },
+                layout: 'lightHorizontalLines'
+            },
+
+            ...currentSuggestionImages.slice(0, 4).flatMap(img => [
+                { text: `Annotated menu — page ${img.page} (numbered markers match the recommendations above)`, style: 'sectionHeader' },
+                { image: img.dataUrl, width: 500, margin: [0, 0, 0, 6] }
+            ]),
+
+            ...(lastDesignImageUrl ? [
+                { text: 'RECREATED MENU DESIGN', style: 'sectionHeader' },
+                { image: lastDesignImageUrl, width: 500, margin: [0, 0, 0, 6] }
+            ] : []),
+
+            { text: '', margin: [0, 6, 0, 0] },
+            {
+                table: {
+                    widths: ['100%'],
+                    body: [
+                        [
+                            {
+                                stack: [
+                                    { text: 'Disclaimer: Informational Purposes & Business Discretion', bold: true, fontSize: 7.5, color: '#374151', margin: [0, 0, 0, 2] },
+                                    { text: 'This audit was generated using artificial intelligence from the menu file you provided. All observations and suggestions are informational guidance based on published menu-design research; final menu design and pricing decisions rest entirely with the business owner and management.', fontSize: 6.8, color: '#6b7280' }
+                                ],
+                                fillColor: '#f9fafb',
+                                margin: [6, 5, 6, 5]
+                            }
+                        ]
+                    ]
+                },
+                layout: {
+                    hLineWidth: function () { return 0.5; },
+                    vLineWidth: function () { return 0.5; },
+                    hLineColor: function () { return '#e5e7eb'; },
+                    vLineColor: function () { return '#e5e7eb'; }
+                }
+            }
+        ]
+    };
+
+    const fileName = `Menu_Design_Audit_${new Date().toISOString().slice(0, 10)}.pdf`;
+    pdfMake.createPdf(docDefinition).download(fileName);
+    showNotification('Menu Design Audit PDF downloaded successfully!', 'success');
+}
+
+$(document).on('click', '.btnDownloadMenuAuditPdf', function () {
+    exportMenuAuditPdf();
+});
 
 async function exportAiInsightsPdf(reportData) {
     if (!reportData) {
@@ -866,43 +1281,6 @@ async function exportAiInsightsPdf(reportData) {
                 layout: 'noBorders'
             }] : [{ text: 'No checklist items \u2014 the menu is already well planned.', color: '#6b7280' }]),
 
-            ...(currentMenuPdfAudit ? [
-                { text: (checklistSectionNo + 1) + '. MENU DESIGN AUDIT — FROM YOUR MENU FILE', style: 'sectionHeader' },
-                {
-                    text: [
-                        { text: 'Design Score: ', bold: true, color: '#111827' },
-                        { text: `${currentMenuPdfAudit.designScore || 0}/100`, bold: true, color: '#f08d11' },
-                        { text: `    File: ${currentMenuPdfAudit.fileName || ''}`, color: '#6b7280', fontSize: 8 }
-                    ],
-                    margin: [0, 0, 0, 4]
-                },
-                { text: currentMenuPdfAudit.summary || '', color: '#374151', margin: [0, 0, 0, 6] },
-                {
-                    table: {
-                        headerRows: 1,
-                        widths: ['18%', '16%', '33%', '33%'],
-                        body: [
-                            [
-                                { text: 'Principle', style: 'tableHeader' },
-                                { text: 'Applies To', style: 'tableHeader' },
-                                { text: 'Recommendation', style: 'tableHeader' },
-                                { text: 'Reasoning & Impact', style: 'tableHeader' }
-                            ],
-                            ...(currentMenuPdfAudit.recommendations || []).map(r => [
-                                { text: r.principle || '', style: 'tableCell', bold: true },
-                                { text: r.itemName || r.category || 'Whole Menu', style: 'tableCell' },
-                                { text: r.recommendation || '', style: 'tableCell' },
-                                { text: `${r.reasoning || ''}${r.expectedImpact ? ` Impact: ${r.expectedImpact}` : ''}`, style: 'tableCell', fontSize: 7.5 }
-                            ])
-                        ]
-                    },
-                    layout: 'lightHorizontalLines'
-                },
-                ...currentSuggestionImages.slice(0, 3).flatMap(img => [
-                    { text: `Annotated menu — page ${img.page} (numbered markers match the audit recommendations above)`, fontSize: 8, bold: true, color: '#374151', margin: [0, 10, 0, 2] },
-                    { image: img.dataUrl, width: 500, margin: [0, 0, 0, 6] }
-                ])
-            ] : []),
             { text: '', margin: [0, 6, 0, 0] },
             {
                 table: {
@@ -952,44 +1330,46 @@ function openCenteredModal(modalId) {
 }
 
 function closeCenteredModal(modalId) {
-    // While the AI analysis is running, warn before closing the insights modal
-    if (modalId === 'aiInsightsModal' && (aiAnalysisInProgress || menuPdfAnalysisInProgress)) {
-        showAiCloseConfirm();
-        return;
-    }
+    // While an analysis is running, warn before closing its modal
+    if (modalId === 'aiInsightsModal' && aiAnalysisInProgress) { showAiCloseConfirm(modalId); return; }
+    if (modalId === 'menuAuditModal' && menuPdfAnalysisInProgress) { showAiCloseConfirm(modalId); return; }
     $('#' + modalId).fadeOut(200, function () {
         $(this).removeClass('show').css('display', 'none');
     });
 }
 
-function showAiCloseConfirm() {
-    if ($('#aiCloseConfirmOverlay').length === 0) {
-        $('#aiInsightsModal').append(`
-            <div id="aiCloseConfirmOverlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 60;">
+function showAiCloseConfirm(modalId) {
+    const $modal = $('#' + modalId);
+    if ($modal.find('.ai-close-confirm-overlay').length === 0) {
+        $modal.append(`
+            <div class="ai-close-confirm-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 60;">
                 <div style="background: #fff; border-radius: 12px; padding: 24px; max-width: 400px; width: calc(100% - 48px); text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
                     <div style="font-size: 30px; color: #f59e0b; margin-bottom: 8px;"><i class="fas fa-triangle-exclamation"></i></div>
                     <div style="font-weight: 700; font-size: 16px; color: #111827; margin-bottom: 6px;">Analysis in Progress</div>
-                    <p style="font-size: 13px; color: #4b5563; margin: 0 0 18px;">Your AI menu analysis is still being generated. If you close this window now, the analysis will be interrupted and the report will not be completed.</p>
+                    <p style="font-size: 13px; color: #4b5563; margin: 0 0 18px;">Your AI analysis is still being generated. If you close this window now, the analysis will be interrupted and the report will not be completed.</p>
                     <div style="display: flex; gap: 10px; justify-content: center;">
-                        <button type="button" class="btn btn-primary" id="btnKeepWaitingAi">Keep Waiting</button>
-                        <button type="button" class="btn btn-outline" id="btnCloseAnywayAi" style="color: #dc2626; border-color: #dc2626;">Close Anyway</button>
+                        <button type="button" class="btn btn-primary btnKeepWaitingAi">Keep Waiting</button>
+                        <button type="button" class="btn btn-outline btnCloseAnywayAi" style="color: #dc2626; border-color: #dc2626;">Close Anyway</button>
                     </div>
                 </div>
             </div>
         `);
-
-        $(document).on('click', '#btnKeepWaitingAi', function () {
-            $('#aiCloseConfirmOverlay').css('display', 'none');
-        });
-
-        $(document).on('click', '#btnCloseAnywayAi', function () {
-            $('#aiCloseConfirmOverlay').css('display', 'none');
-            aiAnalysisInProgress = false;
-            closeCenteredModal('aiInsightsModal');
-        });
     }
-    $('#aiCloseConfirmOverlay').css('display', 'flex');
+    $modal.find('.ai-close-confirm-overlay').css('display', 'flex');
 }
+
+$(document).on('click', '.btnKeepWaitingAi', function () {
+    $(this).closest('.ai-close-confirm-overlay').css('display', 'none');
+});
+
+$(document).on('click', '.btnCloseAnywayAi', function () {
+    const $overlay = $(this).closest('.ai-close-confirm-overlay');
+    const modalId = $overlay.closest('.modal').attr('id');
+    $overlay.css('display', 'none');
+    if (modalId === 'menuAuditModal') menuPdfAnalysisInProgress = false;
+    else aiAnalysisInProgress = false;
+    closeCenteredModal(modalId);
+});
 
 async function getImageAsPngBase64(url) {
     return new Promise((resolve, reject) => {

@@ -66,7 +66,7 @@ namespace MenuOptics.Services
                     ? $"{startDate.Value:MMM dd, yyyy} - {endDate.Value:MMM dd, yyyy}"
                     : "Last 30 Days";
 
-                // Menu context (category + current description per item) — powers the
+                // Menu context (category + current description per item) â€” powers the
                 // menu-design psychology advice. Never blocks the analysis if unavailable.
                 var itemContext = await GetMenuItemContextAsync(currentUserId);
 
@@ -110,7 +110,7 @@ namespace MenuOptics.Services
         // Audits the restaurant's ACTUAL menu file (PDF or image) with Claude's
         // document/vision reading: layout, placement, prices and descriptions as
         // the guest sees them, checked against the 14 menu-design principles.
-        // There is no heuristic fallback for this — a visual audit needs the AI.
+        // There is no heuristic fallback for this â€” a visual audit needs the AI.
         public async Task<ResponseDto> AnalyzeMenuPdfAsync(int currentUserId, MenuPdfAnalysisRequestDto request)
         {
             var responseDto = new ResponseDto();
@@ -207,30 +207,31 @@ namespace MenuOptics.Services
 
             var modelName = _configuration["Anthropic:Model"] ?? "claude-3-7-sonnet-20250219";
 
-            string systemPrompt = @"You are a world-class menu design auditor for '" + restaurantName + @"'. You are looking at the restaurant's ACTUAL menu — the exact document/image guests see. Audit what is REALLY on the pages: layout and reading flow, where items sit, how prices are printed, description wording and length, colors, boxes/highlights, photos, and white space. Never invent items, prices or sections that are not visible.
+            string systemPrompt = @"You are a world-class menu design auditor for '" + restaurantName + @"'. You are looking at the restaurant's ACTUAL menu â€” the exact document/image guests see. Audit what is REALLY on the pages: layout and reading flow, where items sit, how prices are printed, description wording and length, colors, boxes/highlights, photos, and white space. Never invent items, prices or sections that are not visible.
 
 Judge the menu against these 14 research-backed menu-design psychology principles (Aaron Allen & Associates, 'The Psychology of Menu Design'):
-1. The Golden Triangle — eyes land center first, then top-right, then top-left; the highest-margin items belong in those zones.
-2. Feeding the Imagination — specific sensory adjectives ('line-caught', 'sun-dried', 'slow-braised') sell; vague superlatives ('world's best') are ignored.
-3. Subconscious Scheming — the first 2 items in each section are ordered most; the last item is the third most profitable slot.
-4. Covert Currency — currency signs ($/£) pull attention to cost; prices should be printed as bare numbers.
-5. Controlled Costing — charm endings (.95/.50) signal value; round numbers signal premium quality.
-6. Limited Choices — about 7 items per section is the comfort zone; more stresses guests and suppresses ordering.
-7. A Blast From the Past — nostalgia cues ('Grandma's', 'classic', 'old-fashioned') create comfort and trust.
-8. Decoy Dishes — one premium-priced anchor dish makes the rest look like bargains.
-9. Storytelling — longer, richer descriptions on high-margin items make them stand out and justify price.
-10. Empowering the Customer — helpful information (ingredients, sourcing, spice level) reduces ordering anxiety and lifts orders.
-11. Negative Space — white space isolates and spotlights high-value items; crowded menus hide them.
-12. Material World — the menu's material/format signals quality (print finish for PDFs, presentation for images).
-13. Glossaries — unfamiliar dishes/terms should be briefly explained so guests are not afraid to order them.
-14. Color Confusion — green signals freshness, orange stimulates appetite, yellow grabs happy attention, red drives action and sells the highest-margin meals.
+1. The Golden Triangle â€” eyes land center first, then top-right, then top-left; the highest-margin items belong in those zones.
+2. Feeding the Imagination â€” specific sensory adjectives ('line-caught', 'sun-dried', 'slow-braised') sell; vague superlatives ('world's best') are ignored.
+3. Subconscious Scheming â€” the first 2 items in each section are ordered most; the last item is the third most profitable slot.
+4. Covert Currency â€” currency signs ($/Â£) pull attention to cost; prices should be printed as bare numbers.
+5. Controlled Costing â€” charm endings (.95/.50) signal value; round numbers signal premium quality.
+6. Limited Choices â€” about 7 items per section is the comfort zone; more stresses guests and suppresses ordering.
+7. A Blast From the Past â€” nostalgia cues ('Grandma's', 'classic', 'old-fashioned') create comfort and trust.
+8. Decoy Dishes â€” one premium-priced anchor dish makes the rest look like bargains.
+9. Storytelling â€” longer, richer descriptions on high-margin items make them stand out and justify price.
+10. Empowering the Customer â€” helpful information (ingredients, sourcing, spice level) reduces ordering anxiety and lifts orders.
+11. Negative Space â€” white space isolates and spotlights high-value items; crowded menus hide them.
+12. Material World â€” the menu's material/format signals quality (print finish for PDFs, presentation for images).
+13. Glossaries â€” unfamiliar dishes/terms should be briefly explained so guests are not afraid to order them.
+14. Color Confusion â€” green signals freshness, orange stimulates appetite, yellow grabs happy attention, red drives action and sells the highest-margin meals.
 
 OUTPUT RULES:
 - Return ONLY a valid JSON object (no markdown, no commentary) in the exact schema shown in the user message.
-- Recommendations: return EXACTLY 14 — ONE for EACH principle above, in the same order, using the exact Principle names: 'The Golden Triangle', 'Feeding the Imagination', 'Subconscious Scheming', 'Covert Currency', 'Controlled Costing', 'Limited Choices', 'A Blast From the Past', 'Decoy Dishes', 'Storytelling', 'Empowering the Customer', 'Negative Space', 'Material World', 'Glossaries', 'Color Confusion'. Never skip, merge or repeat a principle. If the menu already does a principle well, say what is working and how to protect/extend it.
+- Recommendations: return EXACTLY 14 â€” ONE for EACH principle above, in the same order, using the exact Principle names: 'The Golden Triangle', 'Feeding the Imagination', 'Subconscious Scheming', 'Covert Currency', 'Controlled Costing', 'Limited Choices', 'A Blast From the Past', 'Decoy Dishes', 'Storytelling', 'Empowering the Customer', 'Negative Space', 'Material World', 'Glossaries', 'Color Confusion'. Never skip, merge or repeat a principle. If the menu already does a principle well, say what is working and how to protect/extend it.
 - Ground every recommendation in something actually visible on the pages (name the item/section you saw). If a principle cannot be judged from the file, base the recommendation on the closest visible evidence and say so in Reasoning.
-- Highlight: for each recommendation, give the approximate area of the page it refers to as percentages of the page size (X, Y = top-left corner; Width, Height = box size; all 0-100) and the 1-based Page number. Keep every Highlight SMALL and specific — one item row, one price column, or one section header; never box a whole section group or most of a page. If the recommendation is about the menu overall rather than one spot, return Highlight as null.
-- DesignScore: 0-100 overall menu-design score. Strengths: 2-5 short points. CriticalIssues: 2-5 short points, most damaging first.";
+- Highlight: for each recommendation, give the approximate area of the page it refers to as percentages of the page size (X, Y = top-left corner; Width, Height = box size; all 0-100) and the 1-based Page number. Keep every Highlight SMALL and specific â€” one item row, one price column, or one section header; never box a whole section group or most of a page. If the recommendation is about the menu overall rather than one spot, return Highlight as null.
+- DesignScore: 0-100 overall menu-design score. Strengths: 2-5 short points. CriticalIssues: 2-5 short points, most damaging first.
+- ExtractedMenu: transcribe the ENTIRE visible menu into ExtractedMenu exactly as printed â€” every section in reading order, every item with its name, its description if one is printed, and its price text exactly as shown (if two prices are printed for one item, join them with ' / '). Never invent items, sections or prices that are not visible.";
 
             string userText = @"Audit the attached menu file page by page, then return ONLY this JSON:
 {
@@ -248,7 +249,18 @@ OUTPUT RULES:
       ""ExpectedImpact"": ""Expected effect"",
       ""Highlight"": { ""Page"": 1, ""X"": 0, ""Y"": 0, ""Width"": 0, ""Height"": 0 }
     }
-  ]
+  ],
+  ""ExtractedMenu"": {
+    ""RestaurantName"": ""Restaurant name as printed on the menu, or null"",
+    ""Sections"": [
+      {
+        ""Name"": ""Section name exactly as printed"",
+        ""Items"": [
+          { ""Name"": ""Item name exactly as printed"", ""Description"": ""Description as printed, or null"", ""PriceText"": ""Price exactly as printed, e.g. 159 or 159 / 219"" }
+        ]
+      }
+    ]
+  }
 }";
 
             var fileBlock = new
@@ -284,7 +296,7 @@ OUTPUT RULES:
 
             using var doc = JsonDocument.Parse(responseBody);
 
-            // Find the first text block — never assume it sits at content[0],
+            // Find the first text block â€” never assume it sits at content[0],
             // and surface the raw response when it has an unexpected shape.
             string contentText = "{}";
             bool foundText = false;
@@ -367,22 +379,22 @@ MANDATORY RESEARCH-BACKED MENU ENGINEERING & PRICING PRINCIPLES:
    - Identify bland, generic, or boring titles (e.g., 'Chicken Burger', 'Beef Pasta', 'House Salad') and upgrade them to high-converting sensory titles that elevate perceived value against modern competitors in {locationText}. Only suggest when genuinely beneficial; populate TrendVerbiageUsed.
 5. Strict 10% Removal Cap:
    - In RemovalRecommendations, recommend AT MOST {maxRemovalLimit} items (strictly <= 10% of the {totalItems} total menu items), prioritizing bottom Dogs with low sales and poor margins.
-6. MenuPlanningChecklist: Convert this report's own recommendations (removals, pricing, titles, and all 14 design principles) into a practical MENU PLANNING CHECKLIST the operator can tick off one by one. Each entry is ONE concrete task in imperative form ('Remove ...', 'Change the price of ...', 'Move ...'), naming the exact item/section and the exact change, with a short Details note and an Area ('Removals', 'Pricing', 'Titles & Descriptions', or 'Menu Design'). NO dates, NO phases, NO timeframes — it is a checklist, not a roadmap. Order: removals first, then pricing, then titles & descriptions, then menu design.
-7. Menu-Design Psychology (Aaron Allen & Associates — 'The Psychology of Menu Design'): Apply ALL of the following in MenuDesignRecommendations, and let them inform TitleImprovements and the MenuPlanningChecklist. Name the principle in each recommendation's Principle field.
+6. MenuPlanningChecklist: Convert this report's own recommendations (removals, pricing, titles, and all 14 design principles) into a practical MENU PLANNING CHECKLIST the operator can tick off one by one. Each entry is ONE concrete task in imperative form ('Remove ...', 'Change the price of ...', 'Move ...'), naming the exact item/section and the exact change, with a short Details note and an Area ('Removals', 'Pricing', 'Titles & Descriptions', or 'Menu Design'). NO dates, NO phases, NO timeframes â€” it is a checklist, not a roadmap. Order: removals first, then pricing, then titles & descriptions, then menu design.
+7. Menu-Design Psychology (Aaron Allen & Associates â€” 'The Psychology of Menu Design'): Apply ALL of the following in MenuDesignRecommendations, and let them inform TitleImprovements and the MenuPlanningChecklist. Name the principle in each recommendation's Principle field.
    - The Golden Triangle: A guest's eyes move to the CENTER of the menu first, then the TOP-RIGHT, then the TOP-LEFT. Recommend the highest-margin Stars/Puzzles for these three eye-magnet zones.
    - First-Two & Last-Item Rule (Subconscious Scheming): Guests subconsciously order the TOP TWO items of each menu section most often, and a distinct segment always picks the LAST item. Per section (use the Category field): positions 1-2 must hold the section's highest-margin items, and the last position its third most profitable item. Flag sections wasting these slots on low-margin items.
    - Decoy Dishes (Price Anchoring): A slightly more expensive item at the top of a section makes every other dish look like better value and lifts spend. Per major section, confirm an effective anchor exists or nominate a decoy candidate priced ~15-25% above the section's target item, and name the item it anchors.
-   - Covert Currency: Currency signs are the guest's biggest pain point — they pull attention to cost. Recommend printing prices WITHOUT currency symbols (bare numbers). Where the concept allows, prices written out in words can lift spend by up to 30%; flag it as an optional premium tactic.
-   - Limited Choices (Rule of Seven): More than ~7 items per section stresses guests and suppresses ordering. Flag every section with more than 7 items and say how many to trim (respect the 10% removal cap — prefer repositioning/merging over removal where possible).
-   - Feeding the Imagination: Descriptions must use enticing, specific sensory adjectives ('line-caught', 'sun-dried', 'slow-braised') that make taste buds react. Superlative claims ('world's best', 'finest ever') are ignored by guests — never suggest them; call them out when an item relies on one.
+   - Covert Currency: Currency signs are the guest's biggest pain point â€” they pull attention to cost. Recommend printing prices WITHOUT currency symbols (bare numbers). Where the concept allows, prices written out in words can lift spend by up to 30%; flag it as an optional premium tactic.
+   - Limited Choices (Rule of Seven): More than ~7 items per section stresses guests and suppresses ordering. Flag every section with more than 7 items and say how many to trim (respect the 10% removal cap â€” prefer repositioning/merging over removal where possible).
+   - Feeding the Imagination: Descriptions must use enticing, specific sensory adjectives ('line-caught', 'sun-dried', 'slow-braised') that make taste buds react. Superlative claims ('world's best', 'finest ever') are ignored by guests â€” never suggest them; call them out when an item relies on one.
    - Storytelling (Description Length): When most descriptions are a similar length, a LONGER description breaks the pattern and catches the eye. Recommend extended storytelling descriptions ONLY for the highest-margin items the restaurant most wants to sell; use the Description field to judge which items currently have thin descriptions.
    - Nostalgia ('A Blast From the Past'): Emotionally-worded, nostalgic naming ('Grandma's Apple Pie', 'Nonna's Sunday Sauce') creates resonance that is hard to resist. Where a dish genuinely fits (comfort food, desserts, heritage recipes), suggest a nostalgic angle in TitleImprovements and say so in the Reasoning.
    - Negative Space: On a crowded menu the eye is drawn to open space. Recommend isolating the single highest-margin item of each major section in its own visual space (box, border, or whitespace) away from the dense listings.
-   - Color Psychology: Colors steer ordering — GREEN signals freshness, ORANGE stimulates appetite, YELLOW is a happy attention-grabber, RED encourages action and sells the highest-margin meals. Recommend orange/red accent highlighting for items placed in Golden Triangle zones; green accents for fresh/health-positioned items.
+   - Color Psychology: Colors steer ordering â€” GREEN signals freshness, ORANGE stimulates appetite, YELLOW is a happy attention-grabber, RED encourages action and sells the highest-margin meals. Recommend orange/red accent highlighting for items placed in Golden Triangle zones; green accents for fresh/health-positioned items.
    - Empowering the Customer: The more information a guest has about an item, the more likely they are to choose it. Recommend richer detail (origin, preparation, pairing notes) for premium and slow-moving items instead of stripping detail back.
    - Glossaries: Guests order an unfamiliar, pricey item (e.g., steak tartare) more readily when they know exactly how it is prepared and produced. For items with unfamiliar or intimidating names, recommend a short glossary note or one-line preparation explainer instead of renaming the dish away.
-   - Material World (print menus only): Menu material signals quality — premium concepts should use heavy stock / leather-style presentation, value concepts a clean simple format. Include at most one menu-level recommendation on this, and only when it fits the concept.
-8. MenuDesignRecommendations Output: Return EXACTLY 14 recommendations — ONE for EACH research principle, in this exact order, using these exact Principle names: 'The Golden Triangle', 'Feeding the Imagination', 'Subconscious Scheming', 'Covert Currency', 'Controlled Costing', 'Limited Choices', 'A Blast From the Past', 'Decoy Dishes', 'Storytelling', 'Empowering the Customer', 'Negative Space', 'Material World', 'Glossaries', 'Color Confusion'. Every principle MUST appear exactly once — never skip, merge, or repeat one. Ground each recommendation in THIS menu's data (real items, categories and prices from the dataset); when a principle has no single obvious item, give the advice at section or menu level rather than dropping it. Item-level entries must use the real MenuItemId and Name; section-level entries set Category; menu-level entries leave MenuItemId, ItemName and Category null.
+   - Material World (print menus only): Menu material signals quality â€” premium concepts should use heavy stock / leather-style presentation, value concepts a clean simple format. Include at most one menu-level recommendation on this, and only when it fits the concept.
+8. MenuDesignRecommendations Output: Return EXACTLY 14 recommendations â€” ONE for EACH research principle, in this exact order, using these exact Principle names: 'The Golden Triangle', 'Feeding the Imagination', 'Subconscious Scheming', 'Covert Currency', 'Controlled Costing', 'Limited Choices', 'A Blast From the Past', 'Decoy Dishes', 'Storytelling', 'Empowering the Customer', 'Negative Space', 'Material World', 'Glossaries', 'Color Confusion'. Every principle MUST appear exactly once â€” never skip, merge, or repeat one. Ground each recommendation in THIS menu's data (real items, categories and prices from the dataset); when a principle has no single obvious item, give the advice at section or menu level rather than dropping it. Item-level entries must use the real MenuItemId and Name; section-level entries set Category; menu-level entries leave MenuItemId, ItemName and Category null.
 9. Return ONLY a valid JSON object matching the requested schema. No markdown wrapping, no extra prose.";
 
             var userPrompt = $@"Restaurant: {restaurantName}
@@ -469,7 +481,7 @@ JSON Output Schema required:
       ""Category"": ""Mains"",
       ""MenuItemId"": 7,
       ""ItemName"": ""Sea Bass in White Wine Sauce"",
-      ""Recommendation"": ""Move this item to the top-right zone of the Mains section — the second position every guest's eyes land on after the center."",
+      ""Recommendation"": ""Move this item to the top-right zone of the Mains section â€” the second position every guest's eyes land on after the center."",
       ""Reasoning"": ""It is the section's highest-margin Star ($18.40 contribution) but sits mid-list where scan-path attention is weakest."",
       ""ExpectedImpact"": ""Higher order share for the top-margin main within 2-4 weeks.""
     }},
@@ -714,6 +726,61 @@ JSON Output Schema required:
             return ($"Chef's Signature House-Crafted {currentTitle}", "Signature, House-Crafted");
         }
 
+
+        // Builds a design-ready menu (sections + items + selling prices) from
+        // the restaurant's own MenuOptics data â€” used when the user does NOT
+        // upload a menu file and still wants a fresh premium menu design.
+        public async Task<ResponseDto> GetMenuDesignDataAsync(int currentUserId)
+        {
+            var responseDto = new ResponseDto();
+
+            try
+            {
+                var userResponse = await _userService.GetUserAsync(currentUserId);
+                var user = userResponse.Data as GetUserDTO;
+                var restaurantName = user?.RestaurantName ?? user?.Username ?? "My Restaurant";
+
+                var menuResponse = await _menuService.GetAllMenuItemsAsync(null, currentUserId);
+                var menuItems = (menuResponse.Data as IEnumerable<GetMenuItemDTO>)?.ToList() ?? new List<GetMenuItemDTO>();
+
+                if (!menuItems.Any())
+                {
+                    responseDto.Status = 404;
+                    responseDto.ResponseMsg = "No menu items found. Please add menu items first, then generate a design.";
+                    return responseDto;
+                }
+
+                var menu = new ExtractedMenuDto
+                {
+                    RestaurantName = restaurantName,
+                    Sections = menuItems
+                        .GroupBy(i => string.IsNullOrWhiteSpace(i.CategoryName) ? "Menu" : i.CategoryName)
+                        .Select(g => new ExtractedMenuSectionDto
+                        {
+                            Name = g.Key,
+                            Items = g.Select(i => new ExtractedMenuItemDto
+                            {
+                                Name = i.Name,
+                                Description = i.Description,
+                                PriceText = i.SellingPrice > 0 ? i.SellingPrice.ToString("0.00") : ""
+                            }).ToList()
+                        })
+                        .ToList()
+                };
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "Menu data loaded successfully.";
+                responseDto.Data = menu;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = $"Error loading menu data: {ex.Message}";
+                return responseDto;
+            }
+        }
+
         private async Task<IReadOnlyDictionary<int, MenuItemContext>> GetMenuItemContextAsync(int currentUserId)
         {
             var map = new Dictionary<int, MenuItemContext>();
@@ -732,7 +799,7 @@ JSON Output Schema required:
             }
             catch
             {
-                // Category/description context only enhances the advice — never block the analysis.
+                // Category/description context only enhances the advice â€” never block the analysis.
             }
             return map;
         }
@@ -749,7 +816,7 @@ JSON Output Schema required:
             public string? Description { get; set; }
         }
 
-        // Section 7: the menu planning checklist — every recommendation in this
+        // Section 7: the menu planning checklist â€” every recommendation in this
         // report restated as one tick-off task. Not a roadmap: no dates or phases.
         private static void AddMenuPlanningChecklist(MenuAiAnalysisReportDto report)
         {
@@ -798,7 +865,7 @@ JSON Output Schema required:
             report.MenuPlanningChecklist = items;
         }
 
-        // Menu-design psychology (Aaron Allen — 'The Psychology of Menu Design'), rule-based edition.
+        // Menu-design psychology (Aaron Allen â€” 'The Psychology of Menu Design'), rule-based edition.
         // Emits exactly ONE recommendation per research principle (all 14, in research order),
         // so the report's Menu Design & Psychology section is complete in fallback mode too.
         private static void AddMenuDesignRecommendations(
@@ -829,7 +896,7 @@ JSON Output Schema required:
                 Category = CategoryOf(heroItem),
                 MenuItemId = heroItem.MenuItemId,
                 ItemName = heroItem.Name,
-                Recommendation = $"Place '{heroItem.Name}' in the center or top-right zone of the {CategoryOf(heroItem)} section — the first positions a guest's eyes land on.",
+                Recommendation = $"Place '{heroItem.Name}' in the center or top-right zone of the {CategoryOf(heroItem)} section â€” the first positions a guest's eyes land on.",
                 Reasoning = $"It is the menu's highest-margin hero item (${heroItem.ContributionMargin:F2} contribution per sale). Research shows the eye travels center -> top-right -> top-left, and those zones should hold the dishes the restaurant most wants to sell.",
                 ExpectedImpact = "Higher order share for the top-margin item."
             });
@@ -846,7 +913,7 @@ JSON Output Schema required:
                 MenuItemId = blandItem.MenuItemId,
                 ItemName = blandItem.Name,
                 Recommendation = $"Rewrite the description of '{blandItem.Name}' with specific, enticing sensory words ('line-caught', 'sun-dried', 'slow-braised') that make taste buds react.",
-                Reasoning = "Descriptions that feed the imagination sell the dish before it arrives. Superlative claims like 'world's best' are simply ignored by guests — concrete sensory adjectives are not.",
+                Reasoning = "Descriptions that feed the imagination sell the dish before it arrives. Superlative claims like 'world's best' are simply ignored by guests â€” concrete sensory adjectives are not.",
                 ExpectedImpact = "Higher conversion on a plainly-presented item."
             });
 
@@ -862,7 +929,7 @@ JSON Output Schema required:
                 Principle = "Subconscious Scheming",
                 Category = biggestSection.Key,
                 Recommendation = $"Reorder the {biggestSection.Key} section: put {topTwo} in positions 1-2{lastSlot}. Apply the same pattern in every section.",
-                Reasoning = "Guests subconsciously order the top two items of each section more often, and a distinct segment always picks the last item — so positions 1-2 belong to the highest-margin dishes and the last slot to the third most profitable one.",
+                Reasoning = "Guests subconsciously order the top two items of each section more often, and a distinct segment always picks the last item â€” so positions 1-2 belong to the highest-margin dishes and the last slot to the third most profitable one.",
                 ExpectedImpact = "More orders steered to high-margin dishes in every section."
             });
 
@@ -892,7 +959,7 @@ JSON Output Schema required:
                 {
                     Principle = "Limited Choices",
                     Category = oversized.Key,
-                    Recommendation = $"Trim '{oversized.Key}' from {oversized.Count()} items toward 7 — start with its lowest-margin, lowest-selling items (see Removal Recommendations).",
+                    Recommendation = $"Trim '{oversized.Key}' from {oversized.Count()} items toward 7 â€” start with its lowest-margin, lowest-selling items (see Removal Recommendations).",
                     Reasoning = "A huge section forces guests to choose between too many options and stresses them; around seven dishes per section feels like plenty without overwhelming, and ordering rises.",
                     ExpectedImpact = "Faster decisions and a higher order rate in this section."
                 });
@@ -903,7 +970,7 @@ JSON Output Schema required:
                 {
                     Principle = "Limited Choices",
                     Category = biggestSection.Key,
-                    Recommendation = $"Every section is currently within the ideal range — the largest, '{biggestSection.Key}', has {biggestSection.Count()} items. Keep it that way: when adding a dish, retire or merge one.",
+                    Recommendation = $"Every section is currently within the ideal range â€” the largest, '{biggestSection.Key}', has {biggestSection.Count()} items. Keep it that way: when adding a dish, retire or merge one.",
                     Reasoning = "Around seven dishes per section gives guests plenty of choice without the stress that suppresses ordering; this menu already respects that balance.",
                     ExpectedImpact = "Protects the current healthy order rate as the menu evolves."
                 });
@@ -931,7 +998,7 @@ JSON Output Schema required:
                 recs.Add(new AiMenuDesignRecommendationDto
                 {
                     Principle = "A Blast From the Past",
-                    Recommendation = "Add one nostalgic, heritage-style dish (or rename a comfort-food item) with emotionally-worded copy — the 'Grandma's Apple Pie' treatment.",
+                    Recommendation = "Add one nostalgic, heritage-style dish (or rename a comfort-food item) with emotionally-worded copy â€” the 'Grandma's Apple Pie' treatment.",
                     Reasoning = "Nostalgia is a powerful force: carefully worded descriptions give a dish an emotional resonance that is hard to resist, and this menu currently has no item playing that role.",
                     ExpectedImpact = "A new emotional anchor item guests remember and return for."
                 });
@@ -951,7 +1018,7 @@ JSON Output Schema required:
                     MenuItemId = anchor.MenuItemId,
                     ItemName = anchor.Name,
                     Recommendation = $"List '{anchor.Name}' (${(anchor.SellingPrice ?? 0):F2}) at the top of {biggestSection.Key} and keep it undiscounted, so '{decoyTarget.Name}' reads as the smart-value choice next to it.",
-                    Reasoning = "A slightly more expensive item at the top of a section makes every other dish appear to offer more for the money — and guests who feel they are getting a bargain spend more.",
+                    Reasoning = "A slightly more expensive item at the top of a section makes every other dish appear to offer more for the money â€” and guests who feel they are getting a bargain spend more.",
                     ExpectedImpact = $"Stronger mix toward '{decoyTarget.Name}' and other mid-range {biggestSection.Key} items."
                 });
             }
@@ -964,7 +1031,7 @@ JSON Output Schema required:
                     MenuItemId = priciest.MenuItemId,
                     ItemName = priciest.Name,
                     Recommendation = $"Use '{priciest.Name}' (${(priciest.SellingPrice ?? 0):F2}) as the price anchor at the top of its section and keep it undiscounted.",
-                    Reasoning = "A slightly more expensive item at the top makes every other dish appear to offer more for the money — and guests who feel they are getting a bargain spend more.",
+                    Reasoning = "A slightly more expensive item at the top makes every other dish appear to offer more for the money â€” and guests who feel they are getting a bargain spend more.",
                     ExpectedImpact = "Higher spend on the mid-range items below the anchor."
                 });
             }
@@ -976,7 +1043,7 @@ JSON Output Schema required:
                 Category = CategoryOf(heroItem),
                 MenuItemId = heroItem.MenuItemId,
                 ItemName = heroItem.Name,
-                Recommendation = $"Write a noticeably longer description for '{heroItem.Name}' than for its neighbours — origin, preparation, and one memorable detail.",
+                Recommendation = $"Write a noticeably longer description for '{heroItem.Name}' than for its neighbours â€” origin, preparation, and one memorable detail.",
                 Reasoning = "Most descriptions sit at a similar length, so the one that breaks the pattern sticks out and catches the eye; the longest descriptions belong on the items with the highest profit margins.",
                 ExpectedImpact = "More attention and orders for the highest-margin item."
             });
@@ -989,8 +1056,8 @@ JSON Output Schema required:
                 Category = CategoryOf(empowerItem),
                 MenuItemId = empowerItem.MenuItemId,
                 ItemName = empowerItem.Name,
-                Recommendation = $"Add richer information for '{empowerItem.Name}' — how it is prepared, where its key ingredient comes from, and what to pair it with.",
-                Reasoning = "The more information listed about an item, the more confident and empowered guests feel to choose it — this is why detailed wine lists sell more wine. High-margin items guests hesitate over gain the most.",
+                Recommendation = $"Add richer information for '{empowerItem.Name}' â€” how it is prepared, where its key ingredient comes from, and what to pair it with.",
+                Reasoning = "The more information listed about an item, the more confident and empowered guests feel to choose it â€” this is why detailed wine lists sell more wine. High-margin items guests hesitate over gain the most.",
                 ExpectedImpact = "Higher order rate for a high-margin item guests currently pass over."
             });
 
@@ -1002,7 +1069,7 @@ JSON Output Schema required:
                 MenuItemId = heroItem.MenuItemId,
                 ItemName = heroItem.Name,
                 Recommendation = $"Set '{heroItem.Name}' in its own visual space (a box or border with breathing room), away from the dense run of descriptions around it.",
-                Reasoning = "When a menu is crammed with text, the eye is naturally drawn to open space — items with the largest margins are therefore set apart from the hustle and bustle of the other listings.",
+                Reasoning = "When a menu is crammed with text, the eye is naturally drawn to open space â€” items with the largest margins are therefore set apart from the hustle and bustle of the other listings.",
                 ExpectedImpact = "The hero item is noticed first, at no cost."
             });
 
@@ -1015,7 +1082,7 @@ JSON Output Schema required:
                     ? "For print menus, use a premium physical format (heavy stock, leather-style cover) that matches this menu's price level."
                     : "For print menus, use a clean, simple, well-kept physical format that signals honest value for money.",
                 Reasoning = $"The material of the menu communicates the brand image: high-end restaurants use leather and thick paper to suggest food of similar quality, while a value concept should look clean and straightforward. This menu's average price is ${avgPrice:F2}.",
-                ExpectedImpact = "Menu presentation that matches — and justifies — the price level."
+                ExpectedImpact = "Menu presentation that matches â€” and justifies â€” the price level."
             });
 
             // 13. Glossaries
@@ -1038,7 +1105,7 @@ JSON Output Schema required:
                 MenuItemId = heroItem.MenuItemId,
                 ItemName = heroItem.Name,
                 Recommendation = $"Highlight '{heroItem.Name}' with an orange or red accent; use green accents on fresh items and yellow sparingly where the eye should land.",
-                Reasoning = "Colors affect what we order: green implies the food is fresh, orange stimulates the appetite, yellow is a happy hue that catches attention, and red encourages action — which is why it is used to sell the meals with the highest profit margins.",
+                Reasoning = "Colors affect what we order: green implies the food is fresh, orange stimulates the appetite, yellow is a happy hue that catches attention, and red encourages action â€” which is why it is used to sell the meals with the highest profit margins.",
                 ExpectedImpact = "Color quietly steers orders toward the highest-margin items."
             });
 

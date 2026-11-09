@@ -130,5 +130,28 @@ namespace MenuOptics.Models
         public string? SourceModel { get; set; }
         public string? FileName { get; set; }
         public string? AnalyzedDate { get; set; }
+        public ExtractedMenuDto? ExtractedMenu { get; set; }
+    }
+
+    // A full menu (sections + items + prices) — either transcribed by the AI
+    // from an uploaded menu file, or built from the restaurant's MenuOptics
+    // items. Used to render a fresh, premium menu design.
+    public class ExtractedMenuDto
+    {
+        public string? RestaurantName { get; set; }
+        public List<ExtractedMenuSectionDto> Sections { get; set; } = new();
+    }
+
+    public class ExtractedMenuSectionDto
+    {
+        public string? Name { get; set; }
+        public List<ExtractedMenuItemDto> Items { get; set; } = new();
+    }
+
+    public class ExtractedMenuItemDto
+    {
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public string? PriceText { get; set; }
     }
 }

@@ -41,6 +41,13 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
+        [HttpGet("GetMenuDesignData")]
+        public async Task<IActionResult> GetMenuDesignData()
+        {
+            var responseData = await _menuAiAnalysisService.GetMenuDesignDataAsync(CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
         [HttpPost("AnalyzeMenuPdf")]
         [RequestSizeLimit(25_000_000)]
         public async Task<IActionResult> AnalyzeMenuPdf([FromBody] MenuPdfAnalysisRequestDto request)
