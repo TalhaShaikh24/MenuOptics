@@ -154,4 +154,25 @@ namespace MenuOptics.Models
         public string? Description { get; set; }
         public string? PriceText { get; set; }
     }
+
+    // One AI-generated design concept for the recreated menu. Claude chooses only
+    // the palette, fonts and layout options — the browser renders the design, so
+    // the menu text and prices always stay exactly as entered.
+    public class AiMenuDesignSpecDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Tagline { get; set; } = string.Empty;
+        public string Bg { get; set; } = "#ffffff";
+        public string Ink { get; set; } = "#1f2937";
+        public string Sub { get; set; } = "#6b7280";
+        public string Accent { get; set; } = "#f08d11";
+        public string Price { get; set; } = "#ea580c";
+        public string Divider { get; set; } = "#e5e7eb";
+        public string HeadFont { get; set; } = "Georgia";
+        public string BodyFont { get; set; } = "Segoe UI";
+        public string Frame { get; set; } = "none";       // none | single | double
+        public string Align { get; set; } = "center";     // center | left
+        public string PriceStyle { get; set; } = "dots";  // dots | plain | below
+        public string Ornament { get; set; } = string.Empty;
+    }
 }

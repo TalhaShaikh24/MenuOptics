@@ -10,6 +10,7 @@ let auditProgress = null;
 let currentDesignMenu = null;
 let currentDesignTemplate = 'midnight';
 let currentDesignFormat = 'single';
+let aiDesignSpecs = {}; // 'ai0'... -> { name, tagline, template } for AI-generated designs
 let lastDesignImageUrl = null;
 
 // TEMPORARY (client request, 2026-11-04): the 'Menu Design & Psychology'
@@ -472,6 +473,10 @@ $(document).on('click', '#btnDownloadRecreatedMenu', function () {
     downloadRecreatedMenuImage();
 });
 
+$(document).on('click', '#btnAiDesignVariations', function () {
+    generateAiDesignVariations();
+});
+
 $(document).on('click', '#btnManualMenuEntry', function () {
     openManualEntry();
 });
@@ -565,6 +570,7 @@ function generateManualDesign() {
     currentMenuPdfAudit = null;
     currentSuggestionImages = [];
     lastDesignImageUrl = null;
+    aiDesignSpecs = {};
     $('#menuAuditReportContainer').empty();
     renderMenuDesignSection();
     setMenuAuditState('report');
@@ -588,6 +594,7 @@ function generateDesignFromSystemMenu() {
                 currentMenuPdfAudit = null;
                 currentSuggestionImages = [];
                 lastDesignImageUrl = null;
+                aiDesignSpecs = {};
                 $status.html('');
                 $('#menuAuditReportContainer').empty();
                 renderMenuDesignSection();
@@ -604,7 +611,102 @@ function generateDesignFromSystemMenu() {
     });
 }
 
-// ---------- Rendering: 2 styles x 4 formats ----------
+// ---------- AI design variations (Claude designs, the system renders) ----------
+
+function generateAiDesignVariations() {
+    if (!currentDesignMenu) return;
+    const $btn = $('#btnAiDesignVariations');
+    setBtnLoading($btn, true);
+    $('#aiDesignsStatus').html('');
+    const progress = startAiProgress($('#aiDesignsProgress'), [
+        'Asking the AI designer for fresh concepts',
+        'Mixing colour palettes and typefaces',
+        'Trying different layouts for your menu'
+    ]);
+    ajaxRequest({
+        url: '/api/MenuEngineeringInsightsApi/GenerateMenuDesigns',
+        method: 'POST',
+        data: JSON.stringify(currentDesignMenu),
+        showMessage: false,
+        onSuccess: function (response) {
+            progress.done();
+            $('#aiDesignsProgress').empty();
+            if (response && response.status === 200 && Array.isArray(response.data) && response.data.length) {
+                aiDesignSpecs = {};
+                response.data.forEach((s, i) => {
+                    aiDesignSpecs['ai' + i] = { name: s.name, tagline: s.tagline, template: specToTemplate(s) };
+                });
+                currentDesignTemplate = 'ai0';
+                drawRecreatedMenu();
+                $('#aiDesignsStatus').html(`<span style="color:#16a34a;">${response.data.length} AI designs ready — click a design name in the STYLE row to preview it, then download the one you like.</span>`);
+                showNotification('AI design variations are ready.', 'success');
+            } else {
+                $('#aiDesignsStatus').html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'The AI could not create designs this time.')}</span>`);
+            }
+        },
+        onError: function (xhr) {
+            progress.done();
+            $('#aiDesignsProgress').empty();
+            $('#aiDesignsStatus').html(`<span style="color:#dc2626;">${escapeHtml(xhr.responseJSON?.responseMsg || 'The AI could not create designs this time.')}</span>`);
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
+    });
+}
+
+const FONT_STACKS = {
+    'Georgia': "Georgia, 'Times New Roman', serif",
+    'Times New Roman': "'Times New Roman', Times, serif",
+    'Palatino': "'Palatino Linotype', 'Book Antiqua', Georgia, serif",
+    'Garamond': "Garamond, Georgia, serif",
+    'Segoe UI': "'Segoe UI', Arial, sans-serif",
+    'Trebuchet MS': "'Trebuchet MS', 'Segoe UI', sans-serif",
+    'Arial Black': "'Arial Black', Arial, sans-serif",
+    'Courier New': "'Courier New', Courier, monospace",
+    'Lucida Handwriting': "'Lucida Handwriting', cursive",
+    'Brush Script': "'Brush Script MT', cursive",
+    'Verdana': "Verdana, Geneva, sans-serif"
+};
+
+function specToTemplate(s) {
+    return {
+        bg: s.bg, ink: s.ink, sub: s.sub, accent: s.accent, price: s.price, divider: s.divider,
+        head: FONT_STACKS[s.headFont] || FONT_STACKS['Georgia'],
+        body: FONT_STACKS[s.bodyFont] || FONT_STACKS['Segoe UI'],
+        frame: s.frame || 'none', align: s.align || 'center',
+        priceStyle: s.priceStyle || 'dots', ornament: s.ornament || ''
+    };
+}
+
+function getDesignSpec(key) {
+    if (MENU_TEMPLATES[key]) return MENU_TEMPLATES[key];
+    if (aiDesignSpecs[key]) return aiDesignSpecs[key].template;
+    return MENU_TEMPLATES.midnight;
+}
+
+function renderStyleButtons() {
+    const $box = $('#designStyleButtons');
+    if (!$box.length) return;
+    let html = `<button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="midnight">Midnight Gold</button>
+        <button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="modern">Modern Light</button>`;
+    Object.keys(aiDesignSpecs).forEach(k => {
+        const s = aiDesignSpecs[k];
+        html += `<button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="${k}" title="${escapeHtml(s.tagline || '')}">${escapeHtml(s.name || 'AI Design')}</button>`;
+    });
+    $box.html(html);
+    $('.design-template-btn').each(function () {
+        const active = $(this).data('template') === currentDesignTemplate;
+        $(this).css({ 'border-color': active ? '#f08d11' : '#d1d5db', 'background': active ? '#fff7e8' : '#ffffff', 'font-weight': active ? '700' : '400' });
+    });
+}
+
+function paintFormatButtons() {
+    $('.design-format-btn').each(function () {
+        const active = $(this).data('format') === currentDesignFormat;
+        $(this).css({ 'border-color': active ? '#f08d11' : '#d1d5db', 'background': active ? '#fff7e8' : '#ffffff', 'font-weight': active ? '700' : '400' });
+    });
+}
+
+// ---------- Rendering: styles x formats (built-in + AI designs) ----------
 
 function renderMenuDesignSection() {
     const menu = currentDesignMenu;
@@ -618,11 +720,10 @@ function renderMenuDesignSection() {
     $('#menuDesignSection').html(`
         <div class="ai-section-box" style="border-left: 4px solid #d4a24e; margin-top: 16px;">
             <div class="ai-section-title"><i class="fas fa-wand-magic-sparkles" style="color: #d4a24e;"></i> Your Menu, Recreated — Premium Design</div>
-            <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">A brand-new premium menu design generated from ${fromUpload ? 'your uploaded menu' : 'your menu items'}. Pick a style and a format, then download it as an image.</p>
+            <p style="font-size: 13px; color: #374151; margin: 0 0 10px;">A brand-new premium menu design generated from ${fromUpload ? 'your uploaded menu' : 'your menu items'}. Pick a style and a format — or let the AI design fresh variations for this menu — then download the one you like.</p>
             <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
                 <span style="font-size: 11.5px; font-weight: 700; color: #6b7280; letter-spacing: 1px; width: 58px;">STYLE</span>
-                <button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="midnight">Midnight Gold</button>
-                <button type="button" class="btn btn-outline btn-sm design-template-btn" data-template="modern">Modern Light</button>
+                <div id="designStyleButtons" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
             </div>
             <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;">
                 <span style="font-size: 11.5px; font-weight: 700; color: #6b7280; letter-spacing: 1px; width: 58px;">FORMAT</span>
@@ -632,6 +733,12 @@ function renderMenuDesignSection() {
                 <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="fourfold">Four-Fold</button>
                 <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu" style="margin-left: auto;"><i class="fas fa-download"></i> Download Menu Image</button>
             </div>
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
+                <button type="button" class="btn btn-ai-gradient btn-sm" id="btnAiDesignVariations"><i class="fas fa-wand-magic-sparkles"></i> Generate AI Design Variations</button>
+                <span style="font-size: 12px; color: #6b7280;">4 brand-new designs by AI for this menu — every click gives fresh concepts.</span>
+            </div>
+            <div id="aiDesignsProgress"></div>
+            <div id="aiDesignsStatus" style="font-size: 12.5px; color: #4b5563; margin-bottom: 8px;"></div>
             <div id="recreatedMenuPreview" style="overflow: auto;"></div>
         </div>
     `);
@@ -639,8 +746,8 @@ function renderMenuDesignSection() {
 }
 
 const MENU_TEMPLATES = {
-    midnight: { bg: '#14100d', ink: '#f5ead9', sub: '#c9b18c', accent: '#d4a24e', price: '#d4a24e', divider: '#4a3820', head: "Georgia, 'Times New Roman', serif", body: "Georgia, 'Times New Roman', serif" },
-    modern: { bg: '#fffaf2', ink: '#1f2937', sub: '#6b7280', accent: '#f08d11', price: '#ea580c', divider: '#e8cf9f', head: "'Segoe UI', Arial, sans-serif", body: "'Segoe UI', Arial, sans-serif" }
+    midnight: { bg: '#14100d', ink: '#f5ead9', sub: '#c9b18c', accent: '#d4a24e', price: '#d4a24e', divider: '#4a3820', head: "Georgia, 'Times New Roman', serif", body: "Georgia, 'Times New Roman', serif", frame: 'none', align: 'center', priceStyle: 'dots', ornament: '' },
+    modern: { bg: '#fffaf2', ink: '#1f2937', sub: '#6b7280', accent: '#f08d11', price: '#ea580c', divider: '#e8cf9f', head: "'Segoe UI', Arial, sans-serif", body: "'Segoe UI', Arial, sans-serif", frame: 'none', align: 'center', priceStyle: 'dots', ornament: '' }
 };
 
 // Greedy balance: each section goes to the currently lightest panel.
@@ -660,47 +767,68 @@ function menuSectionHtml(sec, t, compact) {
     const titleSize = compact ? 16.5 : 21;
     const nameSize = compact ? 13.5 : 15.5;
     const priceSize = compact ? 13 : 15;
+    const align = t.align === 'left' ? 'left' : 'center';
+    const divider = t.ornament
+        ? `<div style="display: flex; align-items: center; gap: 8px; margin: 7px 0 5px; ${align === 'center' ? 'justify-content: center;' : ''}">
+               <div style="height: 2px; width: 52px; background: ${t.accent}; opacity: 0.55;"></div>
+               <span style="color: ${t.accent}; font-size: 14px;">${escapeHtml(t.ornament)}</span>
+               <div style="height: 2px; width: 52px; background: ${t.accent}; opacity: 0.55;"></div>
+           </div>`
+        : `<div style="height: 2px; background: ${t.accent}; opacity: 0.55; margin: 8px ${align === 'center' ? 'auto' : '0'} 5px; width: 100px;"></div>`;
+    const itemRow = (it) => {
+        if (t.priceStyle === 'below') {
+            return `<div style="padding: 6px 2px;">
+                <div style="font-family: ${t.body}; font-size: ${nameSize}px; font-weight: 600; color: ${t.ink};">${escapeHtml(it.name || '')}</div>
+                ${it.priceText ? `<div style="font-family: ${t.body}; font-size: ${priceSize}px; font-weight: 700; color: ${t.price};">${escapeHtml(it.priceText)}</div>` : ''}
+                ${it.description ? `<div style="font-size: ${compact ? 11 : 12}px; color: ${t.sub}; font-style: italic; margin-top: 1px;">${escapeHtml(it.description)}</div>` : ''}
+            </div>`;
+        }
+        return `<div style="display: flex; align-items: baseline; gap: 8px; padding: 6px 2px;">
+            <div>
+                <span style="font-family: ${t.body}; font-size: ${nameSize}px; font-weight: 600; color: ${t.ink};">${escapeHtml(it.name || '')}</span>
+                ${it.description ? `<div style="font-size: ${compact ? 11 : 12}px; color: ${t.sub}; font-style: italic; margin-top: 1px;">${escapeHtml(it.description)}</div>` : ''}
+            </div>
+            <div style="flex: 1; ${t.priceStyle === 'dots' ? `border-bottom: 2px dotted ${t.divider};` : ''}"></div>
+            <div style="font-family: ${t.body}; font-size: ${priceSize}px; font-weight: 700; color: ${t.price}; white-space: nowrap;">${escapeHtml(it.priceText || '')}</div>
+        </div>`;
+    };
     return `<div style="margin-top: ${compact ? 20 : 28}px;">
-        <div style="text-align: center; font-family: ${t.head}; letter-spacing: 2.5px; font-size: ${titleSize}px; font-weight: 700; color: ${t.accent}; text-transform: uppercase;">${escapeHtml(sec.name || 'Menu')}</div>
-        <div style="height: 2px; background: ${t.accent}; opacity: 0.55; margin: 8px auto 5px; width: 100px;"></div>
-        ${(sec.items || []).map(it => `
-            <div style="display: flex; align-items: baseline; gap: 8px; padding: 6px 2px;">
-                <div>
-                    <span style="font-family: ${t.body}; font-size: ${nameSize}px; font-weight: 600; color: ${t.ink};">${escapeHtml(it.name || '')}</span>
-                    ${it.description ? `<div style="font-size: ${compact ? 11 : 12}px; color: ${t.sub}; font-style: italic; margin-top: 1px;">${escapeHtml(it.description)}</div>` : ''}
-                </div>
-                <div style="flex: 1; border-bottom: 2px dotted ${t.divider};"></div>
-                <div style="font-family: ${t.body}; font-size: ${priceSize}px; font-weight: 700; color: ${t.price}; white-space: nowrap;">${escapeHtml(it.priceText || '')}</div>
-            </div>`).join('')}
+        <div style="text-align: ${align}; font-family: ${t.head}; letter-spacing: 2.5px; font-size: ${titleSize}px; font-weight: 700; color: ${t.accent}; text-transform: uppercase;">${escapeHtml(sec.name || 'Menu')}</div>
+        ${divider}
+        ${(sec.items || []).map(itemRow).join('')}
     </div>`;
 }
 
 function drawRecreatedMenu() {
     const menu = currentDesignMenu;
     if (!menu) return;
-    const t = MENU_TEMPLATES[currentDesignTemplate] || MENU_TEMPLATES.midnight;
+    renderStyleButtons();
+    const t = getDesignSpec(currentDesignTemplate);
     const fmt = currentDesignFormat;
     const panelCount = fmt === 'booklet' ? 2 : fmt === 'trifold' ? 3 : fmt === 'fourfold' ? 4 : 1;
     const panels = distributeSections(menu.sections || [], panelCount);
+    const align = t.align === 'left' ? 'left' : 'center';
+    const frameCss = t.frame === 'single' ? `border: 3px solid ${t.accent};` : t.frame === 'double' ? `border: 7px double ${t.accent};` : '';
 
-    const header = `<div style="text-align: center;">
+    const header = `<div style="text-align: ${align};">
+        ${t.ornament ? `<div style="color: ${t.accent}; font-size: 17px; letter-spacing: 10px; margin-bottom: 4px;">${escapeHtml(t.ornament)}${escapeHtml(t.ornament)}${escapeHtml(t.ornament)}</div>` : ''}
         <div style="font-family: ${t.head}; font-size: 12.5px; letter-spacing: 5px; color: ${t.sub}; text-transform: uppercase;">Welcome to</div>
         <div style="font-family: ${t.head}; font-size: 31px; font-weight: 700; color: ${t.ink}; margin-top: 4px;">${escapeHtml(menu.restaurantName || 'Our Restaurant')}</div>
-        <div style="height: 3px; background: ${t.accent}; width: 170px; margin: 12px auto 0;"></div>
+        <div style="height: 3px; background: ${t.accent}; width: 170px; margin: 12px ${align === 'center' ? 'auto' : '0'} 0;"></div>
     </div>`;
     const footer = `<div style="text-align: center; margin-top: 28px; font-size: 11.5px; letter-spacing: 2px; color: ${t.sub};">THANK YOU — PLEASE COME AGAIN</div>`;
 
     let sheet;
     if (fmt === 'booklet') {
         sheet = `<div id="recreatedMenuSheet" style="display: flex; gap: 18px; justify-content: center; align-items: stretch;">
-            ${panels.map((secs, i) => `<div style="background: ${t.bg}; padding: 30px 26px 22px; border-radius: 6px; width: 400px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); display: flex; flex-direction: column;">
+            ${panels.map((secs, i) => `<div style="background: ${t.bg}; padding: 30px 26px 22px; border-radius: 6px; width: 400px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); display: flex; flex-direction: column; ${frameCss}">
                 ${i === 0 ? header : `<div style="text-align: center; font-family: ${t.head}; font-size: 12px; letter-spacing: 4px; color: ${t.sub}; text-transform: uppercase;">${escapeHtml(menu.restaurantName || 'Menu')}</div>`}
                 <div style="flex: 1;">${secs.map(s => menuSectionHtml(s, t, true)).join('')}</div>
                 <div style="text-align: center; font-size: 11px; color: ${t.sub}; margin-top: 16px;">— ${i + 1} —</div>
             </div>`).join('')}
         </div>`;
     } else if (panelCount > 1) {
-        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 30px 10px 24px; border-radius: 6px; max-width: 1150px; margin: 0 auto;">
+        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 30px 10px 24px; border-radius: 6px; max-width: 1150px; margin: 0 auto; ${frameCss}">
             ${header}
             <div style="display: flex; align-items: stretch; margin-top: 6px;">
                 ${panels.map((secs, i) => `<div style="flex: 1; padding: 0 18px; ${i > 0 ? `border-left: 2px dashed ${t.divider};` : ''}">${secs.map(s => menuSectionHtml(s, t, true)).join('') || `<div style="text-align: center; color: ${t.sub}; font-size: 12px; padding-top: 34px;">—</div>`}</div>`).join('')}
@@ -708,7 +836,7 @@ function drawRecreatedMenu() {
             ${footer}
         </div>`;
     } else {
-        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 38px 42px 30px; border-radius: 6px; max-width: 760px; margin: 0 auto;">
+        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 38px 42px 30px; border-radius: 6px; max-width: 760px; margin: 0 auto; ${frameCss}">
             ${header}
             ${panels[0].map(s => menuSectionHtml(s, t, false)).join('')}
             ${footer}
@@ -716,15 +844,7 @@ function drawRecreatedMenu() {
     }
 
     $('#recreatedMenuPreview').html(sheet);
-
-    $('.design-template-btn').each(function () {
-        const active = $(this).data('template') === currentDesignTemplate;
-        $(this).css({ 'border-color': active ? '#f08d11' : '#d1d5db', 'background': active ? '#fff7e8' : '#ffffff', 'font-weight': active ? '700' : '400' });
-    });
-    $('.design-format-btn').each(function () {
-        const active = $(this).data('format') === currentDesignFormat;
-        $(this).css({ 'border-color': active ? '#f08d11' : '#d1d5db', 'background': active ? '#fff7e8' : '#ffffff', 'font-weight': active ? '700' : '400' });
-    });
+    paintFormatButtons();
 }
 
 let html2canvasPromise = null;
@@ -798,6 +918,7 @@ function startMenuPdfAnalysis(file) {
                     renderMenuPdfAuditSection();
                     currentDesignMenu = response.data.extractedMenu || null;
                     lastDesignImageUrl = null;
+                    aiDesignSpecs = {};
                     renderMenuDesignSection();
                     setMenuAuditState('report');
                     $('.btnDownloadMenuAuditPdf').prop('disabled', false).css('opacity', '');

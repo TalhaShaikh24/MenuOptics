@@ -1114,6 +1114,206 @@ JSON Output Schema required:
 
         #endregion
 
+        public async Task<ResponseDto> GenerateMenuDesignsAsync(ExtractedMenuDto menu)
+        {
+            var responseDto = new ResponseDto();
+            try
+            {
+                if (menu == null || menu.Sections == null || !menu.Sections.Any(s => s.Items != null && s.Items.Any()))
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "No menu items were provided for the design.";
+                    return responseDto;
+                }
+
+                var anthropicApiKey = _configuration["Anthropic:ApiKey"];
+                bool hasValidClaudeKey = !string.IsNullOrWhiteSpace(anthropicApiKey) &&
+                                         !anthropicApiKey.Contains("YOUR_CLAUDE_API_KEY", StringComparison.OrdinalIgnoreCase);
+                if (!hasValidClaudeKey)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "AI design variations require the AI service to be configured on the server.";
+                    return responseDto;
+                }
+
+                var designs = await CallClaudeDesignVariationsAsync(anthropicApiKey!, menu);
+                if (designs == null || designs.Count == 0)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "The AI could not create design variations this time. Please try again.";
+                    return responseDto;
+                }
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "AI design variations generated successfully.";
+                responseDto.Data = designs;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = ex.Message;
+                return responseDto;
+            }
+        }
+
+        private async Task<List<AiMenuDesignSpecDto>> CallClaudeDesignVariationsAsync(string apiKey, ExtractedMenuDto menu)
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(5);
+            client.DefaultRequestHeaders.Add("x-api-key", apiKey);
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+
+            var modelName = _configuration["Anthropic:Model"] ?? "claude-3-7-sonnet-20250219";
+
+            // A compact picture of the menu for the designer: section names + a few item names.
+            var menuDigest = new StringBuilder();
+            menuDigest.AppendLine("Restaurant: " + (string.IsNullOrWhiteSpace(menu.RestaurantName) ? "Our Restaurant" : menu.RestaurantName));
+            foreach (var sec in menu.Sections ?? new List<ExtractedMenuSectionDto>())
+            {
+                var items = sec.Items ?? new List<ExtractedMenuItemDto>();
+                var sample = string.Join(", ", items.Take(6).Select(i => i.Name));
+                menuDigest.AppendLine($"- {sec.Name} ({items.Count} items): {sample}");
+            }
+
+            string systemPrompt = @"You are an award-winning print menu designer. You design the LOOK of restaurant menus — palettes, typography and layout. You never change menu content.
+
+Create EXACTLY 4 design concepts for the given restaurant menu. The 4 concepts must be GENUINELY different from each other in mood and appearance (for example: dark luxury, bright modern, rustic warm, minimal elegant — adapt the moods to this restaurant's cuisine and item names). Never return 4 variations of the same idea.
+
+Rules for every concept:
+- Palette: full 6-digit hex colors. Bg = sheet background, Ink = main text, Sub = secondary/description text, Accent = headings and highlights, Price = price color, Divider = dotted-leader / panel-line color. GUARANTEE readability: Ink must contrast strongly with Bg (light text on a dark Bg or dark text on a light Bg); Sub and Price must also stay clearly readable on Bg.
+- Fonts: choose HeadFont and BodyFont ONLY from: Georgia, Times New Roman, Palatino, Garamond, Segoe UI, Trebuchet MS, Arial Black, Courier New, Lucida Handwriting, Brush Script, Verdana.
+- Frame: one of none, single, double. Align: one of center, left. PriceStyle: one of dots (dotted leader between item and price), plain (price on the right, no dots), below (price printed under the item name).
+- Ornament: one decorative character from: ✦ ❦ ★ ◆ ❧ — or an empty string for a clean look.
+- Name: a 2-3 word concept name (e.g. 'Midnight Vineyard'). Tagline: one short phrase describing the mood.
+
+Return ONLY a valid JSON object (no markdown, no commentary):
+{ ""designs"": [ { ""Name"": """", ""Tagline"": """", ""Bg"": ""#000000"", ""Ink"": ""#000000"", ""Sub"": ""#000000"", ""Accent"": ""#000000"", ""Price"": ""#000000"", ""Divider"": ""#000000"", ""HeadFont"": ""Georgia"", ""BodyFont"": ""Georgia"", ""Frame"": ""none"", ""Align"": ""center"", ""PriceStyle"": ""dots"", ""Ornament"": """" } ] }";
+
+            var requestBody = new
+            {
+                model = modelName,
+                max_tokens = 2000,
+                system = systemPrompt,
+                messages = new[]
+                {
+                    new { role = "user", content = "Design 4 concepts for this menu:\n" + menuDigest.ToString() }
+                }
+            };
+
+            var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("https://api.anthropic.com/v1/messages", jsonContent);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string apiError = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Claude API returned {(int)response.StatusCode}: {apiError}");
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+
+            string contentText = "{}";
+            bool foundText = false;
+            if (doc.RootElement.TryGetProperty("content", out var contentArray) && contentArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var block in contentArray.EnumerateArray())
+                {
+                    if (block.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+                    {
+                        contentText = textEl.GetString() ?? "{}";
+                        foundText = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundText)
+            {
+                string raw = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Unexpected response from Claude (no text content): {raw}");
+            }
+
+            contentText = CleanJsonMarkdown(contentText);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var parsed = JsonSerializer.Deserialize<AiDesignsResponse>(contentText, options) ?? new AiDesignsResponse();
+            return (parsed.Designs ?? new List<AiMenuDesignSpecDto>())
+                .Take(4)
+                .Select(SanitizeDesignSpec)
+                .ToList();
+        }
+
+        private class AiDesignsResponse
+        {
+            public List<AiMenuDesignSpecDto>? Designs { get; set; }
+        }
+
+        private static readonly string[] DesignFonts = { "Georgia", "Times New Roman", "Palatino", "Garamond", "Segoe UI", "Trebuchet MS", "Arial Black", "Courier New", "Lucida Handwriting", "Brush Script", "Verdana" };
+        private static readonly string[] DesignOrnaments = { "✦", "❦", "★", "◆", "❧", "" };
+
+        // The AI proposes; the system disposes. Anything outside the allowed sets is
+        // clamped to a safe default, and low-contrast text colors are corrected so a
+        // returned design can never render unreadable.
+        private static AiMenuDesignSpecDto SanitizeDesignSpec(AiMenuDesignSpecDto spec)
+        {
+            spec ??= new AiMenuDesignSpecDto();
+            spec.Name = ClampText(spec.Name, "AI Design", 40);
+            spec.Tagline = ClampText(spec.Tagline, "", 90);
+            spec.Bg = ValidHex(spec.Bg, "#ffffff");
+            spec.Ink = ValidHex(spec.Ink, "#1f2937");
+            spec.Sub = ValidHex(spec.Sub, "#6b7280");
+            spec.Accent = ValidHex(spec.Accent, "#f08d11");
+            spec.Price = ValidHex(spec.Price, spec.Accent);
+            spec.Divider = ValidHex(spec.Divider, "#d1d5db");
+            spec.HeadFont = DesignFonts.Contains(spec.HeadFont) ? spec.HeadFont : "Georgia";
+            spec.BodyFont = DesignFonts.Contains(spec.BodyFont) ? spec.BodyFont : "Segoe UI";
+            spec.Frame = (spec.Frame == "single" || spec.Frame == "double") ? spec.Frame : "none";
+            spec.Align = spec.Align == "left" ? "left" : "center";
+            spec.PriceStyle = (spec.PriceStyle == "plain" || spec.PriceStyle == "below") ? spec.PriceStyle : "dots";
+            spec.Ornament = DesignOrnaments.Contains(spec.Ornament ?? "") ? spec.Ornament : "";
+
+            if (ContrastRatio(spec.Bg, spec.Ink) < 3.0)
+                spec.Ink = Luminance(spec.Bg) > 0.5 ? "#111111" : "#ffffff";
+            if (ContrastRatio(spec.Bg, spec.Sub) < 2.2)
+                spec.Sub = spec.Ink;
+            if (ContrastRatio(spec.Bg, spec.Price) < 2.2)
+                spec.Price = spec.Accent;
+            return spec;
+        }
+
+        private static string ClampText(string? value, string fallback, int max)
+        {
+            var v = (value ?? "").Trim();
+            if (v.Length == 0) return fallback;
+            return v.Length > max ? v.Substring(0, max) : v;
+        }
+
+        private static string ValidHex(string? value, string fallback)
+        {
+            var v = (value ?? "").Trim();
+            if (v.Length == 7 && v[0] == '#' && v.Skip(1).All(c => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) return v;
+            return fallback;
+        }
+
+        private static double Luminance(string hex)
+        {
+            double Channel(int i)
+            {
+                var c = Convert.ToInt32(hex.Substring(i, 2), 16) / 255.0;
+                return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            }
+            return 0.2126 * Channel(1) + 0.7152 * Channel(3) + 0.0722 * Channel(5);
+        }
+
+        private static double ContrastRatio(string a, string b)
+        {
+            var la = Luminance(a);
+            var lb = Luminance(b);
+            var hi = Math.Max(la, lb);
+            var lo = Math.Min(la, lb);
+            return (hi + 0.05) / (lo + 0.05);
+        }
+
         private static string CleanJsonMarkdown(string contentText)
         {
             contentText = contentText.Trim();

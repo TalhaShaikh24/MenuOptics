@@ -48,6 +48,13 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
+        [HttpPost("GenerateMenuDesigns")]
+        public async Task<IActionResult> GenerateMenuDesigns([FromBody] ExtractedMenuDto menu)
+        {
+            var responseData = await _menuAiAnalysisService.GenerateMenuDesignsAsync(menu);
+            return StatusCode(responseData.Status, responseData);
+        }
+
         [HttpPost("AnalyzeMenuPdf")]
         [RequestSizeLimit(25_000_000)]
         public async Task<IActionResult> AnalyzeMenuPdf([FromBody] MenuPdfAnalysisRequestDto request)
