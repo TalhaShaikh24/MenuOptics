@@ -10,5 +10,6 @@ namespace MenuOptics.Services
         Task<ResponseDto> AnalyzeMenuPdfAsync(int currentUserId, MenuPdfAnalysisRequestDto request);
         Task<ResponseDto> GetMenuDesignDataAsync(int currentUserId);
         Task<ResponseDto> GenerateMenuDesignsAsync(ExtractedMenuDto menu);
+        Task<ResponseDto> GenerateMenuFromIngredientsAsync(IngredientMenuRequestDto request);
     }
 }

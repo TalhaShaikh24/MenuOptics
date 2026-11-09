@@ -184,4 +184,18 @@ namespace MenuOptics.Models
         public string? SuggestedTitle { get; set; }
         public string? SuggestedTagline { get; set; }
     }
+
+    // What the user types in the manual flow: raw ingredients, grouped.
+    // The AI chef turns these into a full dish menu (ExtractedMenuDto).
+    public class IngredientMenuRequestDto
+    {
+        public string? RestaurantName { get; set; }
+        public List<IngredientSectionInputDto> Sections { get; set; } = new List<IngredientSectionInputDto>();
+    }
+
+    public class IngredientSectionInputDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public List<string> Ingredients { get; set; } = new List<string>();
+    }
 }

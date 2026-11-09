@@ -417,7 +417,7 @@ function buildMenuAuditModal() {
                                 <i class="fas fa-pen" style="color: #f08d11; font-size: 17px;"></i>
                             </div>
                             <div style="font-size: 15px; font-weight: 700; color: #111827;">Enter Manually</div>
-                            <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">Type your own sections and items, row by row — and turn them into a premium design, with an AI-created title.</p>
+                            <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">List the ingredients you have, group by group. Our AI chef turns them into a full menu of dishes — then designs it.</p>
                             <button type="button" class="btn btn-outline" id="btnManualMenuEntry" style="text-align: center;"><i class="fas fa-pen"></i> Start Typing</button>
                         </div>
                     </div>
@@ -425,17 +425,18 @@ function buildMenuAuditModal() {
 
                 <div id="menuAuditManualState" style="display: none;">
                     <div class="ai-section-box" style="max-width: 720px; margin: 8px auto 0; text-align: left;">
-                        <div class="ai-section-title"><i class="fas fa-pen" style="color: #f08d11;"></i> Build Your Menu</div>
-                        <p style="font-size: 13px; color: #374151; margin: 0 0 12px;">Add a section (for example Starters), then add its items one row at a time. Add as many sections and items as you like — the design is generated from exactly what you type here.</p>
-                        <label style="font-size: 12px; font-weight: 600; color: #374151;">Restaurant name</label>
+                        <div class="ai-section-title"><i class="fas fa-carrot" style="color: #f08d11;"></i> Enter Your Ingredients</div>
+                        <p style="font-size: 13px; color: #374151; margin: 0 0 12px;">Add a group (for example Menu 1, or Proteins), then list its ingredients one row at a time. Our AI chef analyzes them and creates a complete menu of dishes — with descriptions and prices — ready to design.</p>
+                        <label style="font-size: 12px; font-weight: 600; color: #374151;">Restaurant name (optional — the AI can name it)</label>
                         <input type="text" id="manualRestaurantName" placeholder="e.g. House of Us" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13.5px; box-sizing: border-box; margin: 4px 0 14px;">
                         <div id="manualSections"></div>
                         <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-outline btn-sm" id="btnAddManualSection"><i class="fas fa-plus"></i> Add Section</button>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnAddManualSection"><i class="fas fa-plus"></i> Add Group</button>
                             <span style="flex: 1;"></span>
                             <button type="button" class="btn btn-outline btn-sm" id="btnBackFromManual">Back</button>
-                            <button type="button" class="btn btn-primary btn-sm" id="btnGenerateManualDesign"><i class="fas fa-wand-magic-sparkles"></i> Generate Design</button>
+                            <button type="button" class="btn btn-primary btn-sm" id="btnGenerateManualDesign"><i class="fas fa-wand-magic-sparkles"></i> Create Menu With AI</button>
                         </div>
+                        <div id="aiManualProgress"></div>
                         <div id="aiManualStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
                     </div>
                 </div>
@@ -528,21 +529,20 @@ const MANUAL_INPUT = 'padding: 7px 9px; border: 1px solid #d1d5db; border-radius
 
 function manualItemRow() {
     return `<div class="manual-item" style="display: flex; gap: 6px; margin-bottom: 6px; align-items: center;">
-        <input type="text" class="m-item-name" placeholder="Item name" style="${MANUAL_INPUT} flex: 3; min-width: 0;">
-        <input type="text" class="m-item-price" placeholder="Price" style="${MANUAL_INPUT} flex: 1; min-width: 0;">
-        <input type="text" class="m-item-desc" placeholder="Description (optional)" style="${MANUAL_INPUT} flex: 3; min-width: 0;">
-        <button type="button" class="btn btn-outline btn-sm btnRemoveManualItem" title="Remove item"><i class="fas fa-times"></i></button>
+        <input type="text" class="m-item-name" placeholder="Ingredient — e.g. Chicken breast" style="${MANUAL_INPUT} flex: 3; min-width: 0;">
+        <input type="text" class="m-item-amount" placeholder="Amount (optional)" style="${MANUAL_INPUT} flex: 1.4; min-width: 0;">
+        <button type="button" class="btn btn-outline btn-sm btnRemoveManualItem" title="Remove ingredient"><i class="fas fa-times"></i></button>
     </div>`;
 }
 
 function manualSectionBlock() {
     return `<div class="manual-section" style="border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #ffffff;">
         <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
-            <input type="text" class="m-section-name" placeholder="Section name — e.g. Starters" style="${MANUAL_INPUT} flex: 1; font-weight: 600;">
+            <input type="text" class="m-section-name" placeholder="Group name — e.g. Menu 1, Proteins, Vegetables" style="${MANUAL_INPUT} flex: 1; font-weight: 600;">
             <button type="button" class="btn btn-outline btn-sm btnRemoveManualSection" title="Remove section"><i class="fas fa-trash"></i></button>
         </div>
         <div class="manual-items"></div>
-        <button type="button" class="btn btn-outline btn-sm btnAddManualItem"><i class="fas fa-plus"></i> Add Item</button>
+        <button type="button" class="btn btn-outline btn-sm btnAddManualItem"><i class="fas fa-plus"></i> Add Ingredient</button>
     </div>`;
 }
 
@@ -554,46 +554,72 @@ function openManualEntry() {
     setMenuAuditState('manual');
 }
 
-function collectManualMenu() {
+function collectIngredientMenu() {
     const sections = [];
     $('#manualSections .manual-section').each(function () {
         const name = $(this).find('.m-section-name').val().trim();
-        const items = [];
+        const ingredients = [];
         $(this).find('.manual-item').each(function () {
             const n = $(this).find('.m-item-name').val().trim();
             if (!n) return;
-            items.push({
-                name: n,
-                priceText: $(this).find('.m-item-price').val().trim(),
-                description: $(this).find('.m-item-desc').val().trim() || null
-            });
+            const amt = $(this).find('.m-item-amount').val().trim();
+            ingredients.push(amt ? `${n} (${amt})` : n);
         });
-        if (name || items.length) sections.push({ name: name || 'Menu', items });
+        if (ingredients.length) sections.push({ name: name || 'Ingredients', ingredients });
     });
     return {
-        restaurantName: $('#manualRestaurantName').val().trim() || 'Our Restaurant',
+        restaurantName: $('#manualRestaurantName').val().trim() || null,
         sections
     };
 }
 
 function generateManualDesign() {
-    const menu = collectManualMenu();
-    const totalItems = menu.sections.reduce((n, s) => n + s.items.length, 0);
-    if (totalItems === 0) {
-        $('#aiManualStatus').html('<span style="color:#dc2626;">Please add at least one item first.</span>');
+    const payload = collectIngredientMenu();
+    const total = payload.sections.reduce((n, s) => n + s.ingredients.length, 0);
+    if (total === 0) {
+        $('#aiManualStatus').html('<span style="color:#dc2626;">Please add at least one ingredient first.</span>');
         return;
     }
-    currentDesignMenu = menu;
-    currentDesignSource = 'manual';
-    currentMenuPdfAudit = null;
-    currentSuggestionImages = [];
-    lastDesignImageUrl = null;
-    aiDesignSpecs = {};
-    $('#menuAuditReportContainer').empty();
-    renderMenuDesignSection();
-    setMenuAuditState('report');
-    $('.btnDownloadMenuAuditPdf').prop('disabled', true).css('opacity', '0.55');
-    showNotification('Menu design generated from your manual menu.', 'success');
+    const $btn = $('#btnGenerateManualDesign');
+    setBtnLoading($btn, true);
+    $('#aiManualStatus').html('');
+    $('#aiManualProgress').html(aiProgressHtml('aiManualProgressInner'));
+    const progress = startAiProgress($('#aiManualProgress'), [
+        'Analyzing your ingredients',
+        'Creating dishes your kitchen can serve',
+        'Writing descriptions and setting prices'
+    ]);
+    ajaxRequest({
+        url: '/api/MenuEngineeringInsightsApi/GenerateMenuFromIngredients',
+        method: 'POST',
+        data: JSON.stringify(payload),
+        showMessage: false,
+        onSuccess: function (response) {
+            progress.done();
+            $('#aiManualProgress').empty();
+            if (response && response.status === 200 && response.data && (response.data.sections || []).length) {
+                currentDesignMenu = response.data;
+                currentDesignSource = 'manual';
+                currentMenuPdfAudit = null;
+                currentSuggestionImages = [];
+                lastDesignImageUrl = null;
+                aiDesignSpecs = {};
+                $('#menuAuditReportContainer').empty();
+                renderMenuDesignSection();
+                setMenuAuditState('report');
+                $('.btnDownloadMenuAuditPdf').prop('disabled', true).css('opacity', '0.55');
+                showNotification('AI created a menu from your ingredients.', 'success');
+            } else {
+                $('#aiManualStatus').html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'The AI could not create a menu this time.')}</span>`);
+            }
+        },
+        onError: function (xhr) {
+            progress.stop();
+            $('#aiManualProgress').empty();
+            $('#aiManualStatus').html(`<span style="color:#dc2626;">${escapeHtml(xhr.responseJSON?.responseMsg || 'The AI could not create a menu this time.')}</span>`);
+        },
+        onComplete: function () { setBtnLoading($btn, false); }
+    });
 }
 
 // ---------- Design from the restaurant's MenuOptics items ----------

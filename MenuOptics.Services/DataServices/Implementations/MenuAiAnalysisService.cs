@@ -1324,6 +1324,163 @@ Return ONLY a valid JSON object (no markdown, no commentary):
             return (hi + 0.05) / (lo + 0.05);
         }
 
+        public async Task<ResponseDto> GenerateMenuFromIngredientsAsync(IngredientMenuRequestDto request)
+        {
+            var responseDto = new ResponseDto();
+            try
+            {
+                var totalIngredients = request?.Sections?.Sum(s => s.Ingredients?.Count(i => !string.IsNullOrWhiteSpace(i)) ?? 0) ?? 0;
+                if (request == null || totalIngredients == 0)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "Please add at least one ingredient.";
+                    return responseDto;
+                }
+
+                var anthropicApiKey = _configuration["Anthropic:ApiKey"];
+                bool hasValidClaudeKey = !string.IsNullOrWhiteSpace(anthropicApiKey) &&
+                                         !anthropicApiKey.Contains("YOUR_CLAUDE_API_KEY", StringComparison.OrdinalIgnoreCase);
+                if (!hasValidClaudeKey)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "Creating a menu from ingredients requires the AI service to be configured on the server.";
+                    return responseDto;
+                }
+
+                var menu = await CallClaudeIngredientMenuAsync(anthropicApiKey!, request);
+                if (menu == null || menu.Sections == null || !menu.Sections.Any(s => s.Items != null && s.Items.Any()))
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "The AI could not create a menu from these ingredients this time. Please try again.";
+                    return responseDto;
+                }
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "Menu created from your ingredients.";
+                responseDto.Data = menu;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = ex.Message;
+                return responseDto;
+            }
+        }
+
+        private async Task<ExtractedMenuDto> CallClaudeIngredientMenuAsync(string apiKey, IngredientMenuRequestDto request)
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(5);
+            client.DefaultRequestHeaders.Add("x-api-key", apiKey);
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+
+            var modelName = _configuration["Anthropic:Model"] ?? "claude-3-7-sonnet-20250219";
+
+            var digest = new StringBuilder();
+            if (!string.IsNullOrWhiteSpace(request.RestaurantName))
+                digest.AppendLine("Restaurant: " + request.RestaurantName.Trim());
+            foreach (var sec in request.Sections ?? new List<IngredientSectionInputDto>())
+            {
+                var ings = (sec.Ingredients ?? new List<string>())
+                    .Where(i => !string.IsNullOrWhiteSpace(i))
+                    .Select(i => i.Trim())
+                    .ToList();
+                if (ings.Count == 0) continue;
+                digest.AppendLine($"Group '{sec.Name}': " + string.Join(", ", ings));
+            }
+
+            string systemPrompt = @"You are an executive chef and menu consultant. A restaurant gives you the INGREDIENTS it has in its kitchen, in groups. Your job: invent a complete, sellable menu of DISHES that can be cooked from those ingredients.
+
+Rules:
+- Every dish's main ingredients must come from the provided lists. Basic pantry staples (salt, pepper, cooking oil, flour, sugar, water) may be assumed, but never build a dish around a main ingredient that was not provided.
+- Organize the dishes into clear menu sections (for example Starters, Mains, Grill, Sides, Desserts, Drinks) — use only sections that fit the ingredients. If an ingredient group has a meaningful name, its dishes may sit under that name.
+- Create 3-6 dishes per ingredient group. Each dish: an appealing name, a one-line appetizing description that names its key ingredients, and a realistic price as a plain number with NO currency symbol (e.g. 249 or 12.50).
+- RestaurantName: use the restaurant name if one is given; otherwise invent a short, fitting name for the place based on the ingredients.
+- Return ONLY a valid JSON object (no markdown, no commentary) in exactly this shape:
+{ ""RestaurantName"": """", ""Sections"": [ { ""Name"": """", ""Items"": [ { ""Name"": """", ""Description"": """", ""PriceText"": """" } ] } ] }";
+
+            var requestBody = new
+            {
+                model = modelName,
+                max_tokens = 4096,
+                system = systemPrompt,
+                messages = new[]
+                {
+                    new { role = "user", content = "Here are the ingredients in our kitchen:\n" + digest.ToString() }
+                }
+            };
+
+            var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("https://api.anthropic.com/v1/messages", jsonContent);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string apiError = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Claude API returned {(int)response.StatusCode}: {apiError}");
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+
+            string contentText = "{}";
+            bool foundText = false;
+            if (doc.RootElement.TryGetProperty("content", out var contentArray) && contentArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var block in contentArray.EnumerateArray())
+                {
+                    if (block.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+                    {
+                        contentText = textEl.GetString() ?? "{}";
+                        foundText = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundText)
+            {
+                string raw = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Unexpected response from Claude (no text content): {raw}");
+            }
+
+            contentText = CleanJsonMarkdown(contentText);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var menu = JsonSerializer.Deserialize<ExtractedMenuDto>(contentText, options) ?? new ExtractedMenuDto();
+            return SanitizeIngredientMenu(menu, request.RestaurantName);
+        }
+
+        private static ExtractedMenuDto SanitizeIngredientMenu(ExtractedMenuDto menu, string? requestedName)
+        {
+            menu ??= new ExtractedMenuDto();
+            menu.RestaurantName = !string.IsNullOrWhiteSpace(requestedName)
+                ? requestedName.Trim()
+                : (string.IsNullOrWhiteSpace(menu.RestaurantName) ? "Our Restaurant" : menu.RestaurantName.Trim());
+
+            var sections = new List<ExtractedMenuSectionDto>();
+            foreach (var sec in (menu.Sections ?? new List<ExtractedMenuSectionDto>()).Take(10))
+            {
+                var items = (sec.Items ?? new List<ExtractedMenuItemDto>())
+                    .Where(i => !string.IsNullOrWhiteSpace(i.Name))
+                    .Take(14)
+                    .Select(i => new ExtractedMenuItemDto
+                    {
+                        Name = i.Name.Trim(),
+                        Description = string.IsNullOrWhiteSpace(i.Description) ? null : i.Description.Trim(),
+                        PriceText = (i.PriceText ?? "").Trim()
+                    })
+                    .ToList();
+                if (items.Count == 0) continue;
+                sections.Add(new ExtractedMenuSectionDto
+                {
+                    Name = string.IsNullOrWhiteSpace(sec.Name) ? "Menu" : sec.Name.Trim(),
+                    Items = items
+                });
+            }
+            menu.Sections = sections;
+            return menu;
+        }
+
         private static string CleanJsonMarkdown(string contentText)
         {
             contentText = contentText.Trim();
