@@ -26,7 +26,9 @@ builder.Services.AddHttpClient();
 // Register the HttpClient named Client for proxying
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    // Configuration here if needed, e.g. Timeout
+    // AI endpoints (menu analysis, design audit) legitimately take minutes;
+    // the default 100s killed them with a Bad Gateway before they could answer.
+    client.Timeout = TimeSpan.FromMinutes(10);
 }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
 {
     AllowAutoRedirect = false,
