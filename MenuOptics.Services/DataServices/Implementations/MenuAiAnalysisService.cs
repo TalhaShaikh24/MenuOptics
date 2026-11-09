@@ -198,6 +198,25 @@ namespace MenuOptics.Services
             }
 
             var modelName = _configuration["Anthropic:Model"] ?? "claude-3-7-sonnet-20250219";
+            int maxTokens = 8192;
+            bool disableThinking = false;
+            if (modelName.Contains("3-7") || modelName.Contains("3.7"))
+            {
+                // Claude 3.7 allows far larger outputs under this beta; these
+                // reports can exceed 8192 tokens and were being cut off mid-JSON.
+                client.DefaultRequestHeaders.Add("anthropic-beta", "output-128k-2025-02-19");
+                maxTokens = 16000;
+                disableThinking = true;
+            }
+            else if (!modelName.StartsWith("claude-3"))
+            {
+                // Newer models (Sonnet 4/5, Opus 4...) think before answering,
+                // and the hidden thinking spends the SAME output budget: at
+                // 8192 a Sonnet 5 reply once arrived with only a thinking
+                // block and no answer text at all. Give real answers room.
+                maxTokens = 24000;
+                disableThinking = true;
+            }
 
             string systemPrompt = @"You are a world-class menu design auditor for '" + restaurantName + @"'. You are looking at the restaurant's ACTUAL menu — the exact document/image guests see. Audit what is REALLY on the pages: layout and reading flow, where items sit, how prices are printed, description wording and length, colors, boxes/highlights, photos, and white space. Never invent items, prices or sections that are not visible.
 
@@ -261,12 +280,12 @@ OUTPUT RULES:
                 source = new { type = "base64", media_type = mediaType, data = base64Data }
             };
 
-            var requestBody = new
+            var requestBody = new Dictionary<string, object>
             {
-                model = modelName,
-                max_tokens = 8192,
-                system = systemPrompt,
-                messages = new[]
+                ["model"] = modelName,
+                ["max_tokens"] = maxTokens,
+                ["system"] = systemPrompt,
+                ["messages"] = new[]
                 {
                     new
                     {
@@ -276,6 +295,12 @@ OUTPUT RULES:
                 }
             };
 
+            if (disableThinking)
+            {
+                // Pure-JSON task: thinking would only eat the output budget
+                // (and the wait) before any answer text appears.
+                requestBody["thinking"] = new { type = "disabled" };
+            }
             var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
             var response = await client.PostAsync("https://api.anthropic.com/v1/messages", jsonContent);
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -335,13 +360,23 @@ OUTPUT RULES:
 
             var modelName = _configuration["Anthropic:Model"] ?? "claude-3-7-sonnet-20250219";
             int maxTokens = 8192;
+            bool disableThinking = false;
             if (modelName.Contains("3-7") || modelName.Contains("3.7"))
             {
-                // Claude 3.7 allows far larger outputs under this beta; the full
-                // report (14 recommendations + checklist) can exceed 8192 tokens
-                // and was being cut off mid-JSON.
+                // Claude 3.7 allows far larger outputs under this beta; these
+                // reports can exceed 8192 tokens and were being cut off mid-JSON.
                 client.DefaultRequestHeaders.Add("anthropic-beta", "output-128k-2025-02-19");
                 maxTokens = 16000;
+                disableThinking = true;
+            }
+            else if (!modelName.StartsWith("claude-3"))
+            {
+                // Newer models (Sonnet 4/5, Opus 4...) think before answering,
+                // and the hidden thinking spends the SAME output budget: at
+                // 8192 a Sonnet 5 reply once arrived with only a thinking
+                // block and no answer text at all. Give real answers room.
+                maxTokens = 24000;
+                disableThinking = true;
             }
             int totalItems = insights.Count;
             int maxRemovalLimit = Math.Max(1, (int)Math.Floor(totalItems * 0.10));
@@ -499,14 +534,20 @@ JSON Output Schema required:
   ]
 }}";
 
-            var requestBody = new
+            var requestBody = new Dictionary<string, object>
             {
-                model = modelName,
-                max_tokens = maxTokens,
-                system = systemPrompt,
-                messages = new[] { new { role = "user", content = userPrompt } }
+                ["model"] = modelName,
+                ["max_tokens"] = maxTokens,
+                ["system"] = systemPrompt,
+                ["messages"] = new[] { new { role = "user", content = userPrompt } }
             };
 
+            if (disableThinking)
+            {
+                // Pure-JSON task: thinking would only eat the output budget
+                // (and the wait) before any answer text appears.
+                requestBody["thinking"] = new { type = "disabled" };
+            }
             var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
             var response = await client.PostAsync("https://api.anthropic.com/v1/messages", jsonContent);
             var responseBody = await response.Content.ReadAsStringAsync();
@@ -539,8 +580,9 @@ JSON Output Schema required:
 
             if (!foundText)
             {
+                string stopReason = doc.RootElement.TryGetProperty("stop_reason", out var srEl) && srEl.ValueKind == JsonValueKind.String ? srEl.GetString() ?? "unknown" : "unknown";
                 string raw = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
-                throw new Exception($"Unexpected response from Claude (no text content): {raw}");
+                throw new Exception($"Unexpected response from Claude (no text content, stop_reason: {stopReason}): {raw}");
             }
 
             contentText = CleanJsonMarkdown(contentText);
