@@ -482,6 +482,10 @@ $(document).on('click', '#btnDownloadRecreatedMenu', function () {
     downloadRecreatedMenuImage();
 });
 
+$(document).on('click', '#btnDownloadRecreatedPdf', function () {
+    downloadRecreatedMenuPdf();
+});
+
 $(document).on('click', '#btnAiDesignVariations', function () {
     generateAiDesignVariations();
 });
@@ -771,6 +775,7 @@ function renderMenuDesignSection() {
                     <span style="flex: 1;"></span>
                     <button type="button" class="btn btn-outline btn-sm" id="btnOpenDesignEditor"><i class="fas fa-pen-to-square"></i> Full Editor</button>
                     <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu"><i class="fas fa-download"></i> Download PNG</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedPdf"><i class="fas fa-file-pdf"></i> Download PDF</button>
                 </div>
             </div>
             <div id="aiDesignsProgress"></div>
@@ -907,6 +912,7 @@ function openDesignEditor() {
 <meta charset="utf-8">
 <title>Menu Design Editor — ${escapeHtml(currentDesignMenu.restaurantName || 'Menu')}</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
 <style>
     body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #e9ebee; }
     .toolbar { position: sticky; top: 0; z-index: 10; background: #14100d; color: #f5ead9; padding: 12px 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -925,6 +931,7 @@ function openDesignEditor() {
 <div class="toolbar">
     <span class="title">Menu Design Editor — ${escapeHtml(designName)}</span>
     <button type="button" onclick="downloadEdited()">Download PNG</button>
+    <button type="button" onclick="downloadEditedPdf()">Download PDF</button>
     <button type="button" class="secondary" onclick="window.print()">Print</button>
 </div>
 <div class="hint">Click any text on the menu to edit it — the title, section names, item names, prices and descriptions. When you are happy with it, download the PNG.</div>
@@ -941,6 +948,19 @@ function openDesignEditor() {
             a.href = canvas.toDataURL('image/png');
             a.download = 'menu-design.png';
             a.click();
+        });
+    }
+    function downloadEditedPdf() {
+        var sheet = document.getElementById('recreatedMenuSheet');
+        if (!sheet || !window.html2canvas || !window.jspdf) return;
+        html2canvas(sheet, { scale: 2, useCORS: true }).then(function (canvas) {
+            var img = canvas.toDataURL('image/png');
+            var landscape = canvas.width >= canvas.height;
+            var pageWidth = landscape ? 297 : 210;
+            var pageHeight = pageWidth * canvas.height / canvas.width;
+            var doc = new window.jspdf.jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: [pageWidth, pageHeight] });
+            doc.addImage(img, 'PNG', 0, 0, pageWidth, pageHeight);
+            doc.save('menu-design.pdf');
         });
     }
 <\/script>
@@ -977,6 +997,42 @@ async function downloadRecreatedMenuImage() {
         showNotification('Menu design image downloaded.', 'success');
     } catch (e) {
         showNotification('Could not generate the image in this browser. Please try again.', 'error');
+    }
+}
+
+let jsPdfPromise = null;
+function loadJsPdf() {
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    if (jsPdfPromise) return jsPdfPromise;
+    jsPdfPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = () => resolve(window.jspdf.jsPDF);
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+    return jsPdfPromise;
+}
+
+// Exports the current design as a single-page PDF with the sheet's own aspect
+// ratio, so the PDF looks exactly like the on-screen design.
+async function downloadRecreatedMenuPdf() {
+    const sheet = document.getElementById('recreatedMenuSheet');
+    if (!sheet) return;
+    try {
+        const html2canvas = await loadHtml2Canvas();
+        const canvas = await html2canvas(sheet, { scale: 2, useCORS: true });
+        lastDesignImageUrl = canvas.toDataURL('image/png');
+        const JsPdf = await loadJsPdf();
+        const landscape = canvas.width >= canvas.height;
+        const pageWidth = landscape ? 297 : 210;
+        const pageHeight = pageWidth * canvas.height / canvas.width;
+        const doc = new JsPdf({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: [pageWidth, pageHeight] });
+        doc.addImage(lastDesignImageUrl, 'PNG', 0, 0, pageWidth, pageHeight);
+        doc.save('menu-design.pdf');
+        showNotification('Menu design PDF downloaded.', 'success');
+    } catch (e) {
+        showNotification('Could not generate the PDF in this browser. Please try again.', 'error');
     }
 }
 
