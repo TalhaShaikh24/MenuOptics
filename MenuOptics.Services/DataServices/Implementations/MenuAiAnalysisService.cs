@@ -1136,8 +1136,8 @@ JSON Output Schema required:
                     return responseDto;
                 }
 
-                var designs = await CallClaudeDesignVariationsAsync(anthropicApiKey!, menu);
-                if (designs == null || designs.Count == 0)
+                var result = await CallClaudeDesignVariationsAsync(anthropicApiKey!, menu);
+                if (result == null || result.Designs.Count == 0)
                 {
                     responseDto.Status = 400;
                     responseDto.ResponseMsg = "The AI could not create design variations this time. Please try again.";
@@ -1146,7 +1146,7 @@ JSON Output Schema required:
 
                 responseDto.Status = 200;
                 responseDto.ResponseMsg = "AI design variations generated successfully.";
-                responseDto.Data = designs;
+                responseDto.Data = result;
                 return responseDto;
             }
             catch (Exception ex)
@@ -1157,7 +1157,7 @@ JSON Output Schema required:
             }
         }
 
-        private async Task<List<AiMenuDesignSpecDto>> CallClaudeDesignVariationsAsync(string apiKey, ExtractedMenuDto menu)
+        private async Task<AiMenuDesignsResultDto> CallClaudeDesignVariationsAsync(string apiKey, ExtractedMenuDto menu)
         {
             using var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromMinutes(5);
@@ -1186,9 +1186,10 @@ Rules for every concept:
 - Frame: one of none, single, double. Align: one of center, left. PriceStyle: one of dots (dotted leader between item and price), plain (price on the right, no dots), below (price printed under the item name).
 - Ornament: one decorative character from: ✦ ❦ ★ ◆ ❧ — or an empty string for a clean look.
 - Name: a 2-3 word concept name (e.g. 'Midnight Vineyard'). Tagline: one short phrase describing the mood.
+- Menu title: also create SuggestedTitle — a short, attractive title for this menu itself (2-5 words) that fits its dishes, and SuggestedTagline — one short inviting line for the menu (max 8 words). If a real restaurant name is given, base the title on it; otherwise invent a fitting name from the dishes.
 
 Return ONLY a valid JSON object (no markdown, no commentary):
-{ ""designs"": [ { ""Name"": """", ""Tagline"": """", ""Bg"": ""#000000"", ""Ink"": ""#000000"", ""Sub"": ""#000000"", ""Accent"": ""#000000"", ""Price"": ""#000000"", ""Divider"": ""#000000"", ""HeadFont"": ""Georgia"", ""BodyFont"": ""Georgia"", ""Frame"": ""none"", ""Align"": ""center"", ""PriceStyle"": ""dots"", ""Ornament"": """" } ] }";
+{ ""SuggestedTitle"": """", ""SuggestedTagline"": """", ""designs"": [ { ""Name"": """", ""Tagline"": """", ""Bg"": ""#000000"", ""Ink"": ""#000000"", ""Sub"": ""#000000"", ""Accent"": ""#000000"", ""Price"": ""#000000"", ""Divider"": ""#000000"", ""HeadFont"": ""Georgia"", ""BodyFont"": ""Georgia"", ""Frame"": ""none"", ""Align"": ""center"", ""PriceStyle"": ""dots"", ""Ornament"": """" } ] }";
 
             var requestBody = new
             {
@@ -1237,15 +1238,24 @@ Return ONLY a valid JSON object (no markdown, no commentary):
             contentText = CleanJsonMarkdown(contentText);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var parsed = JsonSerializer.Deserialize<AiDesignsResponse>(contentText, options) ?? new AiDesignsResponse();
-            return (parsed.Designs ?? new List<AiMenuDesignSpecDto>())
-                .Take(4)
-                .Select(SanitizeDesignSpec)
-                .ToList();
+            var title = ClampText(parsed.SuggestedTitle, "", 60);
+            var tagline = ClampText(parsed.SuggestedTagline, "", 90);
+            return new AiMenuDesignsResultDto
+            {
+                Designs = (parsed.Designs ?? new List<AiMenuDesignSpecDto>())
+                    .Take(4)
+                    .Select(SanitizeDesignSpec)
+                    .ToList(),
+                SuggestedTitle = title.Length == 0 ? null : title,
+                SuggestedTagline = tagline.Length == 0 ? null : tagline
+            };
         }
 
         private class AiDesignsResponse
         {
             public List<AiMenuDesignSpecDto>? Designs { get; set; }
+            public string? SuggestedTitle { get; set; }
+            public string? SuggestedTagline { get; set; }
         }
 
         private static readonly string[] DesignFonts = { "Georgia", "Times New Roman", "Palatino", "Garamond", "Segoe UI", "Trebuchet MS", "Arial Black", "Courier New", "Lucida Handwriting", "Brush Script", "Verdana" };

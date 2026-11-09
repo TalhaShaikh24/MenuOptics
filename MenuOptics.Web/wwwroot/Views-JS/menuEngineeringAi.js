@@ -11,6 +11,7 @@ let currentDesignMenu = null;
 let currentDesignTemplate = 'midnight';
 let currentDesignFormat = 'single';
 let aiDesignSpecs = {}; // 'ai0'... -> { name, tagline, template } for AI-generated designs
+let currentDesignSource = null; // 'upload' | 'system' | 'manual'
 let lastDesignImageUrl = null;
 
 // TEMPORARY (client request, 2026-11-04): the 'Menu Design & Psychology'
@@ -477,6 +478,10 @@ $(document).on('click', '#btnAiDesignVariations', function () {
     generateAiDesignVariations();
 });
 
+$(document).on('click', '#btnOpenDesignEditor', function () {
+    openDesignEditor();
+});
+
 $(document).on('click', '#btnManualMenuEntry', function () {
     openManualEntry();
 });
@@ -567,6 +572,7 @@ function generateManualDesign() {
         return;
     }
     currentDesignMenu = menu;
+    currentDesignSource = 'manual';
     currentMenuPdfAudit = null;
     currentSuggestionImages = [];
     lastDesignImageUrl = null;
@@ -591,6 +597,7 @@ function generateDesignFromSystemMenu() {
         onSuccess: function (response) {
             if (response && response.status === 200 && response.data) {
                 currentDesignMenu = response.data;
+                currentDesignSource = 'system';
                 currentMenuPdfAudit = null;
                 currentSuggestionImages = [];
                 lastDesignImageUrl = null;
@@ -618,6 +625,7 @@ function generateAiDesignVariations() {
     const $btn = $('#btnAiDesignVariations');
     setBtnLoading($btn, true);
     $('#aiDesignsStatus').html('');
+    $('#aiDesignsProgress').html(aiProgressHtml('aiDesignsProgressInner'));
     const progress = startAiProgress($('#aiDesignsProgress'), [
         'Asking the AI designer for fresh concepts',
         'Mixing colour palettes and typefaces',
@@ -631,14 +639,21 @@ function generateAiDesignVariations() {
         onSuccess: function (response) {
             progress.done();
             $('#aiDesignsProgress').empty();
-            if (response && response.status === 200 && Array.isArray(response.data) && response.data.length) {
+            const designs = (response && response.data && Array.isArray(response.data.designs)) ? response.data.designs : [];
+            if (response && response.status === 200 && designs.length) {
                 aiDesignSpecs = {};
-                response.data.forEach((s, i) => {
+                designs.forEach((s, i) => {
                     aiDesignSpecs['ai' + i] = { name: s.name, tagline: s.tagline, template: specToTemplate(s) };
                 });
+                let titleNote = '';
+                if (currentDesignSource === 'manual' && response.data.suggestedTitle) {
+                    currentDesignMenu.restaurantName = response.data.suggestedTitle;
+                    currentDesignMenu.tagline = response.data.suggestedTagline || null;
+                    titleNote = ` The AI also named your menu: "${escapeHtml(response.data.suggestedTitle)}".`;
+                }
                 currentDesignTemplate = 'ai0';
                 drawRecreatedMenu();
-                $('#aiDesignsStatus').html(`<span style="color:#16a34a;">${response.data.length} AI designs ready — click a design name in the STYLE row to preview it, then download the one you like.</span>`);
+                $('#aiDesignsStatus').html(`<span style="color:#16a34a;">${designs.length} AI designs ready — click a design name in the STYLE row to preview it, then download the one you like.${titleNote}</span>`);
                 showNotification('AI design variations are ready.', 'success');
             } else {
                 $('#aiDesignsStatus').html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'The AI could not create designs this time.')}</span>`);
@@ -731,7 +746,8 @@ function renderMenuDesignSection() {
                 <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="booklet">Booklet</button>
                 <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="trifold">Tri-Fold</button>
                 <button type="button" class="btn btn-outline btn-sm design-format-btn" data-format="fourfold">Four-Fold</button>
-                <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu" style="margin-left: auto;"><i class="fas fa-download"></i> Download Menu Image</button>
+                <button type="button" class="btn btn-outline btn-sm" id="btnOpenDesignEditor" style="margin-left: auto;"><i class="fas fa-pen-to-square"></i> Edit in Full Editor</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnDownloadRecreatedMenu"><i class="fas fa-download"></i> Download Menu Image</button>
             </div>
             <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
                 <button type="button" class="btn btn-ai-gradient btn-sm" id="btnAiDesignVariations"><i class="fas fa-wand-magic-sparkles"></i> Generate AI Design Variations</button>
@@ -799,10 +815,10 @@ function menuSectionHtml(sec, t, compact) {
     </div>`;
 }
 
-function drawRecreatedMenu() {
+// Builds the full menu sheet HTML for the current menu / style / format.
+// Used by the in-modal preview AND by the full-page editor.
+function buildMenuSheetHtml() {
     const menu = currentDesignMenu;
-    if (!menu) return;
-    renderStyleButtons();
     const t = getDesignSpec(currentDesignTemplate);
     const fmt = currentDesignFormat;
     const panelCount = fmt === 'booklet' ? 2 : fmt === 'trifold' ? 3 : fmt === 'fourfold' ? 4 : 1;
@@ -814,37 +830,103 @@ function drawRecreatedMenu() {
         ${t.ornament ? `<div style="color: ${t.accent}; font-size: 17px; letter-spacing: 10px; margin-bottom: 4px;">${escapeHtml(t.ornament)}${escapeHtml(t.ornament)}${escapeHtml(t.ornament)}</div>` : ''}
         <div style="font-family: ${t.head}; font-size: 12.5px; letter-spacing: 5px; color: ${t.sub}; text-transform: uppercase;">Welcome to</div>
         <div style="font-family: ${t.head}; font-size: 31px; font-weight: 700; color: ${t.ink}; margin-top: 4px;">${escapeHtml(menu.restaurantName || 'Our Restaurant')}</div>
+        ${menu.tagline ? `<div style="font-family: ${t.body}; font-style: italic; font-size: 13.5px; color: ${t.sub}; margin-top: 3px;">${escapeHtml(menu.tagline)}</div>` : ''}
         <div style="height: 3px; background: ${t.accent}; width: 170px; margin: 12px ${align === 'center' ? 'auto' : '0'} 0;"></div>
     </div>`;
     const footer = `<div style="text-align: center; margin-top: 28px; font-size: 11.5px; letter-spacing: 2px; color: ${t.sub};">THANK YOU — PLEASE COME AGAIN</div>`;
 
-    let sheet;
     if (fmt === 'booklet') {
-        sheet = `<div id="recreatedMenuSheet" style="display: flex; gap: 18px; justify-content: center; align-items: stretch;">
+        return `<div id="recreatedMenuSheet" style="display: flex; gap: 18px; justify-content: center; align-items: stretch;">
             ${panels.map((secs, i) => `<div style="background: ${t.bg}; padding: 30px 26px 22px; border-radius: 6px; width: 400px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); display: flex; flex-direction: column; ${frameCss}">
                 ${i === 0 ? header : `<div style="text-align: center; font-family: ${t.head}; font-size: 12px; letter-spacing: 4px; color: ${t.sub}; text-transform: uppercase;">${escapeHtml(menu.restaurantName || 'Menu')}</div>`}
                 <div style="flex: 1;">${secs.map(s => menuSectionHtml(s, t, true)).join('')}</div>
                 <div style="text-align: center; font-size: 11px; color: ${t.sub}; margin-top: 16px;">— ${i + 1} —</div>
             </div>`).join('')}
         </div>`;
-    } else if (panelCount > 1) {
-        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 30px 10px 24px; border-radius: 6px; max-width: 1150px; margin: 0 auto; ${frameCss}">
+    }
+    if (panelCount > 1) {
+        return `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 30px 10px 24px; border-radius: 6px; max-width: 1150px; margin: 0 auto; ${frameCss}">
             ${header}
             <div style="display: flex; align-items: stretch; margin-top: 6px;">
                 ${panels.map((secs, i) => `<div style="flex: 1; padding: 0 18px; ${i > 0 ? `border-left: 2px dashed ${t.divider};` : ''}">${secs.map(s => menuSectionHtml(s, t, true)).join('') || `<div style="text-align: center; color: ${t.sub}; font-size: 12px; padding-top: 34px;">—</div>`}</div>`).join('')}
             </div>
             ${footer}
         </div>`;
-    } else {
-        sheet = `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 38px 42px 30px; border-radius: 6px; max-width: 760px; margin: 0 auto; ${frameCss}">
-            ${header}
-            ${panels[0].map(s => menuSectionHtml(s, t, false)).join('')}
-            ${footer}
-        </div>`;
     }
+    return `<div id="recreatedMenuSheet" style="background: ${t.bg}; padding: 38px 42px 30px; border-radius: 6px; max-width: 760px; margin: 0 auto; ${frameCss}">
+        ${header}
+        ${panels[0].map(s => menuSectionHtml(s, t, false)).join('')}
+        ${footer}
+    </div>`;
+}
 
-    $('#recreatedMenuPreview').html(sheet);
+function drawRecreatedMenu() {
+    if (!currentDesignMenu) return;
+    renderStyleButtons();
+    $('#recreatedMenuPreview').html(buildMenuSheetHtml());
     paintFormatButtons();
+}
+
+// Opens the current design on a NEW page where every text on the menu is
+// editable in place; the edited design can be downloaded as a PNG or printed.
+function openDesignEditor() {
+    if (!currentDesignMenu) return;
+    const designName = MENU_TEMPLATES[currentDesignTemplate]
+        ? (currentDesignTemplate === 'midnight' ? 'Midnight Gold' : 'Modern Light')
+        : ((aiDesignSpecs[currentDesignTemplate] || {}).name || 'AI Design');
+    const sheetHtml = buildMenuSheetHtml();
+    const win = window.open('', '_blank');
+    if (!win) {
+        showNotification('Please allow pop-ups for this site to open the design editor.', 'error');
+        return;
+    }
+    win.document.open();
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Menu Design Editor — ${escapeHtml(currentDesignMenu.restaurantName || 'Menu')}</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+<style>
+    body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #e9ebee; }
+    .toolbar { position: sticky; top: 0; z-index: 10; background: #14100d; color: #f5ead9; padding: 12px 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .toolbar .title { font-weight: 700; font-size: 15px; margin-right: auto; }
+    .toolbar button { background: #f08d11; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13.5px; cursor: pointer; font-weight: 600; }
+    .toolbar button.secondary { background: #374151; }
+    .hint { background: #fff7e8; color: #7c4a03; font-size: 13px; padding: 9px 18px; border-bottom: 1px solid #f0dcae; }
+    .stage { padding: 26px 12px 60px; display: flex; justify-content: center; overflow: auto; }
+    [contenteditable="true"] { outline: none; border-radius: 3px; }
+    [contenteditable="true"]:hover { box-shadow: 0 0 0 1.5px rgba(240,141,17,.65); }
+    [contenteditable="true"]:focus { box-shadow: 0 0 0 2px #f08d11; background: rgba(240,141,17,.07); }
+    @media print { .toolbar, .hint { display: none; } body { background: #fff; } .stage { padding: 0; } }
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <span class="title">Menu Design Editor — ${escapeHtml(designName)}</span>
+    <button type="button" onclick="downloadEdited()">Download PNG</button>
+    <button type="button" class="secondary" onclick="window.print()">Print</button>
+</div>
+<div class="hint">Click any text on the menu to edit it — the title, section names, item names, prices and descriptions. When you are happy with it, download the PNG.</div>
+<div class="stage"><div id="editorSheetWrap">${sheetHtml}</div></div>
+<script>
+    document.querySelectorAll('#editorSheetWrap div, #editorSheetWrap span').forEach(function (el) {
+        if (el.children.length === 0 && el.textContent.trim().length > 0) el.contentEditable = 'true';
+    });
+    function downloadEdited() {
+        var sheet = document.getElementById('recreatedMenuSheet');
+        if (!sheet || !window.html2canvas) return;
+        html2canvas(sheet, { scale: 2, useCORS: true }).then(function (canvas) {
+            var a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = 'menu-design.png';
+            a.click();
+        });
+    }
+<\/script>
+</body>
+</html>`);
+    win.document.close();
 }
 
 let html2canvasPromise = null;
@@ -917,6 +999,7 @@ function startMenuPdfAnalysis(file) {
                     menuPdfAnalysisInProgress = false;
                     renderMenuPdfAuditSection();
                     currentDesignMenu = response.data.extractedMenu || null;
+                    currentDesignSource = 'upload';
                     lastDesignImageUrl = null;
                     aiDesignSpecs = {};
                     renderMenuDesignSection();

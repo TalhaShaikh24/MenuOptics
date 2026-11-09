@@ -175,4 +175,13 @@ namespace MenuOptics.Models
         public string PriceStyle { get; set; } = "dots";  // dots | plain | below
         public string Ornament { get; set; } = string.Empty;
     }
+
+    // The full answer of the design-variations call: the concepts plus an
+    // AI-created title/tagline for the menu itself.
+    public class AiMenuDesignsResultDto
+    {
+        public List<AiMenuDesignSpecDto> Designs { get; set; } = new List<AiMenuDesignSpecDto>();
+        public string? SuggestedTitle { get; set; }
+        public string? SuggestedTagline { get; set; }
+    }
 }
