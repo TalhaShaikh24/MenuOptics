@@ -559,7 +559,16 @@ JSON Output Schema required:
                             {
                                 Name = i.Name,
                                 Description = i.Description,
-                                PriceText = i.SellingPrice > 0 ? i.SellingPrice.ToString("0.00") : ""
+                                PriceText = i.SellingPrice > 0 ? i.SellingPrice.ToString("0.00") : "",
+                                IngredientsUsed = (i.Ingredients ?? new List<GetMenuItemIngredientDTO>())
+                                    .Select(x => (x.IngredientName ?? "").Trim())
+                                    .Where(x => x.Length > 0)
+                                    .Concat((i.Recipes ?? new List<GetMenuItemRecipeDTO>())
+                                        .Select(x => (x.RecipeName ?? "").Trim())
+                                        .Where(x => x.Length > 0))
+                                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                                    .Take(8)
+                                    .ToList()
                             }).ToList()
                         })
                         .ToList()
@@ -797,6 +806,21 @@ Return ONLY a valid JSON object (no markdown, no commentary):
             return spec;
         }
 
+        // The guarantee behind every direction line: if the text does not name
+        // at least two of the dish's ingredients (or its only ingredient), the
+        // server weaves them in itself — presence never depends on the AI alone.
+        private static string EnsureIngredientsNamed(string direction, List<string> used)
+        {
+            if (used == null || used.Count == 0) return direction;
+            var named = used.Count(u => direction.Contains(u, StringComparison.OrdinalIgnoreCase));
+            var needed = Math.Min(2, used.Count);
+            if (named >= needed) return direction;
+            var withList = string.Join(", ", used);
+            return direction.Length == 0
+                ? $"Prepared with {withList}."
+                : $"{direction.TrimEnd('.', ' ')} — with {withList}.";
+        }
+
         private static string ClampText(string? value, string fallback, int max)
         {
             var v = (value ?? "").Trim();
@@ -996,21 +1020,8 @@ Rules:
 
                     var direction = string.IsNullOrWhiteSpace(i.Description) ? "" : i.Description.Trim();
 
-                    // Guarantee: the direction line must actually name the dish's
-                    // ingredients — if the AI wrote a vague line, the server weaves
-                    // them in itself instead of trusting the prompt alone.
-                    if (used.Count > 0)
-                    {
-                        var named = used.Count(u => direction.Contains(u, StringComparison.OrdinalIgnoreCase));
-                        var needed = Math.Min(2, used.Count);
-                        if (named < needed)
-                        {
-                            var withList = string.Join(", ", used);
-                            direction = direction.Length == 0
-                                ? $"Prepared with {withList}."
-                                : $"{direction.TrimEnd('.', ' ')} — with {withList}.";
-                        }
-                    }
+                    // Guarantee: the direction must name the dish's ingredients.
+                    direction = EnsureIngredientsNamed(direction, used);
 
                     items.Add(new ExtractedMenuItemDto
                     {
@@ -1029,6 +1040,166 @@ Rules:
             }
             menu.Sections = sections;
             return menu;
+        }
+
+        // Rewrites the under-item text of a design menu as guest-facing DIRECTION
+        // lines, written by Claude from each dish's own recipe ingredients. The
+        // saved item descriptions in MenuOptics are internal kitchen prep notes
+        // (timings, plating) — they are never shown on a designed menu as-is.
+        public async Task<ResponseDto> GenerateMenuDirectionsAsync(ExtractedMenuDto menu)
+        {
+            var responseDto = new ResponseDto();
+            try
+            {
+                if (menu == null || menu.Sections == null || !menu.Sections.Any(s => s.Items != null && s.Items.Any()))
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "No menu items were provided.";
+                    return responseDto;
+                }
+
+                var anthropicApiKey = _configuration["Anthropic:ApiKey"];
+                bool hasValidClaudeKey = !string.IsNullOrWhiteSpace(anthropicApiKey) &&
+                                         !anthropicApiKey.Contains("YOUR_CLAUDE_API_KEY", StringComparison.OrdinalIgnoreCase);
+                if (!hasValidClaudeKey)
+                {
+                    responseDto.Status = 400;
+                    responseDto.ResponseMsg = "Writing menu directions requires a valid Anthropic (Claude) API key. Please configure the 'Anthropic:ApiKey' setting on the server and try again.";
+                    return responseDto;
+                }
+
+                await CallClaudeMenuDirectionsAsync(anthropicApiKey!, menu);
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "Menu directions written successfully.";
+                responseDto.Data = menu;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = ex.Message;
+                return responseDto;
+            }
+        }
+
+        private async Task CallClaudeMenuDirectionsAsync(string apiKey, ExtractedMenuDto menu)
+        {
+            using var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(5);
+            client.DefaultRequestHeaders.Add("x-api-key", apiKey);
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+
+            var modelName = _configuration["Anthropic:Model"] ?? "claude-3-7-sonnet-20250219";
+
+            // Flatten the dishes in order; directions come back against these indexes.
+            var flat = new List<(ExtractedMenuItemDto Item, string Section)>();
+            foreach (var sec in menu.Sections ?? new List<ExtractedMenuSectionDto>())
+                foreach (var item in sec.Items ?? new List<ExtractedMenuItemDto>())
+                    flat.Add((item, sec.Name ?? "Menu"));
+            var work = flat.Take(80).ToList();
+
+            var digest = new StringBuilder();
+            for (int n = 0; n < work.Count; n++)
+            {
+                var (item, section) = work[n];
+                var ings = item.IngredientsUsed != null && item.IngredientsUsed.Count > 0
+                    ? string.Join(", ", item.IngredientsUsed)
+                    : "(not listed)";
+                var current = (item.Description ?? "").Trim();
+                if (current.Length > 220) current = current.Substring(0, 220);
+                digest.AppendLine($"{n + 1}. [{section}] {item.Name} | ingredients: {ings} | kitchen notes: {current}");
+            }
+
+            string systemPrompt = @"You are a menu copywriter for restaurants. For every dish in the list, write its DIRECTION — the one flowing line printed under the dish name on the guest menu.
+
+Style — exactly like this example: 'bistro shrimp sautéed in garlic butter and white wine, then baked with mozzarella cheese and garlic bread'.
+
+Rules:
+- One line per dish, about 15-35 words, appetizing, written for guests: how the dish is prepared, with cooking verbs and the cooking sequence.
+- The line MUST name the dish's key ingredients: use its ingredient list when one is given (name at least two of them); when no list is given, name the ingredients the dish is defined by (the ones in its name and kind).
+- The 'kitchen notes' are INTERNAL prep instructions — mine them only for true facts about the dish (real ingredients, real cooking methods). NEVER copy their style: no equipment timings ('microwave for 1 min', 'oven for 4 mins'), no plating or station instructions ('transfer to a rectangular plate', 'place filled bowl'), no abbreviations or shorthand.
+- Do not invent a different dish, and do not add a main ingredient the dish does not have.
+- Return ONLY a valid JSON object (no markdown, no commentary), one entry per dish with the SAME Index numbers as the input:
+{ ""Directions"": [ { ""Index"": 1, ""Direction"": """" } ] }";
+
+            var requestBody = new
+            {
+                model = modelName,
+                max_tokens = 6144,
+                system = systemPrompt,
+                messages = new[]
+                {
+                    new { role = "user", content = "Write a direction for each dish:\n" + digest.ToString() }
+                }
+            };
+
+            var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("https://api.anthropic.com/v1/messages", jsonContent);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string apiError = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Claude API returned {(int)response.StatusCode}: {apiError}");
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+
+            string contentText = "{}";
+            bool foundText = false;
+            if (doc.RootElement.TryGetProperty("content", out var contentArray) && contentArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var block in contentArray.EnumerateArray())
+                {
+                    if (block.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+                    {
+                        contentText = textEl.GetString() ?? "{}";
+                        foundText = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundText)
+            {
+                string raw = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Unexpected response from Claude (no text content): {raw}");
+            }
+
+            contentText = CleanJsonMarkdown(contentText);
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var parsed = JsonSerializer.Deserialize<MenuDirectionsResponse>(contentText, options) ?? new MenuDirectionsResponse();
+
+            var byIndex = new Dictionary<int, string>();
+            foreach (var d in parsed.Directions ?? new List<MenuDirectionEntry>())
+            {
+                var text = (d.Direction ?? "").Replace("\r", " ").Replace("\n", " ").Trim();
+                if (text.Length > 320) text = text.Substring(0, 320).Trim();
+                if (text.Length > 0) byIndex[d.Index] = text;
+            }
+
+            for (int n = 0; n < work.Count; n++)
+            {
+                var (item, _) = work[n];
+                if (byIndex.TryGetValue(n + 1, out var direction))
+                {
+                    // Same guarantee as the AI-chef flow: the ingredients must
+                    // actually appear in the line, woven in by the server if not.
+                    item.Description = EnsureIngredientsNamed(direction, item.IngredientsUsed ?? new List<string>());
+                }
+            }
+        }
+
+        private class MenuDirectionsResponse
+        {
+            public List<MenuDirectionEntry>? Directions { get; set; }
+        }
+
+        private class MenuDirectionEntry
+        {
+            public int Index { get; set; }
+            public string? Direction { get; set; }
         }
 
         private static string CleanJsonMarkdown(string contentText)

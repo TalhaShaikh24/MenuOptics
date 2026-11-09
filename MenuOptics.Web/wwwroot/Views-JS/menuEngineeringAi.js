@@ -408,7 +408,7 @@ function buildMenuAuditModal() {
                                 <i class="fas fa-database" style="color: #f08d11; font-size: 17px;"></i>
                             </div>
                             <div style="font-size: 15px; font-weight: 700; color: #111827;">Use My Menu Items</div>
-                            <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">No file needed — we build a fresh premium menu design from the items already saved in your MenuOptics account.</p>
+                            <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">No file needed — we build a fresh premium design from your saved items, and AI writes an appetizing direction for each dish from its recipe ingredients.</p>
                             <button type="button" class="btn btn-outline" id="btnDesignFromSystemMenu" style="text-align: center;"><i class="fas fa-wand-magic-sparkles"></i> Build From My Items</button>
                             <div id="aiSystemMenuStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
                         </div>
@@ -624,34 +624,77 @@ function generateManualDesign() {
 
 // ---------- Design from the restaurant's MenuOptics items ----------
 
+function openDesignFromMenu(menuData, source) {
+    currentDesignMenu = menuData;
+    currentDesignSource = source;
+    currentMenuPdfAudit = null;
+    currentSuggestionImages = [];
+    lastDesignImageUrl = null;
+    aiDesignSpecs = {};
+    $('#menuAuditReportContainer').empty();
+    renderMenuDesignSection();
+    setMenuAuditState('report');
+    $('.btnDownloadMenuAuditPdf').prop('disabled', true).css('opacity', '0.55');
+}
+
 function generateDesignFromSystemMenu() {
     if (menuPdfAnalysisInProgress) return;
+    const $btn = $('#btnDesignFromSystemMenu');
     const $status = $('#aiSystemMenuStatus');
-    $status.html('<i class="fas fa-spinner fa-spin"></i> Loading your menu items...');
+    $btn.prop('disabled', true);
+    $status.html(aiProgressHtml('aiSystemProgressInner'));
+    const progress = startAiProgress($status, [
+        'Loading your menu items',
+        "Reading each dish's recipe ingredients",
+        'Writing appetizing directions with AI'
+    ]);
+    const finish = () => { $btn.prop('disabled', false); };
+
     ajaxRequest({
         url: '/api/MenuEngineeringInsightsApi/GetMenuDesignData',
         method: 'GET',
         showMessage: false,
         onSuccess: function (response) {
-            if (response && response.status === 200 && response.data) {
-                currentDesignMenu = response.data;
-                currentDesignSource = 'system';
-                currentMenuPdfAudit = null;
-                currentSuggestionImages = [];
-                lastDesignImageUrl = null;
-                aiDesignSpecs = {};
-                $status.html('');
-                $('#menuAuditReportContainer').empty();
-                renderMenuDesignSection();
-                setMenuAuditState('report');
-                $('.btnDownloadMenuAuditPdf').prop('disabled', true).css('opacity', '0.55');
-                showNotification('Menu design generated from your items.', 'success');
-            } else {
+            if (!(response && response.status === 200 && response.data)) {
+                progress.stop();
                 $status.html(`<span style="color:#dc2626;">${escapeHtml(response?.responseMsg || 'Could not load your menu items.')}</span>`);
+                finish();
+                return;
             }
+            const menuData = response.data;
+            // Step 2: the AI rewrites every dish's text as a guest-facing
+            // direction built from its recipe ingredients — the saved kitchen
+            // prep notes are never shown on a designed menu.
+            ajaxRequest({
+                url: '/api/MenuEngineeringInsightsApi/GenerateMenuDirections',
+                method: 'POST',
+                data: JSON.stringify(menuData),
+                showMessage: false,
+                onSuccess: function (dirResponse) {
+                    progress.done();
+                    $status.empty();
+                    finish();
+                    if (dirResponse && dirResponse.status === 200 && dirResponse.data) {
+                        openDesignFromMenu(dirResponse.data, 'system');
+                        showNotification('Menu design generated — directions written from each dish\'s ingredients.', 'success');
+                    } else {
+                        openDesignFromMenu(menuData, 'system');
+                        showNotification(dirResponse?.responseMsg || 'Directions could not be written, so the saved descriptions are shown.', 'error');
+                    }
+                },
+                onError: function (xhr) {
+                    progress.done();
+                    $status.empty();
+                    finish();
+                    openDesignFromMenu(menuData, 'system');
+                    showNotification(xhr.responseJSON?.responseMsg || 'Directions could not be written, so the saved descriptions are shown.', 'error');
+                }
+            });
         },
         onError: function (xhr) {
+            progress.stop();
             $status.html(`<span style="color:#dc2626;">${escapeHtml(xhr.responseJSON?.responseMsg || 'Could not load your menu items.')}</span>`);
+            finish();
         }
     });
 }
