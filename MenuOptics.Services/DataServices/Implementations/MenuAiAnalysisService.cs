@@ -499,15 +499,39 @@ JSON Output Schema required:
 
             var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
             var response = await client.PostAsync("https://api.anthropic.com/v1/messages", jsonContent);
+            var responseBody = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new Exception($"Claude API returned {response.StatusCode}");
+                string apiError = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Claude API returned {(int)response.StatusCode}: {apiError}");
             }
 
-            var responseBody = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(responseBody);
-            var contentText = doc.RootElement.GetProperty("content")[0].GetProperty("text").GetString() ?? "{}";
+
+            // Find the first text block — never assume it sits at content[0]:
+            // a non-text first block (or an unexpected response shape) used to
+            // throw "The given key was not present in the dictionary" here.
+            string contentText = "{}";
+            bool foundText = false;
+            if (doc.RootElement.TryGetProperty("content", out var contentArray) && contentArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var block in contentArray.EnumerateArray())
+                {
+                    if (block.TryGetProperty("text", out var textEl) && textEl.ValueKind == JsonValueKind.String)
+                    {
+                        contentText = textEl.GetString() ?? "{}";
+                        foundText = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundText)
+            {
+                string raw = responseBody.Length > 600 ? responseBody.Substring(0, 600) : responseBody;
+                throw new Exception($"Unexpected response from Claude (no text content): {raw}");
+            }
 
             contentText = CleanJsonMarkdown(contentText);
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
