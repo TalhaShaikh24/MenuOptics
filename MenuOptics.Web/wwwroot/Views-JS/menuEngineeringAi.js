@@ -359,6 +359,11 @@ function openMenuAuditModal() {
     else if (currentMenuPdfAudit || currentDesignMenu) setMenuAuditState('report');
     else setMenuAuditState('upload');
 }
+function openNewMenuAuditModal() {
+    buildMenuAuditModal();
+    openCenteredModal('menuAuditModal');
+    setMenuAuditState('upload');
+}
 
 function buildMenuAuditModal() {
     if ($('#menuAuditModal').length > 0) return;
@@ -399,7 +404,7 @@ function buildMenuAuditModal() {
                             </div>
                             <div style="font-size: 15px; font-weight: 700; color: #111827;">Upload Your Menu</div>
                             <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">AI audit of your real menu (PDF or photo) against 14 design principles, with annotated suggestions — plus a recreated premium design. Takes a few minutes.</p>
-                            <label class="btn btn-primary" for="menuPdfFileInput" style="cursor: pointer; text-align: center;"><i class="fas fa-file-upload"></i> Choose Menu File</label>
+                            <label class="btn btn-outline" for="menuPdfFileInput" style="cursor: pointer; text-align: center;"><i class="fas fa-file-upload"></i> Choose Menu File</label>
                             <input type="file" id="menuPdfFileInput" accept="application/pdf,image/jpeg,image/png,image/webp,image/gif" style="display: none;">
                             <div id="aiMenuUploadStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
                         </div>
@@ -409,7 +414,7 @@ function buildMenuAuditModal() {
                             </div>
                             <div style="font-size: 15px; font-weight: 700; color: #111827;">Use My Menu Items</div>
                             <p style="font-size: 12.5px; color: #6b7280; line-height: 1.55; margin: 6px 0 14px; flex: 1;">No file needed — we build a fresh premium design from your saved items, and AI writes an appetizing direction for each dish from its recipe ingredients.</p>
-                            <button type="button" class="btn btn-outline" id="btnDesignFromSystemMenu" style="text-align: center;"><i class="fas fa-wand-magic-sparkles"></i> Build From My Items</button>
+                            <button type="button" class="btn btn-primary" id="btnDesignFromSystemMenu" style="text-align: center;"><i class="fas fa-wand-magic-sparkles"></i> Build From My Items</button>
                             <div id="aiSystemMenuStatus" style="font-size: 12.5px; color: #4b5563; margin-top: 8px;"></div>
                         </div>
                         <div style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; text-align: left;">
@@ -820,6 +825,7 @@ function renderMenuDesignSection() {
 
     const fromUpload = !!currentMenuPdfAudit;
     $('#menuDesignSection').html(`
+    <button type="button" class="btn btn-outline" id="btnxyz" onClick="openNewMenuAuditModal()"><i class="fa-solid fa-arrow-left"></i> Go Back</button>
         <div class="ai-section-box" style="border-left: 4px solid #d4a24e; margin-top: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
                 <div>
