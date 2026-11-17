@@ -277,6 +277,121 @@
     </div>
 </div>
 
+<!-- Ingredient Pricing History Modal -->
+<div class="modal" id="ingredientPricingHistoryModal">
+    <div class="modal-content large" style="max-width: 960px; width: 95%;">
+        <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="history-modal-header-icon" style="width: 42px; height: 42px; border-radius: 8px; background: rgba(240, 141, 17, 0.12); color: #f08d11; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <h3 id="historyModalIngredientName" style="margin: 0; font-size: 18px; font-weight: 600; color: #111827;">Pricing History</h3>
+                    <p id="historyModalIngredientMeta" style="margin: 3px 0 0; font-size: 13px; color: #6b7280;">Historical price trends & recorded updates</p>
+                </div>
+            </div>
+            <button class="modal-close" type="button" onclick="closeModal('ingredientPricingHistoryModal')">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 24px; max-height: calc(85vh - 120px); overflow-y: auto;">
+            <!-- Loading Indicator -->
+            <div id="historyLoadingState" style="text-align: center; padding: 60px 20px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #f08d11; margin-bottom: 12px;"></i>
+                <p style="color: #6b7280; font-size: 14px; margin: 0;">Loading pricing history...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="historyEmptyState" style="display: none; text-align: center; padding: 60px 20px;">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <i class="fas fa-history" style="font-size: 28px; color: #9ca3af;"></i>
+                </div>
+                <h4 style="font-size: 16px; font-weight: 600; color: #374151; margin: 0 0 6px 0;">No Pricing History Found</h4>
+                <p style="color: #6b7280; font-size: 13px; margin: 0;">There are no recorded price updates for this ingredient yet.</p>
+            </div>
+
+            <!-- Main Content (Stats + Tabs + Charts) -->
+            <div id="historyContentContainer" style="display: none;">
+                <!-- Empty / Baseline Notice Banner (shown when history is empty) -->
+                <div id="historyEmptyBanner" style="display: none; background: #fffbeb; border: 1px solid #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <i class="fas fa-info-circle" style="color: #f59e0b; font-size: 18px; margin-top: 2px;"></i>
+                        <div>
+                            <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #92400e;" id="historyEmptyBannerTitle">No Price History Recorded Yet</h4>
+                            <p style="margin: 3px 0 0; font-size: 12px; color: #b45309; line-height: 1.4;" id="historyEmptyBannerMsg">
+                                This ingredient has no historical price updates logged yet. Displaying the current price as baseline. Price trends and variance will be tracked automatically as price updates are made.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Metric Cards -->
+                <div class="history-stats-grid">
+                    <div class="stat-card">
+                        <p class="stat-label">Current Price</p>
+                        <p class="stat-value" id="historyStatCurrent">$0.00</p>
+                        <div id="historyStatChangeBadge" class="stat-change" style="font-size: 12px;">
+                            <span>--</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Lowest Price</p>
+                        <p class="stat-value" id="historyStatLowest" style="color: #059669;">$0.00</p>
+                        <p class="stat-subtext" id="historyStatLowestDate" style="font-size: 11px; color: #6b7280; margin: 0;">--</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Highest Price</p>
+                        <p class="stat-value" id="historyStatHighest" style="color: #dc2626;">$0.00</p>
+                        <p class="stat-subtext" id="historyStatHighestDate" style="font-size: 11px; color: #6b7280; margin: 0;">--</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-label">Average Price</p>
+                        <p class="stat-value" id="historyStatAverage" style="color: #2563eb;">$0.00</p>
+                        <p class="stat-subtext" id="historyStatCount" style="font-size: 11px; color: #6b7280; margin: 0;">0 updates</p>
+                    </div>
+                </div>
+
+                <!-- Chart & Data Tabs -->
+                <div class="custom-tabs style-2 history-chart-tabs" style="margin-bottom: 20px;">
+                    <button type="button" class="tab-btn active" data-chart-tab="trend">
+                        <i class="fas fa-chart-line"></i> Price Trend
+                    </button>
+                    <button type="button" class="tab-btn" data-chart-tab="table">
+                        <i class="fas fa-table"></i> Price History Table
+                    </button>
+                </div>
+
+                <!-- Tab Panes -->
+                <div class="history-tab-pane" id="paneTrend" style="position: relative; height: 350px;">
+                    <canvas id="historyChartTrend"></canvas>
+                    <div id="trendEmptyPlaceholder" class="chart-empty-placeholder" style="display: none;">
+                        <i class="fas fa-chart-line"></i>
+                        <h4>No Price Trend History</h4>
+                        <p>No historical price updates have been logged yet. Trend lines will appear as prices change over time.</p>
+                    </div>
+                </div>
+                <div class="history-tab-pane" id="paneTable" style="display: none; max-height: 350px; overflow-y: auto;">
+                    <table class="data-table history-data-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Date & Time</th>
+                                <th>Price</th>
+                                <th>Change ($)</th>
+                                <th>Change (%)</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding: 14px 24px; display: flex; justify-content: flex-end;">
+            <button class="btn btn-outline" type="button" onclick="closeModal('ingredientPricingHistoryModal')">Close</button>
+        </div>
+    </div>
+</div>
+
 @section scripts {
     <script src="~/views-js/ingredients.js?v=@DateTime.Now.Ticks"></script>
     <!-- jsPDF Library for PDF Export -->
