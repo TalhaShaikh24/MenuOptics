@@ -455,6 +455,44 @@ namespace MenuOptics.Services
             }
         }
 
+        public async Task<ResponseDto> GetIngredientsPricingHistoryAsync(int ingredientId, int currentUserId)
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@IngredientId", ingredientId);
+                parameters.Add("@RestaurantId", currentUserId);
+                parameters.Add("@Action", "SELECT_PRICING_HISTORY");
+               
+
+                var ingredientHistory = await connection.QueryAsync<GetIngredientHistoryDTO>("sp_IngredientCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = "Ingredient history retrieved successfully.";
+                ResponseDto.Data = ingredientHistory;
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx)
+            {
+                ResponseDto.Status = 400;
+                ResponseDto.ResponseMsg = sqlEx.Message;
+                return ResponseDto;
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = $"{ex.Message}";
+                return ResponseDto;
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+
         public async Task<(int StatusCode, object Body)> ToggleIngredientActiveAsync(int id, int currentUserId, int actualUserId)
         {
             var ResponseDto = new ResponseDto();

@@ -5433,3 +5433,187 @@ body:has(#savePolicyBtn) .editor-container {
     padding-top: 1.5rem;
     border-top: 1px solid #e5e7eb;
 }
+
+/* ==========================================================================
+   Ingredient Pricing History Modal & Table styles
+   ========================================================================== */
+.history-icon-btn {
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    color: #f08d11;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.history-icon-btn:hover {
+    background: #f08d11;
+    color: #ffffff;
+    border-color: #f08d11;
+    box-shadow: 0 2px 6px rgba(240, 141, 17, 0.25);
+}
+
+.history-price-icon-btn {
+    border: none;
+    background: transparent;
+    padding: 2px 4px;
+    color: #f08d11;
+    cursor: pointer;
+    font-size: 13px;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+
+.history-price-icon-btn:hover {
+    opacity: 1;
+    background: rgba(240, 141, 17, 0.1);
+    transform: scale(1.1);
+}
+
+.history-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.history-stats-grid .stat-card {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.history-stats-grid .stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    margin: 0 0 4px 0;
+}
+
+.history-stats-grid .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px 0;
+}
+
+.history-chart-tabs {
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+}
+
+.history-chart-tabs .tab-btn {
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.history-chart-tabs .tab-btn:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.history-chart-tabs .tab-btn.active {
+    background: #f08d11;
+    color: #ffffff;
+}
+
+.history-data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-data-table th {
+    position: sticky;
+    top: 0;
+    background: #f9fafb;
+    z-index: 2;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+.history-data-table td {
+    padding: 10px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    vertical-align: middle;
+}
+
+.history-data-table tr:hover td {
+    background-color: #f9fafb;
+}
+
+.text-danger {
+    color: #dc2626 !important;
+    font-weight: 600;
+}
+
+.text-success {
+    color: #059669 !important;
+    font-weight: 600;
+}
+
+.chart-empty-placeholder {
+    height: 100%;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+    background: #fafafa;
+    border-radius: 8px;
+    border: 1px dashed #e5e7eb;
+}
+
+.chart-empty-placeholder i {
+    font-size: 38px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+}
+
+.chart-empty-placeholder h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 4px 0;
+}
+
+.chart-empty-placeholder p {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+    max-width: 420px;
+}
+
+

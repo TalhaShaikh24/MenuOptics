@@ -84,6 +84,12 @@ namespace MenuOptics.Controllers.Api
             var (statusCode, body) = await _ingredientService.GetAllIngredientsByUserIdParamAsync(userId, Request.Query);
             return StatusCode(statusCode, body);
         }
+        [HttpGet("GetIngredientsPricingHistory/{ingredientId}")]
+        public async Task<IActionResult> GetIngredientsPricingHistory(int ingredientId)
+        {
+            var responseData = await _ingredientService.GetIngredientsPricingHistoryAsync(ingredientId, CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
 
         [HttpPut("ToggleIngredientActive/{id}")]
         public async Task<IActionResult> ToggleIngredientActive(int id)
