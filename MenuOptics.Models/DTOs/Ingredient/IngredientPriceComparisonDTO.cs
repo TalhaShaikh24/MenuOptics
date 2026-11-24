@@ -6,7 +6,7 @@ namespace MenuOptics.Models.DTOs
     public class IngredientPriceComparisonDTO
     {
         public int IngredientId { get; set; }
-        public required string IngredientName { get; set; } = string.Empty;
+        public required string IngredientName { get; set; }
         public decimal OldPrice { get; set; }
         public decimal CurrentPrice { get; set; }
 
