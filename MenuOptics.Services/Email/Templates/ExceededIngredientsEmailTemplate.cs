@@ -33,23 +33,12 @@ namespace MenuOptics.Services.EmailTemplates
                 var color = isInc ? "#dc2626" : "#16a34a";
                 var sign = isInc ? "+" : "-";
 
-                var affectedHtml = string.Empty;
-                if (item.AffectedMenuItems != null && item.AffectedMenuItems.Any())
-                {
-                    var badges = string.Join(" ", item.AffectedMenuItems.Select(m =>
-                        $"<span style=\"display: inline-block; background: #fef3c7; color: #92400e; font-size: 11px; padding: 2px 7px; border-radius: 6px; margin: 2px 3px 2px 0; font-weight: 600;\">{WebUtility.HtmlEncode(m)}</span>"));
-
-                    affectedHtml = $@"<div style=""margin-top: 6px; line-height: 1.4;"">
-                        <span style=""font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.2px;"">Affected Menu Items:</span> {badges}
-                    </div>";
-                }
-
                 rowsHtml += $@"
                 <tr>
                   <td style=""padding: 12px 14px; border-bottom: 1px solid #e5e7eb; vertical-align: top;"">
                     <div style=""font-weight: 700; color: #111827; font-size: 13.5px;"">{name}</div>
-                    {affectedHtml}
                   </td>
+                  <td style=""padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #111827; vertical-align: top; font-size: 13px;"">{item.AffectedMenuItem}</td>
                   <td style=""padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right; color: #6b7280; vertical-align: top; font-size: 13px;"">${item.OldPrice:F2}</td>
                   <td style=""padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 700; color: #111827; vertical-align: top; font-size: 13px;"">${item.CurrentPrice:F2}</td>
                   <td style=""padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right; color: {color}; font-weight: 600; vertical-align: top; font-size: 13px;"">
@@ -209,6 +198,7 @@ namespace MenuOptics.Services.EmailTemplates
         <thead>
           <tr>
             <th style=""text-align: left;"">Ingredient</th>
+            <th style=""text-align: left;"">Affected Menu Item</th>
             <th style=""text-align: right;"">Old Price</th>
             <th style=""text-align: right;"">Current Price</th>
             <th style=""text-align: right;"">Difference</th>

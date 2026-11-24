@@ -18,30 +18,24 @@ namespace MenuOptics.Services
     {
         private readonly DapperContext _context;
         private readonly IWebHostEnvironment _environment;
-        private readonly IAuthService _authService;
         private readonly ITokenService _tokenService;
         private readonly ISmtpEmailService _emailService;
         private readonly IFileUploadService _fileService;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
 
         public UserService(
             DapperContext context,
             IWebHostEnvironment environment,
-            IAuthService authService,
             ITokenService tokenService,
             ISmtpEmailService emailService,
             IFileUploadService fileService,
-            IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration)
         {
             _context = context;
             _environment = environment;
-            _authService = authService;
             _tokenService = tokenService;
             _emailService = emailService;
             _fileService = fileService;
-            _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
         }
 

@@ -6,7 +6,7 @@ namespace MenuOptics.Models.DTOs
     public class IngredientPriceComparisonDTO
     {
         public int IngredientId { get; set; }
-        public string IngredientName { get; set; } = string.Empty;
+        public required string IngredientName { get; set; } = string.Empty;
         public decimal OldPrice { get; set; }
         public decimal CurrentPrice { get; set; }
 
@@ -23,6 +23,6 @@ namespace MenuOptics.Models.DTOs
 
         public bool IsPriceIncrease => CurrentPrice > OldPrice;
 
-        public List<string> AffectedMenuItems { get; set; } = new();
+        public required string AffectedMenuItem { get; set; }
     }
 }

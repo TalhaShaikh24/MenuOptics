@@ -32,40 +32,45 @@ namespace MenuOptics.Services.BackgroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("WeeklyPriceAlertBackgroundService initialized (Testing Mode: Runs every 2 minutes).");
-
-            // Initial 10-second delay on app startup so services and DB initialize cleanly
-            try
-            {
-                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
+            _logger.LogInformation(
+                "WeeklyPriceAlertBackgroundService initialized. Scheduled for every Monday at 05:00 UTC.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    _logger.LogInformation("WeeklyPriceAlertBackgroundService: Executing price audit at {Time} UTC...", DateTime.UtcNow);
-                    await RunWeeklyAuditAsync();
-                    _logger.LogInformation("WeeklyPriceAlertBackgroundService: Price audit finished.");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "WeeklyPriceAlertBackgroundService: Error executing price audit.");
-                }
+                    var now = DateTime.UtcNow;
+                    var nextRun = GetNextMondayRunTime(now);
 
-                // Wait 2 minutes for next run
-                try
-                {
-                    _logger.LogInformation("WeeklyPriceAlertBackgroundService: Next audit in 2 minutes.");
-                    await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
+                    var delay = nextRun - now;
+
+                    _logger.LogInformation(
+                        "Next weekly price audit scheduled for {NextRun} UTC.",
+                        nextRun);
+
+                    await Task.Delay(delay, stoppingToken);
+
+                    if (stoppingToken.IsCancellationRequested)
+                        break;
+
+                    _logger.LogInformation(
+                        "Weekly price audit started at {Time} UTC.",
+                        DateTime.UtcNow);
+
+                    await RunWeeklyAuditAsync();
+
+                    _logger.LogInformation(
+                        "Weekly price audit completed successfully.");
                 }
                 catch (OperationCanceledException)
                 {
                     break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Error executing weekly price audit.");
                 }
             }
 
@@ -87,7 +92,6 @@ namespace MenuOptics.Services.BackgroundServices
 
             var restaurants = (users.Data as IEnumerable<GetUserDTO>)
                 ?.Where(u => u.IsActive 
-                && (u.UserId == 28730)
                 && (u.IsPriceAlertOn == true)
                 && (u.IsParent == true || !u.ParentId.HasValue))
                 .ToList() ?? new List<GetUserDTO>();
@@ -124,30 +128,15 @@ namespace MenuOptics.Services.BackgroundServices
                     // Extract all ingredients used in active menu items, grouped/distinct by IngredientId
                     var comparisons = menuItems
                         .Where(m => m.Ingredients != null)
-                        .SelectMany(m => m.Ingredients!.Select(ing => new
+                        .SelectMany(m => m.Ingredients!.Select(ing =>
+                        new IngredientPriceComparisonDTO
                         {
-                            MenuItemName = m.Name,
-                            Ingredient = ing
+                            IngredientId = ing.IngredientId,
+                            IngredientName = ing.IngredientName,
+                            OldPrice = ing.OldPrice ?? 0,
+                            CurrentPrice = ing.CurrentPrice,
+                            AffectedMenuItem = m.Name
                         }))
-                        .GroupBy(x => x.Ingredient.IngredientId)
-                        .Select(g =>
-                        {
-                            var first = g.First().Ingredient;
-                            var affectedMenus = g
-                                .Select(x => x.MenuItemName)
-                                .Where(name => !string.IsNullOrWhiteSpace(name))
-                                .Distinct()
-                                .ToList();
-
-                            return new IngredientPriceComparisonDTO
-                            {
-                                IngredientId = first.IngredientId,
-                                IngredientName = first.IngredientName,
-                                OldPrice = first.OldPrice ?? 0,
-                                CurrentPrice = first.CurrentPrice,
-                                AffectedMenuItems = affectedMenus
-                            };
-                        })
                         .ToList();
 
                     if (!comparisons.Any())
@@ -178,7 +167,7 @@ namespace MenuOptics.Services.BackgroundServices
                     var htmlBody = ExceededIngredientsEmailTemplate.Build(r.RestaurantName, threshold, exceeded, baseUrl);
                     var subject = $"[Menu Optics] Price Alert: {exceeded.Count} Ingredient(s) Exceeded {threshold:F1}% Threshold";
 
-                    await emailService.SendEmailAsync("grthamad@gmail.com", subject, htmlBody);
+                    await emailService.SendEmailAsync(r.Email, subject, htmlBody);
                     _logger.LogInformation("Weekly price alert email sent to {Email} for restaurant {RestaurantName} ({Count} items exceeding {Threshold}%).",
                         r.Email, r.RestaurantName, exceeded.Count, threshold);
                 }
@@ -191,21 +180,23 @@ namespace MenuOptics.Services.BackgroundServices
 
         public static DateTime GetNextMondayRunTime(DateTime fromUtc)
         {
-            // Monday -5:00 UTC target
-            //const int targetHourUtc = -5;
-            //int daysUntilMonday = ((int)DayOfWeek.Monday - (int)fromUtc.DayOfWeek + 7) % 7;
+            const int targetHourUtc = 5;
 
-            //if (daysUntilMonday == 0)
-            //{
-            //    if (fromUtc.Hour < targetHourUtc)
-            //    {
-            //        return fromUtc.Date.AddHours(targetHourUtc);
-            //    }
-            //    daysUntilMonday = 7;
-            //}
+            int daysUntilMonday =
+                ((int)DayOfWeek.Monday - (int)fromUtc.DayOfWeek + 7) % 7;
 
-            //return fromUtc.Date.AddDays(daysUntilMonday).AddHours(targetHourUtc);
-            return DateTime.Now.AddMinutes(1);
+            var nextRun = fromUtc.Date
+                .AddDays(daysUntilMonday)
+                .AddHours(targetHourUtc);
+
+            // If Monday's scheduled time has already passed,
+            // schedule for the following Monday.
+            if (nextRun <= fromUtc)
+            {
+                nextRun = nextRun.AddDays(7);
+            }
+
+            return nextRun;
         }
     }
 }
