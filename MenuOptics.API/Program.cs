@@ -63,6 +63,7 @@ builder.Services.AddScoped<IPrivateVendorService, PrivateVendorService>();
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IMenuAiAnalysisService, MenuAiAnalysisService>();
+builder.Services.AddHostedService<MenuOptics.Services.BackgroundServices.WeeklyPriceAlertBackgroundService>();
 
 // Read JWT settings from configuration (appsettings.json) and create key for token validation
 var jwtSection = builder.Configuration.GetSection("Jwt");

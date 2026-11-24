@@ -295,27 +295,29 @@ function initIngredientsTable() {
                 data: null,
                 orderable: false,
                 render: function (data, type, row) {
-                    const toggleLink = (!row.vendorId || row.vendorId <= 0)
-                        ? `<a href="#" onclick="toggleIngredientActive(${row.ingredientId})">
-                               <i class="fas fa-ban"></i>
-                               ${row.isActive ? 'Deactivate' : 'Activate'}
-                           </a>`
-                        : '';
 
-                    return `<div class="action-cell" style="display:flex; align-items:center; justify-content:flex-end; gap:6px;">
-                               
-                                <div class="dropdown">
-                                    <button class="dropdown-toggle" title="More Options">
-                                        <i class="fas fa-ellipsis-h"></i>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#" onclick="editIngredient(${row.ingredientId})">
-                                            <i class="fas fa-edit"></i> Edit Details
-                                        </a>
-                                        ${toggleLink}
-                                    </div>
+                    const actionLink = (row.vendorId > 0)
+                        ? ''
+                        : `
+                        <div class="action-cell" style="display:flex; align-items:center; justify-content:flex-end; gap:6px;">
+                            <div class="dropdown">
+                                <button class="dropdown-toggle" title="More Options">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                     <a href="#" onclick="toggleIngredientActive(${row.ingredientId})">
+                           <i class="fas fa-ban"></i>
+                           ${row.isActive ? 'Deactivate' : 'Activate'}
+                       </a>
+                       <a href="#" onclick="editIngredient(${row.ingredientId})">
+                           <i class="fas fa-edit"></i> Edit Details
+                       </a>
                                 </div>
-                            </div>`;
+                            </div>
+                        </div>
+                       `;
+
+                    return actionLink;
                 }
             }
         ],

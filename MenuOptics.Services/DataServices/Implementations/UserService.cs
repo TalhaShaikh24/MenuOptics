@@ -729,7 +729,7 @@ namespace MenuOptics.Services
                     ActualUserId = user.UserId,
                     IsParent = isParent,
                     IsFirstTimeLoggedIn = user.HasViewedIntroVideo,
-                    Roles = user.Roles,
+                    Roles = user.Role,
                     ProfilePic = user.ProfilePic,
                     Token = tokenString,
                     RefreshToken = refreshTokenString,
@@ -833,6 +833,41 @@ namespace MenuOptics.Services
             // 4. Send email with attachment
             await _emailService.SendEmailAsync(vendor.Email, subject, htmlBody, attachmentPath, "MenuOptics_Onboarding_SOP.pdf");
 
+        }
+
+        public async Task<ResponseDto> UpdatePriceAlertAsync(int userId, UpdatePriceAlertDTO model)
+        {
+            var responseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@UserId", userId);
+                parameters.Add("@PriceAlertThreshold", model.PriceAlertThreshold);
+                parameters.Add("@IsPriceAlertOn", model.IsPriceAlertOn);
+                parameters.Add("@Action", "UPDATE_PRICE_ALERT");
+
+                await connection.ExecuteAsync("sp_UserCRUD", parameters, commandType: CommandType.StoredProcedure);
+
+                responseDto.Status = 200;
+                responseDto.ResponseMsg = "Price alert settings updated successfully.";
+                responseDto.Data = model;
+                return responseDto;
+            }
+            catch (SqlException sqlEx)
+            {
+                responseDto.Status = 400;
+                responseDto.ResponseMsg = sqlEx.Message;
+                return responseDto;
+            }
+            catch (Exception ex)
+            {
+                responseDto.Status = 500;
+                responseDto.ResponseMsg = ex.Message;
+                return responseDto;
+            }
         }
     }
 }

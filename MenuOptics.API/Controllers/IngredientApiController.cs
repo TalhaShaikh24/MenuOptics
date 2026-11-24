@@ -98,5 +98,12 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(statusCode, body);
         }
 
+        [HttpGet("GetIngredientsPriceComparison")]
+        public async Task<IActionResult> GetIngredientsPriceComparison()
+        {
+            var responseData = await _ingredientService.GetIngredientsPriceComparisonAsync(CurrentUserId);
+            return StatusCode(responseData.Status, responseData);
+        }
+
     }
 }

@@ -47,9 +47,9 @@ namespace MenuOptics.API.Middleware
             }
 
             // Admin and Vendor accounts do not require restaurant subscriptions
-            if (!string.IsNullOrEmpty(user.Roles) &&
-                (user.Roles.Contains(Role.Admin.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                 user.Roles.Contains(Role.Vendor.ToString(), StringComparison.OrdinalIgnoreCase)))
+            if (!string.IsNullOrEmpty(user.Role) &&
+                (user.Role.Contains(Role.Admin.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                 user.Role.Contains(Role.Vendor.ToString(), StringComparison.OrdinalIgnoreCase)))
             {
                 await next();
                 return;

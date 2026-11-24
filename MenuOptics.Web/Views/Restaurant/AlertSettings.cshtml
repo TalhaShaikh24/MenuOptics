@@ -1,0 +1,169 @@
+@{
+    ViewData["Title"] = "Price Alert Settings";
+}
+@using System.Security.Claims
+@using MenuOptics
+@using MenuOptics.Models
+@using MenuOptics.Utility
+@inject Microsoft.AspNetCore.Mvc.Rendering.IHtmlHelper Html
+
+<style>
+    .toggle-switch-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        margin-bottom: 24px;
+    }
+
+    .price-alert-switch {
+        position: relative;
+        display: inline-block;
+        width: 52px;
+        height: 28px;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .price-alert-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: .25s ease;
+        border-radius: 28px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .25s ease;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    input:checked + .slider {
+        background-color: #f08d11;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(24px);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 16px;
+        margin-left: 10px;
+    }
+
+    .status-badge.active {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .status-badge.inactive {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1>Price Alert Settings</h1>
+        <p style="color: #6b7280; margin-top: 4px; font-size: 14px;">
+            Configure your ingredient price change alerts and percentage thresholds.
+        </p>
+    </div>
+</div>
+
+<!-- Alert Settings Card -->
+<div class="card" style="padding: 32px; margin-bottom: 24px;">
+    <div class="card-body">
+        <form id="alertSettingsForm">
+
+            <!-- Enable/Disable Toggle Section -->
+            <div class="toggle-switch-wrapper">
+                <div>
+                    <div style="display: flex; align-items: center;">
+                        <span style="font-size: 16px; font-weight: 700; color: #111827;">Enable Price Alerts</span>
+                        <span id="alertStatusBadge" class="status-badge active">
+                            <i class="fas fa-circle" style="font-size: 8px;"></i>
+                            <span id="alertStatusText">Enabled</span>
+                        </span>
+                    </div>
+                    <p style="font-size: 13px; color: #6b7280; margin-top: 4px; margin-bottom: 0;">
+                        When active, MenuOptics sends you a weekly email every Monday listing all ingredients that exceeded your price threshold.
+                    </p>
+                </div>
+                <div>
+                    <label class="price-alert-switch">
+                        <input type="checkbox" id="isPriceAlertOn" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Threshold Configuration Section -->
+            <div id="thresholdConfigSection" style="margin-bottom: 24px; transition: opacity .2s ease;">
+                <label style="font-size: 15px; font-weight: 700; color: #111827; display: block; margin-bottom: 6px;">
+                    Price Alert Percentage Threshold (%)
+                </label>
+                <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">
+                    Enter the percentage threshold. If an ingredient's price change is equal to or exceeds this number, an alert will be sent.
+                </p>
+
+                <div style="display: flex; align-items: center; gap: 14px; max-width: 320px; margin-bottom: 14px;">
+                    <div style="position: relative; flex: 1;">
+                        <input type="number" id="thresholdInput" name="threshold" class="form-control" 
+                               min="0.1" max="500" step="1" value="" required 
+                               style="font-size: 18px; font-weight: 700; padding-right: 36px; color: #111827;">
+                        <span style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-weight: 700; color: #9ca3af; font-size: 16px;">%</span>
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 12px; font-weight: 600; color: #6b7280; margin-right: 4px;">Quick Presets:</span>
+                    <button type="button" class="btn btn-outline-sm btn-preset" data-pct="5.0">5%</button>
+                    <button type="button" class="btn btn-outline-sm btn-preset active" data-pct="10.0" style="border-color: #f08d11; color: #f08d11; font-weight: 700;">10% (Default)</button>
+                    <button type="button" class="btn btn-outline-sm btn-preset" data-pct="20.0">20%</button>
+                    <button type="button" class="btn btn-outline-sm btn-preset" data-pct="50.0">50%</button>
+                    <button type="button" class="btn btn-outline-sm btn-preset" data-pct="100.0">100%</button>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                <button type="button" class="btn btn-primary" id="btnSaveAlertSettings">
+                    <i class="fas fa-save" style="margin-right: 6px;"></i>
+                    <span class="btn-text">Save Settings</span>
+                    <i class="fas fa-spinner fa-spin btn-loading" style="display: none; margin-left: 6px;"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="~/Views-JS/restaurant-alert-settings.js?v=@DateTime.Now.Ticks"></script>

@@ -87,7 +87,7 @@ namespace MenuOptics.Services
                     Address = user.Address,
                     ActualUserId = user.UserId,
                     IsParent = isParent,
-                    Roles = user.Roles,
+                    Role = user.Role,
                     ProfilePic = user.ProfilePic,
                     Token = tokenString,
                     RefreshToken = refreshTokenString,
@@ -105,12 +105,12 @@ namespace MenuOptics.Services
                     await connection.ExecuteAsync("sp_UserCRUD", updateParams, commandType: CommandType.StoredProcedure);
                 }
 
-                if (user.Roles?.Contains(Role.Vendor.ToString()) == true)
+                if (user.Role?.Contains(Role.Vendor.ToString()) == true)
                 {
                     await _vendorActivityLog.LogAsync(user.UserId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success");
                 }
-                if (user.Roles?.Contains(Role.Restaurant.ToString()) == true || user.Roles?.Contains(Role.Admin.ToString()) == true)
+                if (user.Role?.Contains(Role.Restaurant.ToString()) == true || user.Role?.Contains(Role.Admin.ToString()) == true)
                 {
                     await _activityLog.LogAsync(user.UserId, "POST /api/UserApi/Login", payload,
                         System.Text.Json.JsonSerializer.Serialize(new { ResponseDto.Status, ResponseDto.ResponseMsg }), "Success", ipAddress);

@@ -12,9 +12,7 @@
     var initials = (firstName.FirstOrDefault().ToString() + lastName.FirstOrDefault().ToString()).ToUpper();
     var userRole = User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? "User";
     var subscriptionType = User?.FindFirst("SubscriptionType")?.Value ?? "";
-    bool isParent = Convert.ToBoolean(
-        User?.FindFirst("isParent")?.Value ?? "false"
-    );
+    bool isParent = bool.TryParse(User?.FindFirst("isParent")?.Value ?? User?.FindFirst("IsParent")?.Value, out var parsedParent) && parsedParent;
     var stripeSubscriptionId = User?.FindFirst("StripeSubscriptionId")?.Value ?? "";
     var paidBy = User?.FindFirst("PaidBy")?.Value;
 
@@ -247,6 +245,10 @@
                             <a href="@Url.Action("Index", "Profile")" class="nav-item nav-child @Html.IsActive("Profile", "Index")">
                                 <i class="fas fa-edit"></i>
                                 <span>Edit Profile</span>
+                            </a>
+                            <a href="@Url.Action("AlertSettings", "Restaurant")" class="nav-item nav-child @Html.IsActive("Restaurant", "AlertSettings")">
+                                <i class="fas fa-sliders-h"></i>
+                                <span>Price Alert Settings</span>
                             </a>
                             <a href="@Url.Action("Members", "Restaurant")" class="nav-item nav-child @Html.IsActive("Restaurant", "Members")">
                                 <i class="fas fa-users-cog"></i>

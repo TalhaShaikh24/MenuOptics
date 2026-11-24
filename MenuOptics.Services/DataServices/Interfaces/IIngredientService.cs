@@ -15,5 +15,6 @@ namespace MenuOptics.Services
         Task<(int StatusCode, object Body)> GetAllIngredientsByUserIdParamAsync(int userId, IQueryCollection query);
         Task<ResponseDto> GetIngredientsPricingHistoryAsync(int ingredientId, int currentUserId);
         Task<(int StatusCode, object Body)> ToggleIngredientActiveAsync(int id, int currentUserId, int actualUserId);
+        Task<ResponseDto> GetIngredientsPriceComparisonAsync(int restaurantId);
     }
 }

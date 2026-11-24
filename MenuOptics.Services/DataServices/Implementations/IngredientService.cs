@@ -2,6 +2,9 @@ using Dapper;
 using MenuOptics.Data;
 using MenuOptics.Models;
 using MenuOptics.Models.DTOs;
+using MenuOptics.Services.EmailTemplates;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Stripe.Forwarding;
 using System.Data;
 using System.Data.SqlClient;
@@ -577,6 +580,42 @@ namespace MenuOptics.Services
             return (500, new ResponseDto { Status = 500, ResponseMsg = $"{ex.Message}" });
         }
 
+        public async Task<ResponseDto> GetIngredientsPriceComparisonAsync(int restaurantId)
+        {
+            var ResponseDto = new ResponseDto();
+            using var connection = _context.CreateConnection();
+            connection.Open();
+
+            try
+            {
+                var parameters = new DynamicParameters();
+                parameters.Add("@RestaurantId", restaurantId);
+                parameters.Add("@Action", "SELECT_PRICE_COMPARISON");
+
+                var list = await connection.QueryAsync<IngredientPriceComparisonDTO>(
+                    "sp_IngredientCRUD",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                ResponseDto.Status = 200;
+                ResponseDto.ResponseMsg = "Ingredient price comparisons retrieved successfully.";
+                ResponseDto.Data = list;
+                return ResponseDto;
+            }
+            catch (SqlException sqlEx)
+            {
+                ResponseDto.Status = 400;
+                ResponseDto.ResponseMsg = sqlEx.Message;
+                return ResponseDto;
+            }
+            catch (Exception ex)
+            {
+                ResponseDto.Status = 500;
+                ResponseDto.ResponseMsg = ex.Message;
+                return ResponseDto;
+            }
+        }
     }
 }
 

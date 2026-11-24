@@ -5617,3 +5617,6 @@ body:has(#savePolicyBtn) .editor-container {
 }
 
 
+button#btnOpenMenuAuditModal {
+    display: none !important;
+}

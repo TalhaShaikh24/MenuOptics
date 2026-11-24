@@ -20,7 +20,7 @@ namespace MenuOptics.Models
         public string? Zip { get; set; }
         public string? RestaurantName { get; set; }
         public bool IsActive { get; set; }
-        public string? Roles { get; set; }
+        public string? Role { get; set; }
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }
         public string? StripeCustomerId { get; set; }
@@ -35,5 +35,7 @@ namespace MenuOptics.Models
         public bool? HasViewedIntroVideo { get; set; }
         public int? CreatedBy { get; set; }
         public int? VendorId { get; set; }
+        public decimal? PriceAlertThreshold { get; set; }
+        public bool? IsPriceAlertOn { get; set; }
     }
 }

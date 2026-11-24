@@ -354,18 +354,51 @@
                     <button type="button" class="tab-btn active" data-chart-tab="trend">
                         <i class="fas fa-chart-line"></i> Price Trend
                     </button>
+                    <button type="button" class="tab-btn" data-chart-tab="stepped">
+                        <i class="fas fa-chart-area"></i> Stepped Timeline
+                    </button>
+                    <button type="button" class="tab-btn" data-chart-tab="bar">
+                        <i class="fas fa-chart-bar"></i> Price Levels
+                    </button>
+                    <button type="button" class="tab-btn" data-chart-tab="variance">
+                        <i class="fas fa-percentage"></i> % Changes
+                    </button>
                     <button type="button" class="tab-btn" data-chart-tab="table">
-                        <i class="fas fa-table"></i> Price History Table
+                        <i class="fas fa-table"></i> History Table
                     </button>
                 </div>
 
-                <!-- Tab Panes -->
+                <!-- Tab Panes for Charts -->
                 <div class="history-tab-pane" id="paneTrend" style="position: relative; height: 350px;">
                     <canvas id="historyChartTrend"></canvas>
                     <div id="trendEmptyPlaceholder" class="chart-empty-placeholder" style="display: none;">
                         <i class="fas fa-chart-line"></i>
                         <h4>No Price Trend History</h4>
                         <p>No historical price updates have been logged yet. Trend lines will appear as prices change over time.</p>
+                    </div>
+                </div>
+                <div class="history-tab-pane" id="paneStepped" style="display: none; position: relative; height: 350px;">
+                    <canvas id="historyChartStepped"></canvas>
+                    <div id="steppedEmptyPlaceholder" class="chart-empty-placeholder" style="display: none;">
+                        <i class="fas fa-chart-area"></i>
+                        <h4>No Timeline Stages</h4>
+                        <p>Stepped price duration intervals will be displayed once price revisions are recorded.</p>
+                    </div>
+                </div>
+                <div class="history-tab-pane" id="paneBar" style="display: none; position: relative; height: 350px;">
+                    <canvas id="historyChartBar"></canvas>
+                    <div id="barEmptyPlaceholder" class="chart-empty-placeholder" style="display: none;">
+                        <i class="fas fa-chart-bar"></i>
+                        <h4>No Price Levels Comparison</h4>
+                        <p>Comparison bars will show price changes between consecutive updates.</p>
+                    </div>
+                </div>
+                <div class="history-tab-pane" id="paneVariance" style="display: none; position: relative; height: 350px;">
+                    <canvas id="historyChartVariance"></canvas>
+                    <div id="varianceEmptyPlaceholder" class="chart-empty-placeholder" style="display: none;">
+                        <i class="fas fa-percentage"></i>
+                        <h4>No Variance Data</h4>
+                        <p>Price variance requires at least 2 recorded price changes to calculate percentage fluctuation.</p>
                     </div>
                 </div>
                 <div class="history-tab-pane" id="paneTable" style="display: none; max-height: 350px; overflow-y: auto;">

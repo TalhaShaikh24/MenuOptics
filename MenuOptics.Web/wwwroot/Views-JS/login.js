@@ -111,8 +111,8 @@ $(document).ready(function () {
                 if (response.data.hasViewedIntroVideo == false) {
                     sessionStorage.setItem('showWelcomeVideo', 'true');
                 }
-
-                var redirectUrl = response.data.roles.includes('Admin')
+                debugger
+                var redirectUrl = response.data.role.includes('Admin')
                     ? '/User/Index'
                     : '/Menu/Index';
 
@@ -217,7 +217,7 @@ $(document).ready(function () {
                     sessionStorage.setItem('showWelcomeVideo', 'true');
                 }
 
-                var redirectUrl = (response.data.roles && response.data.roles.includes('Admin'))
+                var redirectUrl = (response.data.roles && response.data.role.includes('Admin'))
                     ? '/User/Index'
                     : '/Menu/Index';
 

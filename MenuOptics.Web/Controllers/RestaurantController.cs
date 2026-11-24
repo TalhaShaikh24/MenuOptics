@@ -28,5 +28,16 @@ namespace MenuOptics.Controllers
             }
             return View();
         }
+
+        [AuthorizeRestaurant]
+        public IActionResult AlertSettings()
+        {
+            var isParentClaim = User.FindFirst("isParent")?.Value ?? User.FindFirst("IsParent")?.Value;
+            if (!string.Equals(isParentClaim, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                return RedirectToAction("AccessDenied", "User");
+            }
+            return View();
+        }
     }
 }

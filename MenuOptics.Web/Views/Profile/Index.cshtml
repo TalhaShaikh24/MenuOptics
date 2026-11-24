@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "My Profile";
     var userRole = User?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? "User";
     bool isParent = Convert.ToBoolean(

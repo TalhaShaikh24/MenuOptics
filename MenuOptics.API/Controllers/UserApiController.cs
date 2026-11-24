@@ -135,6 +135,20 @@ namespace MenuOptics.Controllers.Api
             return StatusCode(responseData.Status, responseData);
         }
 
+        [Authorize(Roles = "Restaurant,Admin")]
+        [HttpPut("UpdatePriceAlert")]
+        public async Task<IActionResult> UpdatePriceAlert([FromBody] UpdatePriceAlertDTO model)
+        {
+            var isParentClaim = User.FindFirst("IsParent")?.Value ?? User.FindFirst("isParent")?.Value;
+            if (!User.IsInRole("Admin") && !string.Equals(isParentClaim, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                return StatusCode(403, new ResponseDto { Status = 403, ResponseMsg = "Only parent restaurant accounts can update price alert settings." });
+            }
+
+            var responseData = await _userService.UpdatePriceAlertAsync(CurrentUserId, model);
+            return StatusCode(responseData.Status, responseData);
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPut("ToggleUserActive/{id}")]
         public async Task<IActionResult> ToggleUserActive(int id)
